@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Selection</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+    <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+    <link rel="stylesheet" href="static/css/main.css">
+</head>
+<body>
+<div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-tabs">
+    <header class="mdl-layout__header">
+        <div class="mdl-layout__header-row">
+            <!-- Title -->
+            <span class="mdl-layout-title">
+                <a class="mdl-navigation__link" href="/">Matrix Steuerung</a></span>
+            <!-- Add spacer, to align navigation to the right -->
+            <div class="mdl-layout-spacer">
+                <form method="post" action="/stop_process">
+                    <button id="stop_process_button" type="submit" class="mdl-button mdl-js-button mdl-button--icon">
+                        <div class="control-icon icon-pause-circle"></div>
+                    </button>
+                </form>
+            </div>
+            <div class="mdl-tooltip" for="stop_process_button">
+                Stop Displaying<br>and shut down the display
+            </div>
+            <!-- Navigation. We hide it in small screens. -->
+            <nav class="mdl-navigation mdl-layout--large-screen-only">
+                {{ freeDiskSpaceInPercent }} GB frei
+                <div id="p1" class="mdl-progress mdl-js-progress"></div>
+                <a class="mdl-navigation__link" href="{{ url_for('upload') }}">Dateien Hochladen</a>
+                <a class="mdl-navigation__link" href="{{ url_for('settings') }}">Einstellungen</a>
+            </nav>
+        </div>
+    </header>
+    <main class="mdl-layout__content">
+        <h1>This is a new page!</h1>
+
+    <form method="POST" enctype="multipart/form-data"
+ action="/upload_image">
+        <input type="file" name="image_file" accept=".jpg, .jpeg, .png">
+        <br>
+        <button type="submit">Upload</button>
+    </form>
+
+    </main>
+</div></body>
+
+
+<script>
+    document.querySelector('#p1').addEventListener('mdl-componentupgraded', function () {
+        this.MaterialProgress.setProgress({{freeDiskSpaceInPercent}});
+    });
+</script>
+</body>
+</html>

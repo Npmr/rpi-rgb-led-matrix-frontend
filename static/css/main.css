@@ -1,0 +1,115 @@
+.demo-card-image.mdl-card {
+    height: 350px;
+    background: center / cover;
+}
+
+.demo-card-image.mdl-card:hover {
+    background-repeat: no-repeat !important;
+    background-size: auto !important;
+}
+
+.demo-card-image > .mdl-card__actions {
+    height: 52px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.demo-card-image__filename {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+#p1 {
+    max-width: 200px;
+}
+
+.mdl-progress > .progressbar {
+    background-color: red;
+}
+
+.auxbar {
+    background-color: gray;
+}
+
+.mdl-button--icon {
+    border-radius: 50%;
+    height: 32px;
+    margin-left: 0;
+    margin-right: 0;
+    min-width: 32px;
+    width: 32px;
+    padding: 0;
+    overflow: hidden;
+    color: inherit;
+    line-height: normal;
+}
+
+form {
+    width: 50px;
+}
+
+.control-icon {
+    height: 100%;
+    width: 100%;
+    vertical-align: baseline;
+}
+
+.fl {
+    float: left;
+}
+
+.fr {
+    float: right;
+}
+
+.icon-play-circle {
+    background-color: white;
+    -webkit-mask: url(../svg/play_circle.svg) no-repeat center;
+    mask: url(../svg/play_circle.svg) no-repeat center;
+}
+
+.icon-delete {
+    background-color: white;
+    -webkit-mask: url(../svg/delete.svg) no-repeat center;
+    mask: url(../svg/delete.svg) no-repeat center;
+}
+
+.icon-pause-circle {
+    height: 30px;
+    background-color: white;
+    -webkit-mask: url(../svg/pause_circle.svg) no-repeat center;
+    mask: url(../svg/pause_circle.svg) no-repeat center;
+}
+
+.icon-landscape {
+    height: 32px;
+    width: 32px;
+    background-color: white;
+    -webkit-mask: url(../svg/landscape.svg) no-repeat center;
+    mask: url(../svg/landscape.svg) no-repeat center;
+}
+
+.icon-portrait {
+    height: 32px;
+    width: 32px;
+    background-color: white;
+    -webkit-mask: url(../svg/portrait.svg) no-repeat center;
+    mask: url(../svg/portrait.svg) no-repeat center;
+}
+
+.icon-square {
+    height: 32px;
+    width: 32px;
+    background-color: white;
+    -webkit-mask: url(../svg/square.svg) no-repeat center;
+    mask: url(../svg/square.svg) no-repeat center;
+}
+
+.icon-playlist-play {
+    height: 32px;
+    width: 32px;
+    background-color: black;
+    -webkit-mask: url(../svg/playlist_play.svg) no-repeat center;
+    mask: url(../svg/playlist_play.svg) no-repeat center;
+}
