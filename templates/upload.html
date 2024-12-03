@@ -28,25 +28,37 @@
             </div>
             <!-- Navigation. We hide it in small screens. -->
             <nav class="mdl-navigation mdl-layout--large-screen-only">
-                {{ freeDiskSpaceInPercent }} GB frei
-                <div id="p1" class="mdl-progress mdl-js-progress"></div>
-                <a class="mdl-navigation__link" href="{{ url_for('upload') }}">Dateien Hochladen</a>
+                <a class="mdl-navigation__link" href="#">Dateien Hochladen</a>
                 <a class="mdl-navigation__link" href="{{ url_for('settings') }}">Einstellungen</a>
             </nav>
         </div>
     </header>
     <main class="mdl-layout__content">
-        <h1>This is a new page!</h1>
+        <h1>Image Uplaod!</h1>
+        <div class="mdl-grid">
 
-    <form method="POST" enctype="multipart/form-data"
- action="/upload_image">
-        <input type="file" name="image_file" accept=".jpg, .jpeg, .png">
-        <br>
-        <button type="submit">Upload</button>
-    </form>
+            <div class="mdl-cell mdl-cell--12-col">
+                <span>Upload all kinds of images, as long as they are in the .png, .jpg or .gif format!</span>
+            </div>
 
+            <div class="mdl-cell mdl-cell--12-col">
+                <span>Currently you got {{ freeDiskSpaceInPercent }} % free storage space on this system</span>
+                <div id="p1" class="mdl-progress mdl-js-progress"></div>
+            </div>
+
+            <div class="mdl-cell mdl-cell--12-col"></div>
+            <form method="POST" enctype="multipart/form-data"
+                  action="/upload_image">
+                <input class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" type="file" name="image_file" multiple accept=".jpg, .jpeg, .png, .gif">
+                <br><br>
+                <button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" type="submit">Upload
+                </button>
+            </form>
+
+        </div>
     </main>
-</div></body>
+</div>
+</body>
 
 
 <script>
