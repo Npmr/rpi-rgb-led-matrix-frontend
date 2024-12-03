@@ -1,6 +1,9 @@
 {
-    "heightInPixel": "192",
-    "widthInPixel": "128",
-    "direction": "horizontalTurned",
-    "playlistTime": 30
+    "heightInPixel": "32",
+    "widthInPixel": "32",
+    "direction": "horizontal",
+    "chainLength": "12",
+    "parallelChains": "2",
+    "ledSlowdown": "2",
+    "playlistTime": "30"
 }

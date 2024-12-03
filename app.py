@@ -1,11 +1,11 @@
 import json
 import os
-import psutil
 import shutil
 import subprocess
 from threading import Thread
-from PIL import Image
 
+import psutil
+from PIL import Image
 from flask import Flask, render_template, request, url_for, redirect
 
 from upload_handler import upload_image
@@ -21,23 +21,9 @@ def read_settings(filename="settings.json"):
 
 @app.route('/')
 def index():
-    # Liste der Bilder im Ordner
-    image_files = os.listdir('static/pictures')
+    medias = countMediaTypeAndNumber()
 
-    images = []
-    gifs = []
-
-    for file in image_files:
-        image_path = os.path.join('static/pictures', file)
-        orientation = determine_orientation(image_path)
-
-        if file.lower().endswith(('.jpg', '.jpeg', '.png')):
-            images.append({'filename': file, 'orientation': orientation})
-        elif file.lower().endswith('.gif'):
-            gifs.append({'filename': file, 'orientation': orientation})
-
-
-    return render_template('index.html', images=images, gifs=gifs)
+    return render_template('index.html', images=medias[0], gifs=medias[1])
 
 
 @app.route('/upload')
@@ -62,7 +48,11 @@ def delete_image():
 @app.route('/settings')
 def settings():
     settings = read_settings()
-    return render_template('settings.html', settings=settings)
+    medias = countMediaTypeAndNumber()
+    numberOfPictues = len(medias[0])
+    numberOfGifs = len(medias[1])
+    freeDiskSpaceInPercent = getFreeDiskSpace()
+    return render_template('settings.html', settings=settings, numberOfPictues=numberOfPictues, numberOfGifs=numberOfGifs, freeDiskSpaceInPercent=round(freeDiskSpaceInPercent[0]))
 
 
 @app.route('/save_settings', methods=['POST'])
@@ -70,11 +60,16 @@ def save_settings():
     new_height = request.form['height']
     new_width = request.form['width']
     new_direction = request.form['direction']
+    new_chainLength = request.form['chainLength']
+    new_parallelChains = request.form['parallelChains']
+    new_ledSlowdown = request.form['ledSlowdown']
+    new_playlistTime = request.form['playlistTime']
 
     # Update the settings.json file
     with open('settings.json', 'w') as f:
-        json.dump({'heightInPixel': new_height, 'widthInPixel': new_width, 'direction': new_direction}, f,
-                  indent=4)
+        json.dump({'heightInPixel': new_height, 'widthInPixel': new_width, 'direction': new_direction,
+                   'chainLength': new_chainLength, 'parallelChains': new_parallelChains, 'ledSlowdown': new_ledSlowdown,
+                   'playlistTime': new_playlistTime}, f, indent=4)
     return 'Changes saved'
 
 
@@ -107,17 +102,17 @@ def process_image_async(image_name):
             break
 
     settings = read_settings()
-    rotation=";Rotate:270"
+    rotation = ";Rotate:270"
     if settings["direction"] == "horizontal":
-        rotation=";Rotate:180"
+        rotation = ";Rotate:180"
     if settings["direction"] == "verticalTurned":
-        rotation=";Rotate:90"
+        rotation = ";Rotate:90"
     if settings["direction"] == "horizontalTurned":
-        rotation=";Rotate:0"
+        rotation = ";Rotate:0"
 
     # Start the new process
     process = subprocess.Popen(
-        f"sudo .././rpi-rgb-led-matrix/utils/led-image-viewer -C --led-rows=32 --led-cols=32 --led-chain=12 --led-parallel=2 --led-brightness=50 --led-pixel-mapper=\"U-mapper{rotation}\" --led-slowdown-gpio=2 /home/pi/webapp/static/pictures/{image_name} &",
+        f"sudo .././rpi-rgb-led-matrix/utils/led-image-viewer -C --led-rows={settings["heightInPixel"]} --led-cols={settings["widthInPixel"]} --led-chain={settings["chainLength"]} --led-parallel={settings["parallelChains"]} --led-brightness=50 --led-pixel-mapper=\"U-mapper{rotation}\" --led-slowdown-gpio={settings["ledSlowdown"]} /home/pi/webapp/static/pictures/{image_name} &",
         shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # Capture standard output and error (optional) in a separate thread
@@ -140,6 +135,7 @@ def getFreeDiskSpace():
     print("Free: %d GiB" % (free // (2 ** 30)))
     return (100 / (total // (2 ** 30))) * (used // (2 ** 30)), (free // (2 ** 30))
 
+
 def determine_orientation(image_path):
     with Image.open(image_path) as img:
         width, height = img.size
@@ -149,6 +145,22 @@ def determine_orientation(image_path):
             return "vertical"
         else:
             return "square"
+
+def countMediaTypeAndNumber():
+    image_files = os.listdir('static/pictures')
+
+    images = []
+    gifs = []
+
+    for file in image_files:
+        image_path = os.path.join('static/pictures', file)
+        orientation = determine_orientation(image_path)
+
+        if file.lower().endswith(('.jpg', '.jpeg', '.png')):
+            images.append({'filename': file, 'orientation': orientation})
+        elif file.lower().endswith('.gif'):
+            gifs.append({'filename': file, 'orientation': orientation})
+    return images, gifs
 
 upload_image(app)
 

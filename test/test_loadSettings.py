@@ -5,7 +5,7 @@ import unittest
 from app import read_settings
 
 
-class TestSettings(unittest.TestCase):
+class TestLoadSettings(unittest.TestCase):
     def test_read_settings(self):
         # Create a temporary settings.json file for testing
         with open('test_settings.json', 'w') as f:
