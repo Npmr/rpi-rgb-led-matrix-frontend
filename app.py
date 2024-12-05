@@ -13,10 +13,17 @@ from upload_handler import upload_image
 app = Flask(__name__)
 app.config['STATIC_FOLDER'] = 'static/pictures'
 
+
 def read_settings(filename="settings.json"):
     with open(filename, 'r') as f:
         settings = json.load(f)
     return settings
+
+
+def read_infos(filename="info.json"):
+    with open(filename, 'r') as f:
+        app_info = json.load(f)
+    return app_info
 
 
 @app.route('/')
@@ -47,12 +54,19 @@ def delete_image():
 
 @app.route('/settings')
 def settings():
+
     settings = read_settings()
     medias = countMediaTypeAndNumber()
     numberOfPictues = len(medias[0])
     numberOfGifs = len(medias[1])
     freeDiskSpaceInPercent = getFreeDiskSpace()
-    return render_template('settings.html', settings=settings, numberOfPictues=numberOfPictues, numberOfGifs=numberOfGifs, freeDiskSpaceInPercent=round(freeDiskSpaceInPercent[0]))
+
+    infos = read_infos()
+
+
+    return render_template('settings.html', settings=settings, numberOfPictues=numberOfPictues,
+                           numberOfGifs=numberOfGifs, freeDiskSpaceInPercent=round(freeDiskSpaceInPercent[0]),
+                           applicationInfo=infos)
 
 
 @app.route('/save_settings', methods=['POST'])
@@ -146,6 +160,7 @@ def determine_orientation(image_path):
         else:
             return "square"
 
+
 def countMediaTypeAndNumber():
     image_files = os.listdir('static/pictures')
 
@@ -161,6 +176,7 @@ def countMediaTypeAndNumber():
         elif file.lower().endswith('.gif'):
             gifs.append({'filename': file, 'orientation': orientation})
     return images, gifs
+
 
 upload_image(app)
 

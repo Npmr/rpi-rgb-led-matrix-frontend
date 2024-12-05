@@ -30,9 +30,12 @@
         </div>
     </header>
     <main class="mdl-layout__content">
-
+        <div class="mdl-grid">
+        <div class="mdl-cell mdl-cell--12-col">
         <h1 class="title">Settings Page</h1>{{ numberOfPictues }} - {{ numberOfGifs }} - {{ freeDiskSpaceInPercent }}
-
+        </div>
+<hr>
+        <div class="mdl-cell mdl-cell--12-col">
         <form method="POST" action="/save_settings">
             <table class="mdl-data-table mdl-js-data-table mdl-shadow--2dp">
                 <thead>
@@ -105,8 +108,14 @@
             </table>
 
         </form>
+        </div>
+<hr>
 
-
+        <div class="mdl-cell mdl-cell--12-col">
+            <span>Current Used Version: {{applicationInfo['currentApplicationVersion']}}</span>
+            <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" disabled>Update Application</button>
+        </div>
+</div>
     </main>
 </div>
 </body>

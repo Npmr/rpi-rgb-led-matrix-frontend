@@ -13,10 +13,11 @@ please use the installer to set up the complete system.
 ## Installer
 
 This part of the documentation should show how to use the installer and explain what it does
-
+1. Donwload the Script via wget with the following command
+   > wget https://raw.githubusercontent.com/Npmr/rpi-rgb-led-matrix-frontend/refs/heads/main/install_application.sh
 1. change the sh file to be executable
    > chmod +x install_application.sh
-2. run the installer file. (!) Because this file uses the SUDO command, you have to enter your password
+2. run the installer file. (!) Because this file uses the SUDO command, you may have to enter your password
 
 ## Updater
 
