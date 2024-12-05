@@ -18,6 +18,7 @@ This part of the documentation should show how to use the installer and explain 
 1. change the sh file to be executable
    > chmod +x install_application.sh
 2. run the installer file. (!) Because this file uses the SUDO command, you may have to enter your password
+   > ./install_application.sh
 
 ## Updater
 
