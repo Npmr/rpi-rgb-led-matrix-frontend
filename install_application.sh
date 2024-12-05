@@ -21,6 +21,6 @@ make led-image-viewer
 cd
 
 # Install the new crontab
-(crontab -l 2>/dev/null; echo "@reboot sudo python3 rpi-rgb-led-matrix-frontend/app.py") | crontab -
+(crontab -l 2>/dev/null; echo "@reboot sudo python3 rpi-rgb-led-matrix-frontend/app.py # matrix-frontend-instance ") | crontab -
 #reboot the system
 sudo reboot
