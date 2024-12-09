@@ -54,7 +54,6 @@ def delete_image():
 
 @app.route('/settings')
 def settings():
-
     settings = read_settings()
     medias = countMediaTypeAndNumber()
     numberOfPictues = len(medias[0])
@@ -62,7 +61,6 @@ def settings():
     freeDiskSpaceInPercent = getFreeDiskSpace()
 
     infos = read_infos()
-
 
     return render_template('settings.html', settings=settings, numberOfPictues=numberOfPictues,
                            numberOfGifs=numberOfGifs, freeDiskSpaceInPercent=round(freeDiskSpaceInPercent[0]),
@@ -124,10 +122,10 @@ def process_image_async(image_name):
     if settings["direction"] == "horizontalTurned":
         rotation = ";Rotate:0"
 
+    command = f"sudo .././rpi-rgb-led-matrix/utils/led-image-viewer -C --led-no-hardware-pulse --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness=50 --led-pixel-mapper=\"U-mapper{rotation}\" --led-slowdown-gpio={settings['ledSlowdown']} /home/pi/rpi-rgb-led-matrix-frontend/static/pictures/{image_name} &"
+
     # Start the new process
-    process = subprocess.Popen(
-        f"sudo .././rpi-rgb-led-matrix/utils/led-image-viewer -C --led-rows={settings["heightInPixel"]} --led-cols={settings["widthInPixel"]} --led-chain={settings["chainLength"]} --led-parallel={settings["parallelChains"]} --led-brightness=50 --led-pixel-mapper=\"U-mapper{rotation}\" --led-slowdown-gpio={settings["ledSlowdown"]} /home/pi/webapp/static/pictures/{image_name} &",
-        shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # Capture standard output and error (optional) in a separate thread
     def capture_output():
