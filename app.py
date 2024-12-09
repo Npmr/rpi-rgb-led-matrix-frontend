@@ -100,7 +100,7 @@ def save_settings():
         json.dump({'heightInPixel': new_height, 'widthInPixel': new_width, 'direction': new_direction,
                    'chainLength': new_chainLength, 'parallelChains': new_parallelChains, 'ledSlowdown': new_ledSlowdown,
                    'playlistTime': new_playlistTime}, f, indent=4)
-    return 'Changes saved'
+    return redirect(url_for('settings'))
 
 
 @app.route('/process_image', methods=['POST'])
