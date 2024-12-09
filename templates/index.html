@@ -147,60 +147,95 @@
                     <h2>Demos</h2>
 
                     <div class="mdl-cell mdl-cell--12-col "></div>
-                    <form method="post" action="/process_demo" class="from-normal">
+                    <form method="post" action="/process_demo" >
+                        <ul class="demo-list-item mdl-list">
+                            <li class="mdl-list__item">
+                                <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-1">
+                                    <input type="radio" id="option-1" class="mdl-radio__button" name="options" value="0"
+                                           checked>
+                                    <span class="mdl-radio__label">A rotating Square</span>
+                                </label>
+                            </li>
+                            <li class="mdl-list__item">
+                                <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-2">
+                                    <input type="radio" id="option-2" class="mdl-radio__button" name="options"
+                                           value="3">
+                                    <span class="mdl-radio__label">Test image, a square</span>
+                                </label>
+                            </li>
+                            <li class="mdl-list__item">
+                                <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-3">
+                                    <input type="radio" id="option-3" class="mdl-radio__button" name="options"
+                                           value="4">
+                                    <span class="mdl-radio__label">Pulsing color</span>
+                                </label>
+                            </li>
 
-                        <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-1">
-                            <input type="radio" id="option-1" class="mdl-radio__button" name="options" value="0"
-                                   checked>
-                            <span class="mdl-radio__label">A rotating Square</span>
-                        </label>
-                        <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-2">
-                            <input type="radio" id="option-2" class="mdl-radio__button" name="options" value="3">
-                            <span class="mdl-radio__label">Test image, a square</span>
-                        </label>
-                        <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-3">
-                            <input type="radio" id="option-3" class="mdl-radio__button" name="options" value="4">
-                            <span class="mdl-radio__label">Pulsing color</span>
-                        </label>
-                        <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-4">
-                            <input type="radio" id="option-4" class="mdl-radio__button" name="options" value="5">
-                            <span class="mdl-radio__label">Grayscale Block</span>
-                        </label>
-                        <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-5">
-                            <input type="radio" id="option-5" class="mdl-radio__button" name="options" value="6">
-                            <span class="mdl-radio__label">Abelian sandpile model</span>
-                        </label>
-                        <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-6">
-                            <input type="radio" id="option-6" class="mdl-radio__button" name="options" value="7">
-                            <span class="mdl-radio__label">Conway's game of life</span>
-                        </label>
-                        <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-7">
-                            <input type="radio" id="option-7" class="mdl-radio__button" name="options" value="8">
-                            <span class="mdl-radio__label">Langton's ant</span>
-                        </label>
-                        <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-8">
-                            <input type="radio" id="option-8" class="mdl-radio__button" name="options" value="9">
-                            <span class="mdl-radio__label">Volume bars</span>
-                        </label>
-                        <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-9">
-                            <input type="radio" id="option-9" class="mdl-radio__button" name="options" value="10">
-                            <span class="mdl-radio__label">Evolution of color</span>
-                        </label>
-                        <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-10">
-                            <input type="radio" id="option-10" class="mdl-radio__button" name="options" value="11">
-                            <span class="mdl-radio__label">Brightness pulse generator</span>
-                        </label>
-                        <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-11">
-                            <input type="radio" id="option-11" class="mdl-radio__button" name="options" value="12">
-                            <span class="mdl-radio__label">Current Day and  Time</span>
-                        </label>
+                            <li class="mdl-list__item">
+                                <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-4">
+                                    <input type="radio" id="option-4" class="mdl-radio__button" name="options"
+                                           value="5">
+                                    <span class="mdl-radio__label">Grayscale Block</span>
+                                </label>
+                            </li>
+                            <li class="mdl-list__item">
+                                <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-5">
+                                    <input type="radio" id="option-5" class="mdl-radio__button" name="options"
+                                           value="6">
+                                    <span class="mdl-radio__label">Abelian sandpile model</span>
+                                </label>
+                            </li>
+                            <li class="mdl-list__item">
+                                <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-6">
+                                    <input type="radio" id="option-6" class="mdl-radio__button" name="options"
+                                           value="7">
+                                    <span class="mdl-radio__label">Conway's game of life</span>
+                                </label>
+                            </li>
+                            <li class="mdl-list__item">
+                                <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-7">
+                                    <input type="radio" id="option-7" class="mdl-radio__button" name="options"
+                                           value="8">
+                                    <span class="mdl-radio__label">Langton's ant</span>
+                                </label>
+                            </li>
+                            <li class="mdl-list__item">
+                                <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-8">
+                                    <input type="radio" id="option-8" class="mdl-radio__button" name="options"
+                                           value="9">
+                                    <span class="mdl-radio__label">Volume bars</span>
+                                </label>
+                            </li>
+                            <li class="mdl-list__item">
+                                <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-9">
+                                    <input type="radio" id="option-9" class="mdl-radio__button" name="options"
+                                           value="10">
+                                    <span class="mdl-radio__label">Evolution of color</span>
+                                </label>
+                            </li>
+
+                            <li class="mdl-list__item"><label class="mdl-radio mdl-js-radio mdl-js-ripple-effect"
+                                                              for="option-10">
+                                <input type="radio" id="option-10" class="mdl-radio__button" name="options" value="11">
+                                <span class="mdl-radio__label">Brightness pulse generator</span>
+                            </label></li>
+                            <li class="mdl-list__item"><label class="mdl-radio mdl-js-radio mdl-js-ripple-effect"
+                                                              for="option-11">
+                                <input type="radio" id="option-11" class="mdl-radio__button" name="options" value="12">
+                                <span class="mdl-radio__label">Current Day and  Time</span>
+                            </label></li>
+
+
+                        </ul>
+
 
                         <button class="mdl-button mdl-js-button"
                                 type="submit">Submit
                         </button>
                     </form>
 
-                    <p> TODO add the text option as well as the option to show multiple at once, like the clock together with a image or so</p>
+                    <p> TODO add the text option as well as the option to show multiple at once, like the clock together
+                        with a image or so</p>
                 </div>
 
             </div>
