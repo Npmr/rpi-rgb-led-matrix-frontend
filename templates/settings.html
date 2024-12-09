@@ -113,7 +113,12 @@
 
         <div class="mdl-cell mdl-cell--12-col">
             <span>Current Used Version: {{applicationInfo['currentApplicationVersion']}}</span>
-            <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" disabled>Update Application</button>
+            <span>Current GIT Version: {{currentAvailableVersion}}</span>
+            <form action="/update_process" method="POST">
+                <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" {{ enableUpdateButton }}>Update Application</button>
+            </form>
+            <p>This updates the rpi-rgb-led-matrix repository as well as the rpi-rgb-led-matrix-frontend repository</p>
+            <p>At the End of the Update, the raspberry will be rebooted!</p>
         </div>
 </div>
     </main>

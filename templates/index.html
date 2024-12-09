@@ -34,39 +34,41 @@
         <div class="mdl-layout__tab-bar mdl-js-ripple-effect">
             <a href="#fixed-tab-1" class="mdl-layout__tab is-active">Bilder</a>
             <a href="#fixed-tab-2" class="mdl-layout__tab">GIFs</a>
-            <a href="#fixed-tab-3" class="mdl-layout__tab">Videos</a>
+            <a href="#fixed-tab-3" class="mdl-layout__tab">Demos</a>
         </div>
     </header>
     <main class="mdl-layout__content">
-<div class="mdl-grid">
-    <div>
-         <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect is-checked" for="checkbox-vertical">
-                  <input type="checkbox" id="checkbox-vertical" class="mdl-checkbox__input" onclick="filterFunction()">
-                  <span class="mdl-checkbox__label">Vertical</span>
+        <div class="mdl-grid">
+            <div>
+                <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect is-checked" for="checkbox-vertical">
+                    <input type="checkbox" id="checkbox-vertical" class="mdl-checkbox__input"
+                           onclick="filterFunction()">
+                    <span class="mdl-checkbox__label">Vertical</span>
                 </label>
                 <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect is-checked" for="checkbox-horizontal">
-                  <input type="checkbox" id="checkbox-horizontal" class="mdl-checkbox__input" onclick="filterFunction()">
-                  <span class="mdl-checkbox__label">Horizontal</span>
+                    <input type="checkbox" id="checkbox-horizontal" class="mdl-checkbox__input"
+                           onclick="filterFunction()">
+                    <span class="mdl-checkbox__label">Horizontal</span>
                 </label>
                 <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect is-checked" for="checkbox-square">
-                  <input type="checkbox" id="checkbox-square" class="mdl-checkbox__input" onclick="filterFunction()">
-                  <span class="mdl-checkbox__label">Rechteckig</span>
+                    <input type="checkbox" id="checkbox-square" class="mdl-checkbox__input" onclick="filterFunction()">
+                    <span class="mdl-checkbox__label">Rechteckig</span>
                 </label>
-    </div>
-    <div>
-        <form method="post" action="/stop_process">
+            </div>
+            <div>
+                <form method="post" action="/stop_process">
                     <button id="stop_process_button" type="submit" class="mdl-button mdl-js-button mdl-button--icon">
                         <div class="control-icon icon-playlist-play"></div>
                     </button>
                 </form>
-    </div>
-
             </div>
+
+        </div>
         <section class="mdl-layout__tab-panel is-active" id="fixed-tab-1">
             <div class="page-content">
                 <div class="mdl-grid">
                     {% for image in images %}
-                        <div class="mdl-cell mdl-cell--4-col {{image['orientation']}}">
+                        <div class="mdl-cell mdl-cell--4-col {{ image['orientation'] }}">
                             <div class="demo-card-image mdl-card mdl-shadow--2dp"
                                  style="background: url('{{ url_for('static', filename='pictures/' + image['filename']) }}') center / cover;">
                                 <div class="mdl-card__title mdl-card--expand">
@@ -89,7 +91,7 @@
                                     </form>
                                 </div>
                                 <div class="mdl-card__menu">
-                                   <div class="control-icon
+                                    <div class="control-icon
                                     {% if image['orientation'] == 'vertical' %}icon-portrait{% endif %}
                                     {% if image['orientation'] == 'horizontal' %}icon-landscape{% endif %}
                                     {% if image['orientation'] == 'square' %}icon-square{% endif %}
@@ -105,7 +107,7 @@
             <div class="page-content">
                 <div class="mdl-grid">
                     {% for gif in gifs %}
-                        <div class="mdl-cell mdl-cell--4-col {{gif['orientation']}}">
+                        <div class="mdl-cell mdl-cell--4-col {{ gif['orientation'] }}">
                             <div class="demo-card-image mdl-card mdl-shadow--2dp"
                                  style="background: url('{{ url_for('static', filename='pictures/' + gif['filename']) }}') center / cover;">
                                 <div class="mdl-card__title mdl-card--expand">
@@ -127,7 +129,7 @@
                                     </form>
                                 </div>
                                 <div class="mdl-card__menu">
-                                   <div class="control-icon
+                                    <div class="control-icon
                                     {% if gif['orientation'] == 'vertical' %}icon-portrait{% endif %}
                                     {% if gif['orientation'] == 'horizontal' %}icon-landscape{% endif %}
                                     {% if gif['orientation'] == 'square' %}icon-square{% endif %}
@@ -140,11 +142,72 @@
             </div>
         </section>
         <section class="mdl-layout__tab-panel" id="fixed-tab-3">
-            <div class="page-content">Videos<!-- Your content goes here --></div>
+            <div class="page-content">
+                <div class="mdl-grid">
+                    <h2>Demos</h2>
+
+                    <div class="mdl-cell mdl-cell--12-col "></div>
+                    <form method="post" action="/process_demo" class="from-normal">
+
+                        <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-1">
+                            <input type="radio" id="option-1" class="mdl-radio__button" name="options" value="0"
+                                   checked>
+                            <span class="mdl-radio__label">A rotating Square</span>
+                        </label>
+                        <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-2">
+                            <input type="radio" id="option-2" class="mdl-radio__button" name="options" value="3">
+                            <span class="mdl-radio__label">Test image, a square</span>
+                        </label>
+                        <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-3">
+                            <input type="radio" id="option-3" class="mdl-radio__button" name="options" value="4">
+                            <span class="mdl-radio__label">Pulsing color</span>
+                        </label>
+                        <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-4">
+                            <input type="radio" id="option-4" class="mdl-radio__button" name="options" value="5">
+                            <span class="mdl-radio__label">Grayscale Block</span>
+                        </label>
+                        <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-5">
+                            <input type="radio" id="option-5" class="mdl-radio__button" name="options" value="6">
+                            <span class="mdl-radio__label">Abelian sandpile model</span>
+                        </label>
+                        <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-6">
+                            <input type="radio" id="option-6" class="mdl-radio__button" name="options" value="7">
+                            <span class="mdl-radio__label">Conway's game of life</span>
+                        </label>
+                        <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-7">
+                            <input type="radio" id="option-7" class="mdl-radio__button" name="options" value="8">
+                            <span class="mdl-radio__label">Langton's ant</span>
+                        </label>
+                        <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-8">
+                            <input type="radio" id="option-8" class="mdl-radio__button" name="options" value="9">
+                            <span class="mdl-radio__label">Volume bars</span>
+                        </label>
+                        <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-9">
+                            <input type="radio" id="option-9" class="mdl-radio__button" name="options" value="10">
+                            <span class="mdl-radio__label">Evolution of color</span>
+                        </label>
+                        <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-10">
+                            <input type="radio" id="option-10" class="mdl-radio__button" name="options" value="11">
+                            <span class="mdl-radio__label">Brightness pulse generator</span>
+                        </label>
+                        <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-11">
+                            <input type="radio" id="option-11" class="mdl-radio__button" name="options" value="12">
+                            <span class="mdl-radio__label">Current Day and  Time</span>
+                        </label>
+
+                        <button class="mdl-button mdl-js-button"
+                                type="submit">Submit
+                        </button>
+                    </form>
+
+                    <p> TODO add the text option as well as the option to show multiple at once, like the clock together with a image or so</p>
+                </div>
+
+            </div>
         </section>
     </main>
 </div>
 
- <script src="static/js/formatFilter.js"></script>
+<script src="static/js/formatFilter.js"></script>
 </body>
 </html>

@@ -5,8 +5,10 @@ import subprocess
 from threading import Thread
 
 import psutil
+import requests
 from PIL import Image
 from flask import Flask, render_template, request, url_for, redirect
+from pyinotify import command_line
 
 from upload_handler import upload_image
 
@@ -62,9 +64,25 @@ def settings():
 
     infos = read_infos()
 
+    uri = "https://raw.githubusercontent.com/Npmr/rpi-rgb-led-matrix-frontend/refs/heads/main/info.json"
+    try:
+        uResponse = requests.get(uri)
+    except requests.ConnectionError:
+        return "Connection Error"
+    Jresponse = uResponse.text
+    data = json.loads(Jresponse)
+
+    updateVersion = data['currentApplicationVersion']
+    print(updateVersion)
+
+    enableUpdateButton = "disabled"
+    if updateVersion != infos['currentApplicationVersion']:
+        enableUpdateButton = ""
+
+
     return render_template('settings.html', settings=settings, numberOfPictues=numberOfPictues,
                            numberOfGifs=numberOfGifs, freeDiskSpaceInPercent=round(freeDiskSpaceInPercent[0]),
-                           applicationInfo=infos)
+                           applicationInfo=infos, currentAvailableVersion=updateVersion, enableUpdateButton=enableUpdateButton)
 
 
 @app.route('/save_settings', methods=['POST'])
@@ -88,30 +106,42 @@ def save_settings():
 @app.route('/process_image', methods=['POST'])
 def process_image():
     image_name = request.form['image_name']
+    command_line = "displayImage"
 
-    process_thread = Thread(target=process_image_async, args=(image_name,))
+    process_thread = Thread(target=process_image_async, args=(image_name,command_line,))
     process_thread.start()
 
-    return 'Das Bild sollte in Kürze erscheinen. <a href=\"/\">Zurück zur Übersicht</a>'
+    return redirect(url_for('index'))
+
+@app.route('/process_demo', methods=['POST'])
+def process_demo():
+    demo_options = request.form['options']
+    number_option = int(demo_options)
+    command_line = "displayDemo"
+
+    process_thread = Thread(target=process_image_async, args=(number_option, command_line,))
+    process_thread.start()
+
+    return redirect(url_for('index'))
 
 
 @app.route('/stop_process', methods=['POST'])
 def stop_process():
     # Implement logic to stop the running process
     # Use psutil to find and terminate the process
-    for process in psutil.process_iter():
-        if "led-image-viewer" in process.name():
-            process.kill()
-            return redirect(url_for('index'))  # Update success message
-    return 'No process found to stop.'
+    stopProcess()
+    return redirect(url_for('index'))  # Update success message
 
+@app.route('/update_process', methods=['POST'])
+def update_process():
+    # Implement logic to stop the running process
+    # Use psutil to find and terminate the process
+    subprocess.run(['sh', 'update_application.sh'])
+    return "Update triggered successfully!"
 
-def process_image_async(image_name):
+def process_image_async(image_name, command_line):
     # Check for existing process
-    for process in psutil.process_iter():
-        if "led-image-viewer" in process.name():
-            process.kill()
-            break
+    stopProcess()
 
     settings = read_settings()
     rotation = ";Rotate:270"
@@ -122,7 +152,14 @@ def process_image_async(image_name):
     if settings["direction"] == "horizontalTurned":
         rotation = ";Rotate:0"
 
-    command = f"sudo .././rpi-rgb-led-matrix/utils/led-image-viewer -C --led-no-hardware-pulse --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness=50 --led-pixel-mapper=\"U-mapper{rotation}\" --led-slowdown-gpio={settings['ledSlowdown']} /home/pi/rpi-rgb-led-matrix-frontend/static/pictures/{image_name} &"
+    if command_line == "displayImage":
+        command = f"sudo .././rpi-rgb-led-matrix/utils/led-image-viewer -C --led-no-hardware-pulse --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness=50 --led-pixel-mapper=\"U-mapper{rotation}\" --led-slowdown-gpio={settings['ledSlowdown']} /home/pi/rpi-rgb-led-matrix-frontend/static/pictures/{image_name} &"
+
+    if command_line == "displayDemo":
+        if image_name == 12:
+            command = f"sudo .././rpi-rgb-led-matrix/examples-api-use/clock -f ../rpi-rgb-led-matrix/fonts/tom-thumb.bdf -d '%A' -d '%H:%M:%S' --led-no-hardware-pulse --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness=50 --led-pixel-mapper=\"U-mapper{rotation}\" --led-slowdown-gpio={settings['ledSlowdown']} &"
+        elif image_name <= 11:
+            command = f"sudo .././rpi-rgb-led-matrix/examples-api-use/demo -D{image_name} --led-no-hardware-pulse --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness=50 --led-pixel-mapper=\"U-mapper{rotation}\" --led-slowdown-gpio={settings['ledSlowdown']} &"
 
     # Start the new process
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -137,6 +174,19 @@ def process_image_async(image_name):
 
     output_thread = Thread(target=capture_output)
     output_thread.start()
+
+
+def stopProcess():
+    for process in psutil.process_iter():
+        if "led-image-viewer" in process.name():
+            process.kill()
+            break
+        if "demo" in process.name():
+            process.kill()
+            break
+        if "clock" in process.name():
+            process.kill()
+            break
 
 
 def getFreeDiskSpace():
