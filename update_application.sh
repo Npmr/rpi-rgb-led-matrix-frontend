@@ -1,14 +1,14 @@
 #!/bin/sh
-sudo apt-get update  # To get the latest package lists
-#apt-get install <package name> -y
+sudo apt-get update
 
-
-
+#kill the current instance
 ps -ef | grep matrix-frontend-instance | grep -v grep | awk '{print $2}' | xargs kill
 
-1. kill the python process
-2. git pull or git up from the last release
-3. start python process again
+#go into the application directory and make a git pull
+cd /home/pi/rpi-rgb-led-matrix
+git pull
+cd /home/pi/rpi-rgb-led-matrix-frontend
+git pull
 
-
-wget https://github.com/Npmr/rpi-rgb-led-matrix-frontend.git
+#reboot system with new version installed
+sudo reboot

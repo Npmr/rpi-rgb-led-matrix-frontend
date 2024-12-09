@@ -17,10 +17,15 @@ make -C examples-api-use
 cd utils
 make led-image-viewer
 
+# make the Upate script executable
+cd rpi-rgb-led-matrix-frontend
+chmod +x update_application.sh
+rm install_application.sh
+
 # Go back into the home directory
 cd
 
 # Install the new crontab
-(crontab -l 2>/dev/null; echo "@reboot cd /home/pi/rpi-rgb-led-matrix-frontend ; sudo python3 rpi-rgb-led-matrix-frontend/app.py # matrix-frontend-instance ") | crontab -
+(crontab -l 2>/dev/null; echo "@reboot cd /home/pi/rpi-rgb-led-matrix-frontend ; sudo python3 app.py # matrix-frontend-instance ") | crontab -
 #reboot the system
 sudo reboot
