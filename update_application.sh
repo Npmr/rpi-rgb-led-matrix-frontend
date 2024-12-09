@@ -10,6 +10,7 @@ cp settings.json /home/pi/settings.json
 git fetch --all
 git reset HEAD --hard
 git pull
+chmod +x update_application.sh
 
 # copy the settings file back into the correct folder and remove the bck file afterwards
 cd
