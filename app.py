@@ -8,7 +8,6 @@ import psutil
 import requests
 from PIL import Image
 from flask import Flask, render_template, request, url_for, redirect
-from pyinotify import command_line
 
 from upload_handler import upload_image
 
@@ -73,16 +72,22 @@ def settings():
     data = json.loads(Jresponse)
 
     updateVersion = data['currentApplicationVersion']
+    updateText = data['whatChanged']
     print(updateVersion)
+
+    # systemData = json.loads(psutil.sensors_temperatures())
+    # systemTemp = systemData['shwtemp']['current']
+    # print(systemTemp)
 
     enableUpdateButton = "disabled"
     if updateVersion != infos['currentApplicationVersion']:
         enableUpdateButton = ""
 
-
+    #
     return render_template('settings.html', settings=settings, numberOfPictues=numberOfPictues,
                            numberOfGifs=numberOfGifs, freeDiskSpaceInPercent=round(freeDiskSpaceInPercent[0]),
-                           applicationInfo=infos, currentAvailableVersion=updateVersion, enableUpdateButton=enableUpdateButton)
+                           applicationInfo=infos, updateText = updateText, currentAvailableVersion=updateVersion,
+                           enableUpdateButton=enableUpdateButton)
 
 
 @app.route('/save_settings', methods=['POST'])
@@ -108,10 +113,11 @@ def process_image():
     image_name = request.form['image_name']
     command_line = "displayImage"
 
-    process_thread = Thread(target=process_image_async, args=(image_name,command_line,))
+    process_thread = Thread(target=process_image_async, args=(image_name, command_line,))
     process_thread.start()
 
     return redirect(url_for('index'))
+
 
 @app.route('/process_demo', methods=['POST'])
 def process_demo():
@@ -132,12 +138,14 @@ def stop_process():
     stopProcess()
     return redirect(url_for('index'))  # Update success message
 
+
 @app.route('/update_process', methods=['POST'])
 def update_process():
     # Implement logic to stop the running process
     # Use psutil to find and terminate the process
     subprocess.run(['sh', 'update_application.sh'])
     return "Update triggered successfully!"
+
 
 def process_image_async(image_name, command_line):
     # Check for existing process

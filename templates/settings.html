@@ -22,8 +22,7 @@
                     </button>
                 </form>
             </div>
-            <!-- Navigation. We hide it in small screens. -->
-            <nav class="mdl-navigation mdl-layout--large-screen-only">
+            <nav class="mdl-navigation">
                 <a class="mdl-navigation__link" href="{{ url_for('upload') }}">Dateien Hochladen</a>
                 <a class="mdl-navigation__link" href="/">Zurück</a>
             </nav>
@@ -31,96 +30,143 @@
     </header>
     <main class="mdl-layout__content">
         <div class="mdl-grid">
-        <div class="mdl-cell mdl-cell--12-col">
-        <h1 class="title">Settings Page</h1>{{ numberOfPictues }} - {{ numberOfGifs }} - {{ freeDiskSpaceInPercent }}
-        </div>
-<hr>
-        <div class="mdl-cell mdl-cell--12-col">
-        <form method="POST" action="/save_settings">
-            <table class="mdl-data-table mdl-js-data-table mdl-shadow--2dp">
-                <thead>
-                <tr>
-                    <th class="mdl-data-table__cell--non-numeric">Description</th>
-                    <th>Your Setting</th>
-                    <th>Default</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr>
-                    <td><input type="submit" value="Save Settings"></td>
-                </tr>
-                <tr>
-                    <td class="mdl-data-table__cell--non-numeric">Number of Pixels per Module in Height</td>
-                    <td><input type="number" id="height" name="height" value="{{ settings['heightInPixel'] }}"></td>
-                    <td>32</td>
-                </tr>
-                <tr>
-                    <td class="mdl-data-table__cell--non-numeric">Number of Pixels per Module in Width</td>
-                    <td><input type="number" id="width" name="width" value="{{ settings['widthInPixel'] }}"></td>
-                    <td>32</td>
-                </tr>
-                <tr>
-                    <td class="mdl-data-table__cell--non-numeric">Chain of Modules:</td>
-                    <td><input type="number" id="chainLength" name="chainLength" value="{{ settings['chainLength'] }}"></td>
-                    <td>1</td>
-                </tr>
-                <tr>
-                    <td class="mdl-data-table__cell--non-numeric">How many parallel chains:</td>
-                    <td><input type="number" min="1" id="parallelChains" name="parallelChains"
-                   value="{{ settings['parallelChains'] }}"></td>
-                    <td>1</td>
-                </tr>
-                <tr>
-                    <td class="mdl-data-table__cell--non-numeric">Should the display slowed down:</td>
-                    <td><input type="number" min="0" placeholder="0" id="ledSlowdown" name="ledSlowdown"
-                   value="{{ settings['ledSlowdown'] }}"></td>
-                    <td>2</td>
-                </tr>
-                <tr>
-                    <td class="mdl-data-table__cell--non-numeric">Length of displaying a image in Sec:</td>
-                    <td><input type="number" min="30" id="playlistTime" name="playlistTime" value="{{ settings['playlistTime'] }}"></td>
-                    <td>30</td>
-                </tr>
-                <tr>
-                    <td class="mdl-data-table__cell--non-numeric">Display direction. Where is the up part</td>
-                    <td><select name="direction" id="direction">
-                        <option value="vertical" {% if settings['direction'] == 'vertical' %}selected{% endif %}>
-                            Vertical
-                        </option>
-                        <option value="verticalTurned"
-                                {% if settings['direction'] == 'verticalTurned' %}selected{% endif %}>
-                            Vertical Gedreht
-                        </option>
-                        <option value="horizontal" {% if settings['direction'] == 'horizontal' %}selected{% endif %}>
-                            Horizontal
-                        </option>
-                        <option value="horizontalTurned"
-                                {% if settings['direction'] == 'horizontalTurned' %}selected{% endif %}>
-                            Horizontal Gedreht
-                        </option>
-                    </select></td>
-                    <td>vertical</td>
-                </tr>
-                <tr>
-                    <td><input type="submit" value="Save Settings"></td>
-                </tr>
-                </tbody>
-            </table>
 
-        </form>
-        </div>
-<hr>
+            <div class="mdl-cell mdl-cell--4-col-desktop mdl-cell--8-col-tablet mdl-cell--4-col-phone mdl-cell--order-3-tablet mdl-cell--order-3-phone">
+                <h2>Stats</h2>
 
-        <div class="mdl-cell mdl-cell--12-col">
-            <span>Current Used Version: {{applicationInfo['currentApplicationVersion']}}</span>
-            <span>Current GIT Version: {{currentAvailableVersion}}</span>
-            <form action="/update_process" method="POST">
-                <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" {{ enableUpdateButton }}>Update Application</button>
-            </form>
-            <p>This updates the rpi-rgb-led-matrix repository as well as the rpi-rgb-led-matrix-frontend repository</p>
-            <p>At the End of the Update, the raspberry will be rebooted!</p>
+                <ul class="demo-list-icon mdl-list">
+                    <li class="mdl-list__item">
+    <span class="mdl-list__item-primary-content">
+    <i class="material-icons mdl-list__item-icon">photo</i>Uploaded Images: {{ numberOfPictues }}
+</span>
+                    </li>
+                    <li class="mdl-list__item">
+    <span class="mdl-list__item-primary-content">
+    <i class="material-icons mdl-list__item-icon">gif_box</i>Uploaded GIFs: {{ numberOfGifs }}
+  </span>
+                    </li>
+                    <li class="mdl-list__item">
+    <span class="mdl-list__item-primary-content">
+    <i class="material-icons mdl-list__item-icon">hard_disk</i>Disk Space in use: {{ freeDiskSpaceInPercent }}%
+  </span>
+                    </li>
+                </ul>
+
+            </div>
+
+
+            <div class="mdl-cell mdl-cell--4-col-desktop mdl-cell--8-col-tablet mdl-cell--4-col-phone mdl-cell--order-1-tablet mdl-cell--order-1-phone">
+
+                <div class="mdl-cell mdl-cell--12-col">
+                    <h2>Settings </h2>
+                </div>
+                <div class="mdl-cell mdl-cell--12-col">
+                    <form method="POST" action="/save_settings">
+                        <button type="submit"
+                                class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect fw">
+                            Save Settings
+                        </button>
+                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                            <input class="mdl-textfield__input" type="number" name="height" pattern="-?[0-9]*(\.[0-9]+)?"
+                                   id="height" value="{{ settings['heightInPixel'] }}">
+                            <label class="mdl-textfield__label" for="height">Pixels per Module - Height - Default
+                                32</label>
+                            <span class="mdl-textfield__error">Input is not a number!</span>
+                        </div>
+                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                            <input class="mdl-textfield__input" type="number" name="width" pattern="-?[0-9]*(\.[0-9]+)?"
+                                   id="width" value="{{ settings['widthInPixel'] }}">
+                            <label class="mdl-textfield__label" for="width">Pixels per Module - Width - Default
+                                32</label>
+                            <span class="mdl-textfield__error">Input is not a number!</span>
+                        </div>
+
+                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                            <input class="mdl-textfield__input" type="number" min="1" name="chainLength"
+                                   pattern="-?[0-9]*(\.[0-9]+)?"
+                                   id="chainLength" value="{{ settings['chainLength'] }}">
+                            <label class="mdl-textfield__label" for="chainLength">Chain of Modules - Default 1</label>
+                            <span class="mdl-textfield__error">Input is not a number!</span>
+                        </div>
+                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                            <input class="mdl-textfield__input" type="number" min="1" name="parallelChains"
+                                   pattern="-?[0-9]*(\.[0-9]+)?"
+                                   id="parallelChains" value="{{ settings['parallelChains'] }}">
+                            <label class="mdl-textfield__label" for="parallelChains">How many parallel chains - Default
+                                1</label>
+                            <span class="mdl-textfield__error">Input is not a number!</span>
+                        </div>
+                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                            <input class="mdl-textfield__input" type="number" min="0" name="ledSlowdown"
+                                   pattern="-?[0-9]*(\.[0-9]+)?"
+                                   id="ledSlowdown" value="{{ settings['ledSlowdown'] }}">
+                            <label class="mdl-textfield__label" for="ledSlowdown">Should the display slowed down - Default
+                                2</label>
+                            <span class="mdl-textfield__error">Input is not a number!</span>
+                        </div>
+                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                            <input class="mdl-textfield__input" type="number" min="30" name="playlistTime"
+                                   pattern="-?[0-9]*(\.[0-9]+)?"
+                                   id="playlistTime" value="{{ settings['playlistTime'] }}">
+                            <label class="mdl-textfield__label" for="playlistTime">Length of displaying a image in Sec - min
+                                30</label>
+                            <span class="mdl-textfield__error">Input is not a number!</span>
+                        </div>
+                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                            <select name="direction" id="direction" class="mdl-textfield__input">
+                                <option value="vertical"
+                                        {% if settings['direction'] == 'vertical' %}selected{% endif %}>
+                                    Vertical
+                                </option>
+                                <option value="verticalTurned"
+                                        {% if settings['direction'] == 'verticalTurned' %}selected{% endif %}>
+                                    Vertical Gedreht
+                                </option>
+                                <option value="horizontal"
+                                        {% if settings['direction'] == 'horizontal' %}selected{% endif %}>
+                                    Horizontal
+                                </option>
+                                <option value="horizontalTurned"
+                                        {% if settings['direction'] == 'horizontalTurned' %}selected{% endif %}>
+                                    Horizontal Gedreht
+                                </option>
+                            </select>
+
+                            <label class="mdl-textfield__label" for="direction">Display direction. Where is the up part -
+                                Default vertical</label>
+                            <span class="mdl-textfield__error">Input is not a number!</span>
+                        </div>
+                        <button type="submit"
+                                class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect fw">
+                            Save Settings
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="mdl-cell mdl-cell--4-col-desktop mdl-cell--8-col-tablet mdl-cell--4-col-phone  mdl-cell--order-2-tablet mdl-cell--order-2-phone">
+                <h2>Update</h2>
+                <div class="mdl-cell mdl-cell--12-col">
+                    <div>Current Used Version: {{ applicationInfo['currentApplicationVersion'] }}</div>
+                    <div>Last changes in current Version: {{ applicationInfo['whatChanged'] }}</div>
+                    <br>
+                    <div>Current GIT Version: {{ currentAvailableVersion }}</div>
+                    <div>Changes in the new Version: {{ currentAvailableVersion }}</div>
+                    <br>
+                    <form action="/update_process" method="POST">
+                        <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" {{ enableUpdateButton }}>
+                            Update Application
+                        </button>
+                    </form>
+                    <br>
+                    <p>This updates the rpi-rgb-led-matrix repository as well as the rpi-rgb-led-matrix-frontend
+                        repository<br>
+                        At the End of the Update, the raspberry will be rebooted!</p>
+                </div>
+            </div>
+
+
         </div>
-</div>
     </main>
 </div>
 </body>
