@@ -151,7 +151,7 @@
                     <div>Last changes in current Version: {{ applicationInfo['whatChanged'] }}</div>
                     <br>
                     <div>Current GIT Version: {{ currentAvailableVersion }}</div>
-                    <div>Changes in the new Version: {{ currentAvailableVersion }}</div>
+                    <div>Changes in the new Version: {{ updateText }}</div>
                     <br>
                     <form action="/update_process" method="POST">
                         <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" {{ enableUpdateButton }}>
