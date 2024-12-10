@@ -26,23 +26,28 @@
             <div class="mdl-tooltip" for="stop_process_button">
                 Stop Displaying<br>and shut down the display
             </div>
-            <!-- Navigation. We hide it in small screens. -->
-            <nav class="mdl-navigation mdl-layout--large-screen-only">
+            <nav class="mdl-navigation">
                 <a class="mdl-navigation__link" href="#">Dateien Hochladen</a>
                 <a class="mdl-navigation__link" href="{{ url_for('settings') }}">Einstellungen</a>
             </nav>
         </div>
     </header>
     <main class="mdl-layout__content">
-        <h1>Image Uplaod!</h1>
+
         <div class="mdl-grid">
 
-            <div class="mdl-cell mdl-cell--12-col">
+            <div class="mdl-cell mdl-cell--4-col  mdl-cell--hide-tablet mdl-cell--hide-phone">
+            </div>
+
+
+            <div class="mdl-cell mdl-cell--4-col mdl-cell--12-col-tablet mdl-cell--12-col-phone mdl-cell--middle">
+                <h1>Image Uplaod!</h1>
+                <div class="mdl-cell mdl-cell--12-col">
                 <span>Upload all kinds of images, as long as they are in the .png, .jpg or .gif format!</span>
             </div>
 
             <div class="mdl-cell mdl-cell--12-col">
-                <span>Currently you got {{ freeDiskSpaceInPercent }} % free storage space on this system</span>
+                <span>Currently {{ freeDiskSpaceInPercent }} % of your space is occupied on this system</span>
                 <div id="p1" class="mdl-progress mdl-js-progress"></div>
             </div>
 
@@ -54,6 +59,10 @@
                 <button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" type="submit">Upload
                 </button>
             </form>
+
+            </div>
+            <div class="mdl-cell mdl-cell--4-col  mdl-cell--hide-tablet mdl-cell--hide-phone">
+            </div>
 
         </div>
     </main>

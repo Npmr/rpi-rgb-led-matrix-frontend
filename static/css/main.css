@@ -1,5 +1,4 @@
 .demo-card-image.mdl-card {
-    height: 350px;
     background: center / cover;
 }
 
@@ -49,6 +48,10 @@ form {
     width: 50px;
 }
 
+.mdl-card {
+    width: 100%;
+}
+
 .from-normal {
     width: 100% !important;
 }
@@ -65,6 +68,11 @@ form {
 
 .fr {
     float: right;
+}
+
+.fw {
+    /*full width*/
+    width: 100% !important;
 }
 
 .icon-play-circle {
