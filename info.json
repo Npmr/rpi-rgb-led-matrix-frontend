@@ -1,4 +1,4 @@
 {
-  "currentApplicationVersion": "v0.0.22",
-  "whatChanged": "In this version we refactored the layout for the image and gif page as well adapted the Upload page for a more consistent look."
+  "currentApplicationVersion": "v0.0.23",
+  "whatChanged": "Added a new param in the setting to display the date and time together with a normal conent."
 }

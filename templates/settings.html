@@ -136,6 +136,37 @@
                                 Default vertical</label>
                             <span class="mdl-textfield__error">Input is not a number!</span>
                         </div>
+                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                            <select name="direction" id="direction" class="mdl-textfield__input">
+                                <option value="vertical"
+                                        {% if settings['direction'] == 'vertical' %}selected{% endif %}>
+                                    Vertical
+                                </option>
+                                <option value="verticalTurned"
+                                        {% if settings['direction'] == 'verticalTurned' %}selected{% endif %}>
+                                    Vertical Gedreht
+                                </option>
+                                <option value="horizontal"
+                                        {% if settings['direction'] == 'horizontal' %}selected{% endif %}>
+                                    Horizontal
+                                </option>
+                                <option value="horizontalTurned"
+                                        {% if settings['direction'] == 'horizontalTurned' %}selected{% endif %}>
+                                    Horizontal Gedreht
+                                </option>
+                            </select>
+
+                            <label class="mdl-textfield__label" for="direction">Display direction. Where is the up part -
+                                Default vertical</label>
+                            <span class="mdl-textfield__error">Input is not a number!</span>
+                        </div>
+                        <div>
+                            <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="showClockAndPicture">
+                              <input type="checkbox" id="showClockAndPicture" name="showClockAndPicture" class="mdl-checkbox__input" {{ settings['displayTimeAndDate'] }}>
+                              <span class="mdl-checkbox__label">Show Time & Date even when choosing another content</span>
+                            </label>
+                        </div>
+                    </br>
                         <button type="submit"
                                 class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect fw">
                             Save Settings

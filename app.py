@@ -99,12 +99,20 @@ def save_settings():
     new_parallelChains = request.form['parallelChains']
     new_ledSlowdown = request.form['ledSlowdown']
     new_playlistTime = request.form['playlistTime']
+    new_displayTimeAndDate = request.form.get('showClockAndPicture')
+
+    if new_displayTimeAndDate == 'on':
+        new_displayTimeAndDate = "checked"
+    else:
+        new_displayTimeAndDate = ""
+
+    print(new_displayTimeAndDate)
 
     # Update the settings.json file
     with open('settings.json', 'w') as f:
         json.dump({'heightInPixel': new_height, 'widthInPixel': new_width, 'direction': new_direction,
                    'chainLength': new_chainLength, 'parallelChains': new_parallelChains, 'ledSlowdown': new_ledSlowdown,
-                   'playlistTime': new_playlistTime}, f, indent=4)
+                   'playlistTime': new_playlistTime, 'displayTimeAndDate': new_displayTimeAndDate}, f, indent=4)
     return redirect(url_for('settings'))
 
 
@@ -194,9 +202,11 @@ def stopProcess():
         if "demo" in process.name():
             process.kill()
             break
-        if "clock" in process.name():
-            process.kill()
-            break
+        settings = read_settings()
+        if settings["displayTimeAndDate"] == "":
+            if "clock" in process.name():
+                process.kill()
+                break
 
 
 def getFreeDiskSpace():
