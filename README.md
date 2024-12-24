@@ -1,6 +1,6 @@
 # rpi-rgb-led-matrix-frontend
 
-A easy to understand frontend to control the rpi-rgb-led-matrix from your mobile device without programming knowledge
+A easy to understand frontend to control the rpi-rgb-led-matrix from your mobile device without programming knowledge.
 
 -----
 
@@ -25,3 +25,4 @@ This part of the documentation should show how to use the installer and explain 
 The software can be updated automatically.
 To do that please go on the settings page and click the "Update to a new version" Button. This button can only be
 clicked when a new Realease of the software is available via GitHub.
+This works by running the  update_application.sh Script as a thread in the brackground so that the frontend can still be used until the application is updated. Because then the system will be rebooted. This should be changed in the future. 
