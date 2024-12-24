@@ -6,5 +6,6 @@
     "parallelChains": "2",
     "ledSlowdown": "2",
     "playlistTime": "30",
-    "displayTimeAndDate": "checked"
+    "displayTimeAndDate": "checked",
+    "language": "en"
 }

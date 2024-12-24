@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Image Selection</title>
+    <title>Settings</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
     <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
@@ -59,15 +60,14 @@
 
                 <div class="mdl-cell mdl-cell--12-col">
                     <h2>Settings </h2>
-                </div>
-                <div class="mdl-cell mdl-cell--12-col">
                     <form method="POST" action="/save_settings">
                         <button type="submit"
                                 class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect fw">
                             Save Settings
                         </button>
                         <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <input class="mdl-textfield__input" type="number" name="height" pattern="-?[0-9]*(\.[0-9]+)?"
+                            <input class="mdl-textfield__input" type="number" name="height"
+                                   pattern="-?[0-9]*(\.[0-9]+)?"
                                    id="height" value="{{ settings['heightInPixel'] }}">
                             <label class="mdl-textfield__label" for="height">Pixels per Module - Height - Default
                                 32</label>
@@ -100,7 +100,8 @@
                             <input class="mdl-textfield__input" type="number" min="0" name="ledSlowdown"
                                    pattern="-?[0-9]*(\.[0-9]+)?"
                                    id="ledSlowdown" value="{{ settings['ledSlowdown'] }}">
-                            <label class="mdl-textfield__label" for="ledSlowdown">Should the display slowed down - Default
+                            <label class="mdl-textfield__label" for="ledSlowdown">Should the display slowed down -
+                                Default
                                 2</label>
                             <span class="mdl-textfield__error">Input is not a number!</span>
                         </div>
@@ -108,7 +109,8 @@
                             <input class="mdl-textfield__input" type="number" min="30" name="playlistTime"
                                    pattern="-?[0-9]*(\.[0-9]+)?"
                                    id="playlistTime" value="{{ settings['playlistTime'] }}">
-                            <label class="mdl-textfield__label" for="playlistTime">Length of displaying a image in Sec - min
+                            <label class="mdl-textfield__label" for="playlistTime">Length of displaying a image in Sec -
+                                min
                                 30</label>
                             <span class="mdl-textfield__error">Input is not a number!</span>
                         </div>
@@ -132,7 +134,8 @@
                                 </option>
                             </select>
 
-                            <label class="mdl-textfield__label" for="direction">Display direction. Where is the up part -
+                            <label class="mdl-textfield__label" for="direction">Display direction. Where is the up part
+                                -
                                 Default vertical</label>
                             <span class="mdl-textfield__error">Input is not a number!</span>
                         </div>
@@ -156,17 +159,44 @@
                                 </option>
                             </select>
 
-                            <label class="mdl-textfield__label" for="direction">Display direction. Where is the up part -
+                            <label class="mdl-textfield__label" for="direction">Display direction. Where is the up part
+                                -
+                                Default vertical</label>
+                            <span class="mdl-textfield__error">Input is not a number!</span>
+                        </div>
+                    <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                            <select name="language" id="language" class="mdl-textfield__input">
+                                <option value="de"
+                                        {% if settings['language'] == 'de' %}selected{% endif %}>
+                                    Deutsch
+                                </option>
+                                <option value="en"
+                                        {% if settings['language'] == 'en' %}selected{% endif %}>
+                                    English
+                                </option>
+                                <option value="it"
+                                        {% if settings['direction'] == 'it' %}selected{% endif %}>
+                                    Italiano
+                                </option>
+                                <option value="ch"
+                                        {% if settings['direction'] == 'ch' %}selected{% endif %}>
+                                    中国人
+                                </option>
+                            </select>
+
+                            <label class="mdl-textfield__label" for="direction">Display direction. Where is the up part
+                                -
                                 Default vertical</label>
                             <span class="mdl-textfield__error">Input is not a number!</span>
                         </div>
                         <div>
                             <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="showClockAndPicture">
-                              <input type="checkbox" id="showClockAndPicture" name="showClockAndPicture" class="mdl-checkbox__input" {{ settings['displayTimeAndDate'] }}>
-                              <span class="mdl-checkbox__label">Show Time & Date even when choosing another content</span>
+                                <input type="checkbox" id="showClockAndPicture" name="showClockAndPicture"
+                                       class="mdl-checkbox__input" {{ settings['displayTimeAndDate'] }}>
+                                <span class="mdl-checkbox__label">Show Time & Date even when choosing another content</span>
                             </label>
                         </div>
-                    </br>
+                        </br>
                         <button type="submit"
                                 class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect fw">
                             Save Settings
@@ -176,8 +206,25 @@
             </div>
 
             <div class="mdl-cell mdl-cell--4-col-desktop mdl-cell--8-col-tablet mdl-cell--4-col-phone  mdl-cell--order-2-tablet mdl-cell--order-2-phone">
-                <h2>Update</h2>
                 <div class="mdl-cell mdl-cell--12-col">
+                    <h2>Reboot / Shutdown</h2>
+                    <form action="/reboot" method="POST">
+                        <button type="submit"
+                                class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect fw">
+                            Reboot
+                        </button>
+                    </form>
+                    <form action="/shutdown" method="POST">
+                        <button type="submit"
+                                class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect fw">
+                            Safe System Shutdown
+                        </button>
+                    </form>
+                </div>
+
+
+                <div class="mdl-cell mdl-cell--12-col">
+                    <h2>Update</h2>
                     <div>Current Used Version: {{ applicationInfo['currentApplicationVersion'] }}</div>
                     <div>Last changes in current Version: {{ applicationInfo['whatChanged'] }}</div>
                     <br>

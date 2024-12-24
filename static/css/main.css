@@ -75,6 +75,10 @@ form {
     width: 100% !important;
 }
 
+.lazyLoadClass {
+    background: center / cover;
+}
+
 .icon-play-circle {
     background-color: white;
     -webkit-mask: url(../svg/play_circle.svg) no-repeat center;

@@ -7,8 +7,6 @@ function filterFunction() {
     const collectionHorizontal = document.getElementsByClassName('horizontal');
     const collectionSqare = document.getElementsByClassName('square');
 
-    console.log("im called");
-
     if (checkBoxVertical.checked == true) {
         for (let i = 0; i < collectionVertical.length; i++) {
             collectionVertical.item(i).style.display = "block";

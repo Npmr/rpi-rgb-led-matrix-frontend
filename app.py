@@ -31,7 +31,7 @@ def read_infos(filename="info.json"):
 def index():
     medias = countMediaTypeAndNumber()
 
-    return render_template('index.html', images=medias[0], gifs=medias[1])
+    return render_template('index.html', images=medias[0], gifs=medias[1], videos=medias[2])
 
 
 @app.route('/upload')
@@ -100,6 +100,7 @@ def save_settings():
     new_ledSlowdown = request.form['ledSlowdown']
     new_playlistTime = request.form['playlistTime']
     new_displayTimeAndDate = request.form.get('showClockAndPicture')
+    new_language = request.form.get('language')
 
     if new_displayTimeAndDate == 'on':
         new_displayTimeAndDate = "checked"
@@ -112,7 +113,7 @@ def save_settings():
     with open('settings.json', 'w') as f:
         json.dump({'heightInPixel': new_height, 'widthInPixel': new_width, 'direction': new_direction,
                    'chainLength': new_chainLength, 'parallelChains': new_parallelChains, 'ledSlowdown': new_ledSlowdown,
-                   'playlistTime': new_playlistTime, 'displayTimeAndDate': new_displayTimeAndDate}, f, indent=4)
+                   'playlistTime': new_playlistTime, 'displayTimeAndDate': new_displayTimeAndDate, 'language': new_language}, f, indent=4)
     return redirect(url_for('settings'))
 
 
@@ -154,6 +155,19 @@ def update_process():
     subprocess.run(['sh', 'update_application.sh'])
     return "Update triggered successfully!"
 
+@app.route('/reboot', methods=['POST'])
+def reboot_process():
+    # Implement logic to stop the running process
+    # Use psutil to find and terminate the process
+    os.system('sudo reboot')
+    return "Reboot System now!"
+
+@app.route('/shutdown', methods=['POST'])
+def shutdown_process():
+    # Implement logic to stop the running process
+    # Use psutil to find and terminate the process
+    os.system('sudo shutdown -h now')
+    return "Shutting down! Bye bye"
 
 def process_image_async(image_name, command_line):
     # Check for existing process
@@ -234,16 +248,21 @@ def countMediaTypeAndNumber():
 
     images = []
     gifs = []
+    videos = []
 
     for file in image_files:
         image_path = os.path.join('static/pictures', file)
-        orientation = determine_orientation(image_path)
+
 
         if file.lower().endswith(('.jpg', '.jpeg', '.png')):
+            orientation = determine_orientation(image_path)
             images.append({'filename': file, 'orientation': orientation})
         elif file.lower().endswith('.gif'):
+            orientation = determine_orientation(image_path)
             gifs.append({'filename': file, 'orientation': orientation})
-    return images, gifs
+        elif file.lower().endswith('.webm'):
+            videos.append({'filename': file, 'orientation': 'horizontal'})
+    return images, gifs, videos
 
 
 upload_image(app)

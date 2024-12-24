@@ -2,7 +2,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Image Selection</title>
+    <title>Content Upload</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
     <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
@@ -43,7 +44,7 @@
             <div class="mdl-cell mdl-cell--4-col mdl-cell--12-col-tablet mdl-cell--12-col-phone mdl-cell--middle">
                 <h1>Image Uplaod!</h1>
                 <div class="mdl-cell mdl-cell--12-col">
-                <span>Upload all kinds of images, as long as they are in the .png, .jpg or .gif format!</span>
+                <span>Upload all kinds of images, as long as they are in the .png, .jpg, .gif or .webm format!</span>
             </div>
 
             <div class="mdl-cell mdl-cell--12-col">
@@ -54,7 +55,7 @@
             <div class="mdl-cell mdl-cell--12-col"></div>
             <form method="POST" enctype="multipart/form-data"
                   action="/upload_image">
-                <input class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" type="file" name="image_file" multiple accept=".jpg, .jpeg, .png, .gif">
+                <input class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" type="file" name="image_file" multiple accept=".jpg, .jpeg, .png, .gif, .webm">
                 <br><br>
                 <button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" type="submit">Upload
                 </button>
