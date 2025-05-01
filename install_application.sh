@@ -5,7 +5,7 @@ sudo apt-get update  # To get the latest package lists
 sudo apt install git libgraphicsmagick++-dev libwebp-dev -y
 
 # Install everything for the rpi-rgb-led-matrix-frontend application
-sudo apt install python3 python3-flask python3-psutil  python3-pil -y
+sudo apt install python3 python3-flask python3-psutil  python3-pil python3-paho-mqtt -y
 
 # Go into the home directory
 cd

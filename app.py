@@ -1,97 +1,70 @@
-import json
 import os
-import shutil
-import subprocess
-from threading import Thread
-
-import psutil
-import requests
-from PIL import Image
 from flask import Flask, render_template, request, url_for, redirect
 
+from modules import mqtt_handler
 from upload_handler import upload_image
+from modules.settings_handler import read_settings, save_settings
+from modules.info_handler import read_infos
+from modules.media_handler import countMediaTypeAndNumber
+from modules.display_control import process_image_async, stopProcess
+from modules.system_handler import getFreeDiskSpace, reboot_system, shutdown_system
+from modules.update_handler import trigger_update, fetch_update_info
+from modules.mqtt_handler import publish_discovery_info, mqtt_listener, publish_mqtt
+from threading import Thread
 
 app = Flask(__name__)
 app.config['STATIC_FOLDER'] = 'static/pictures'
 
+def handle_play_media(image_name):
+    process_thread = Thread(target=process_image_async, args=(image_name, "displayImage", app.config['STATIC_FOLDER']))
+    process_thread.start()
 
-def read_settings(filename="settings.json"):
-    with open(filename, 'r') as f:
-        settings = json.load(f)
-    return settings
-
-
-def read_infos(filename="info.json"):
-    with open(filename, 'r') as f:
-        app_info = json.load(f)
-    return app_info
-
+def handle_stop():
+    stopProcess()
 
 @app.route('/')
 def index():
-    medias = countMediaTypeAndNumber()
-
+    medias = countMediaTypeAndNumber(app.config['STATIC_FOLDER'])
     return render_template('index.html', images=medias[0], gifs=medias[1], videos=medias[2])
-
 
 @app.route('/upload')
 def upload():
     freeDiskSpaceInPercent = getFreeDiskSpace()
-
     return render_template('upload.html', freeDiskSpaceInPercent=round(freeDiskSpaceInPercent[0]))
-
 
 @app.route('/delete_image', methods=['POST'])
 def delete_image():
     image_name = request.form['image_name_to_delete']
     image_path = os.path.join(app.config['STATIC_FOLDER'], image_name)
-
     try:
         os.remove(image_path)
         return redirect(url_for('index'))
     except OSError as e:
         return redirect(url_for('index'))
 
-
 @app.route('/settings')
 def settings():
     settings = read_settings()
-    medias = countMediaTypeAndNumber()
+    medias = countMediaTypeAndNumber(app.config['STATIC_FOLDER'])
     numberOfPictues = len(medias[0])
     numberOfGifs = len(medias[1])
     freeDiskSpaceInPercent = getFreeDiskSpace()
-
     infos = read_infos()
+    update_info = fetch_update_info()
 
-    uri = "https://raw.githubusercontent.com/Npmr/rpi-rgb-led-matrix-frontend/refs/heads/main/info.json"
-    try:
-        uResponse = requests.get(uri)
-    except requests.ConnectionError:
-        return "Connection Error"
-    Jresponse = uResponse.text
-    data = json.loads(Jresponse)
+    updateVersion = update_info.get('currentApplicationVersion') if update_info else 'unknown'
+    updateText = update_info.get('whatChanged') if update_info else ''
+    currentVersion = infos.get('currentApplicationVersion', 'unknown')
 
-    updateVersion = data['currentApplicationVersion']
-    updateText = data['whatChanged']
-    print(updateVersion)
+    enableUpdateButton = "" if updateVersion != currentVersion and update_info else "disabled"
 
-    # systemData = json.loads(psutil.sensors_temperatures())
-    # systemTemp = systemData['shwtemp']['current']
-    # print(systemTemp)
-
-    enableUpdateButton = "disabled"
-    if updateVersion != infos['currentApplicationVersion']:
-        enableUpdateButton = ""
-
-    #
     return render_template('settings.html', settings=settings, numberOfPictues=numberOfPictues,
                            numberOfGifs=numberOfGifs, freeDiskSpaceInPercent=round(freeDiskSpaceInPercent[0]),
-                           applicationInfo=infos, updateText = updateText, currentAvailableVersion=updateVersion,
+                           applicationInfo=infos, updateText=updateText, currentAvailableVersion=updateVersion,
                            enableUpdateButton=enableUpdateButton)
 
-
 @app.route('/save_settings', methods=['POST'])
-def save_settings():
+def save_settings_route():
     new_height = request.form['height']
     new_width = request.form['width']
     new_direction = request.form['direction']
@@ -102,170 +75,65 @@ def save_settings():
     new_displayTimeAndDate = request.form.get('showClockAndPicture')
     new_language = request.form.get('language')
 
-    if new_displayTimeAndDate == 'on':
-        new_displayTimeAndDate = "checked"
-    else:
-        new_displayTimeAndDate = ""
-
-    print(new_displayTimeAndDate)
-
-    # Update the settings.json file
-    with open('settings.json', 'w') as f:
-        json.dump({'heightInPixel': new_height, 'widthInPixel': new_width, 'direction': new_direction,
-                   'chainLength': new_chainLength, 'parallelChains': new_parallelChains, 'ledSlowdown': new_ledSlowdown,
-                   'playlistTime': new_playlistTime, 'displayTimeAndDate': new_displayTimeAndDate, 'language': new_language}, f, indent=4)
+    new_settings = {'heightInPixel': new_height, 'widthInPixel': new_width, 'direction': new_direction,
+                    'chainLength': new_chainLength, 'parallelChains': new_parallelChains, 'ledSlowdown': new_ledSlowdown,
+                    'playlistTime': new_playlistTime, 'displayTimeAndDate': "checked" if new_displayTimeAndDate == 'on' else "",
+                    'language': new_language}
+    save_settings(new_settings)
     return redirect(url_for('settings'))
-
 
 @app.route('/process_image', methods=['POST'])
 def process_image():
     image_name = request.form['image_name']
-    command_line = "displayImage"
-
-    process_thread = Thread(target=process_image_async, args=(image_name, command_line,))
+    process_thread = Thread(target=process_image_async, args=(image_name, "displayImage", app.config['STATIC_FOLDER']))
     process_thread.start()
-
     return redirect(url_for('index'))
-
 
 @app.route('/process_demo', methods=['POST'])
 def process_demo():
     demo_options = request.form['options']
     number_option = int(demo_options)
-    command_line = "displayDemo"
-
-    process_thread = Thread(target=process_image_async, args=(number_option, command_line,))
+    process_thread = Thread(target=process_image_async, args=(number_option, "displayDemo", app.config['STATIC_FOLDER']))
     process_thread.start()
-
     return redirect(url_for('index'))
 
-
 @app.route('/stop_process', methods=['POST'])
-def stop_process():
-    # Implement logic to stop the running process
-    # Use psutil to find and terminate the process
+def stop_process_route():
     stopProcess()
-    return redirect(url_for('index'))  # Update success message
-
+    return redirect(url_for('index'))
 
 @app.route('/update_process', methods=['POST'])
-def update_process():
-    # Implement logic to stop the running process
-    # Use psutil to find and terminate the process
-    subprocess.run(['sh', 'update_application.sh'])
-    return "Update triggered successfully!"
+def update_process_route():
+    result = trigger_update()
+    return result
 
 @app.route('/reboot', methods=['POST'])
-def reboot_process():
-    # Implement logic to stop the running process
-    # Use psutil to find and terminate the process
-    os.system('sudo reboot')
-    return "Reboot System now!"
+def reboot_route():
+    result = reboot_system()
+    return result
 
 @app.route('/shutdown', methods=['POST'])
-def shutdown_process():
-    # Implement logic to stop the running process
-    # Use psutil to find and terminate the process
-    os.system('sudo shutdown -h now')
-    return "Shutting down! Bye bye"
-
-def process_image_async(image_name, command_line):
-    # Check for existing process
-    stopProcess()
-
-    settings = read_settings()
-    rotation = ";Rotate:270"
-    if settings["direction"] == "horizontal":
-        rotation = ";Rotate:180"
-    if settings["direction"] == "verticalTurned":
-        rotation = ";Rotate:90"
-    if settings["direction"] == "horizontalTurned":
-        rotation = ";Rotate:0"
-
-    if command_line == "displayImage":
-        command = f"sudo .././rpi-rgb-led-matrix/utils/led-image-viewer -C --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness=50 --led-pixel-mapper=\"U-mapper{rotation}\" --led-slowdown-gpio={settings['ledSlowdown']} /home/pi/rpi-rgb-led-matrix-frontend/static/pictures/{image_name} &"
-
-    if command_line == "displayDemo":
-        if image_name == 12:
-            command = f"sudo .././rpi-rgb-led-matrix/examples-api-use/clock -f ../rpi-rgb-led-matrix/fonts/9x18B.bdf -d '%A' -d '%H:%M:%S' --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness=50 --led-pixel-mapper=\"U-mapper{rotation}\" --led-slowdown-gpio={settings['ledSlowdown']} &"
-        elif image_name <= 11:
-            command = f"sudo .././rpi-rgb-led-matrix/examples-api-use/demo -D{image_name} --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness=50 --led-pixel-mapper=\"U-mapper{rotation}\" --led-slowdown-gpio={settings['ledSlowdown']} &"
-
-    print(command)
-
-    # Start the new process
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-    # Capture standard output and error (optional) in a separate thread
-    def capture_output():
-        stdout, stderr = process.communicate()
-        if stdout:
-            print(f"Process output: {stdout.decode()}")
-        if stderr:
-            print(f"Process error: {stderr.decode()}")
-
-    output_thread = Thread(target=capture_output)
-    output_thread.start()
-
-
-def stopProcess():
-    for process in psutil.process_iter():
-        if "led-image-viewer" in process.name():
-            process.kill()
-            break
-        if "demo" in process.name():
-            process.kill()
-            break
-        settings = read_settings()
-        if settings["displayTimeAndDate"] == "":
-            if "clock" in process.name():
-                process.kill()
-                break
-
-
-def getFreeDiskSpace():
-    total, used, free = shutil.disk_usage("/")
-
-    print("Total: %d GiB" % (total // (2 ** 30)))
-    print("Used: %d GiB" % (used // (2 ** 30)))
-    print("Free: %d GiB" % (free // (2 ** 30)))
-    return (100 / (total // (2 ** 30))) * (used // (2 ** 30)), (free // (2 ** 30))
-
-
-def determine_orientation(image_path):
-    with Image.open(image_path) as img:
-        width, height = img.size
-        if width > height:
-            return "horizontal"
-        elif height > width:
-            return "vertical"
-        else:
-            return "square"
-
-
-def countMediaTypeAndNumber():
-    image_files = os.listdir('static/pictures')
-
-    images = []
-    gifs = []
-    videos = []
-
-    for file in image_files:
-        image_path = os.path.join('static/pictures', file)
-
-
-        if file.lower().endswith(('.jpg', '.jpeg', '.png')):
-            orientation = determine_orientation(image_path)
-            images.append({'filename': file, 'orientation': orientation})
-        elif file.lower().endswith('.gif'):
-            orientation = determine_orientation(image_path)
-            gifs.append({'filename': file, 'orientation': orientation})
-        elif file.lower().endswith('.webm'):
-            videos.append({'filename': file, 'orientation': 'horizontal'})
-    return images, gifs, videos
-
-
-upload_image(app)
+def shutdown_route():
+    result = shutdown_system()
+    return result
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    # Start the MQTT listener in a separate thread
+    if mqtt_handler.MQTT_BROKER_IP != "YOUR_MQTT_BROKER_IP":
+        mqtt_client = mqtt_handler.mqtt_listener(handle_play_media, handle_stop)
+        if mqtt_client:
+            mqtt_thread = Thread(target=mqtt_client.loop_forever)
+            mqtt_thread.daemon = True
+            mqtt_thread.start()
+
+            # Publish discovery info after a short delay to ensure MQTT client is connected
+            import time
+            time.sleep(2)
+            publish_discovery_info()
+        else:
+            print("Warning: MQTT listener could not be started.")
+    else:
+        print("Warning: MQTT Broker IP not configured. Home Assistant discovery and control will not work.")
+
+    upload_image(app)
+    app.run(host='0.0.0.0', port=5000, debug=True)

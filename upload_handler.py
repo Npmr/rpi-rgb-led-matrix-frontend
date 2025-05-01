@@ -1,7 +1,5 @@
 import os
-
 from flask import request, redirect
-
 
 def upload_image(app):
     @app.route('/upload_image', methods=['POST'])
