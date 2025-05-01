@@ -74,11 +74,13 @@ def save_settings_route():
     new_playlistTime = request.form['playlistTime']
     new_displayTimeAndDate = request.form.get('showClockAndPicture')
     new_language = request.form.get('language')
+    new_mqttIP = request.form.get('mqttIP')
+    new_mqttPort = request.form['mqttPort']
 
     new_settings = {'heightInPixel': new_height, 'widthInPixel': new_width, 'direction': new_direction,
                     'chainLength': new_chainLength, 'parallelChains': new_parallelChains, 'ledSlowdown': new_ledSlowdown,
                     'playlistTime': new_playlistTime, 'displayTimeAndDate': "checked" if new_displayTimeAndDate == 'on' else "",
-                    'language': new_language}
+                    'language': new_language, 'mqttIP': new_mqttIP, 'mqttPort': new_mqttPort}
     save_settings(new_settings)
     return redirect(url_for('settings'))
 

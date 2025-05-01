@@ -7,5 +7,9 @@
     "ledSlowdown": "2",
     "playlistTime": "30",
     "displayTimeAndDate": "checked",
-    "language": "en"
+    "language": "en",
+    "mqttIP": "YOUR_MQTT_IP",
+    "mqttPort": "1883",
+    "deviceID": "pixel_display_rpi",
+    "deciveName": "Pixel Display"
 }

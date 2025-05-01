@@ -117,20 +117,24 @@
                         <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
                             <select name="direction" id="direction" class="mdl-textfield__input">
                                 <option value="vertical"
-                                        {% if settings['direction'] == 'vertical' %}selected{% endif %}>
-                                    Vertical
+                                        {% if settings[
+                                'direction'] == 'vertical' %}selected{% endif %}>
+                                Vertical
                                 </option>
                                 <option value="verticalTurned"
-                                        {% if settings['direction'] == 'verticalTurned' %}selected{% endif %}>
-                                    Vertical Gedreht
+                                        {% if settings[
+                                'direction'] == 'verticalTurned' %}selected{% endif %}>
+                                Vertical Gedreht
                                 </option>
                                 <option value="horizontal"
-                                        {% if settings['direction'] == 'horizontal' %}selected{% endif %}>
-                                    Horizontal
+                                        {% if settings[
+                                'direction'] == 'horizontal' %}selected{% endif %}>
+                                Horizontal
                                 </option>
                                 <option value="horizontalTurned"
-                                        {% if settings['direction'] == 'horizontalTurned' %}selected{% endif %}>
-                                    Horizontal Gedreht
+                                        {% if settings[
+                                'direction'] == 'horizontalTurned' %}selected{% endif %}>
+                                Horizontal Gedreht
                                 </option>
                             </select>
 
@@ -142,45 +146,54 @@
                         <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
                             <select name="direction" id="direction" class="mdl-textfield__input">
                                 <option value="vertical"
-                                        {% if settings['direction'] == 'vertical' %}selected{% endif %}>
-                                    Vertical
+                                        {% if settings[
+                                'direction'] == 'vertical' %}selected{% endif %}>
+                                Vertical
                                 </option>
                                 <option value="verticalTurned"
-                                        {% if settings['direction'] == 'verticalTurned' %}selected{% endif %}>
-                                    Vertical Gedreht
+                                        {% if settings[
+                                'direction'] == 'verticalTurned' %}selected{% endif %}>
+                                Vertical Gedreht
                                 </option>
                                 <option value="horizontal"
-                                        {% if settings['direction'] == 'horizontal' %}selected{% endif %}>
-                                    Horizontal
+                                        {% if settings[
+                                'direction'] == 'horizontal' %}selected{% endif %}>
+                                Horizontal
                                 </option>
                                 <option value="horizontalTurned"
-                                        {% if settings['direction'] == 'horizontalTurned' %}selected{% endif %}>
-                                    Horizontal Gedreht
+                                        {% if settings[
+                                'direction'] == 'horizontalTurned' %}selected{% endif %}>
+                                Horizontal Gedreht
                                 </option>
                             </select>
 
-                            <label class="mdl-textfield__label" for="direction">Display direction. Where is the up part
+                            <label class="mdl-textfield__label" for="direction">Language selection for the applicationb
+                                direction.
                                 -
-                                Default vertical</label>
+                                Default english</label>
                             <span class="mdl-textfield__error">Input is not a number!</span>
                         </div>
-                    <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
                             <select name="language" id="language" class="mdl-textfield__input">
                                 <option value="de"
-                                        {% if settings['language'] == 'de' %}selected{% endif %}>
-                                    Deutsch
+                                        {% if settings[
+                                'language'] == 'de' %}selected{% endif %}>
+                                Deutsch
                                 </option>
                                 <option value="en"
-                                        {% if settings['language'] == 'en' %}selected{% endif %}>
-                                    English
+                                        {% if settings[
+                                'language'] == 'en' %}selected{% endif %}>
+                                English
                                 </option>
                                 <option value="it"
-                                        {% if settings['direction'] == 'it' %}selected{% endif %}>
-                                    Italiano
+                                        {% if settings[
+                                'direction'] == 'it' %}selected{% endif %}>
+                                Italiano
                                 </option>
                                 <option value="ch"
-                                        {% if settings['direction'] == 'ch' %}selected{% endif %}>
-                                    中国人
+                                        {% if settings[
+                                'direction'] == 'ch' %}selected{% endif %}>
+                                中国人
                                 </option>
                             </select>
 
@@ -197,6 +210,21 @@
                             </label>
                         </div>
                         </br>
+                        <hr>
+                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                            <input class="mdl-textfield__input" type="text" minlength="7" maxlength="15" size="15" pattern="^(?>(\d|[1-9]\d{2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(?1)$" name="mqttIP"
+                                   id="mqttIP" value="{{ settings['mqttIP'] }}">
+                            <label class="mdl-textfield__label" for="mqttIP">IP of your MQTT-Server</label>
+                            <span class="mdl-textfield__error">Input is not a number!</span>
+                        </div>
+                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                            <input class="mdl-textfield__input" minlength="3" maxlength="5" type="number" name="height"
+                                   pattern="-?[0-9]*(\.[0-9]+)?" name="mqttPort"
+                                   id="mqttPort" value="{{ settings['mqttPort'] }}">
+                            <label class="mdl-textfield__label" for="mqttPort">PORT of your MQTT-Server</label>
+                            <span class="mdl-textfield__error">Input is not a number!</span>
+                        </div>
+
                         <button type="submit"
                                 class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect fw">
                             Save Settings
@@ -232,7 +260,8 @@
                     <div>Changes in the new Version: {{ updateText }}</div>
                     <br>
                     <form action="/update_process" method="POST">
-                        <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" {{ enableUpdateButton }}>
+                        <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent"
+                                {{ enableUpdateButton }}>
                             Update Application
                         </button>
                     </form>

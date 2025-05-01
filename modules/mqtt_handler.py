@@ -1,14 +1,18 @@
 # modules/mqtt_handler.py
 import paho.mqtt.client as mqtt
 import json
-from .info_handler import read_infos # Import from the same module directory
+from .info_handler import read_infos
+from .settings_handler import read_settings
+
+settings = read_settings()
 
 HA_DISCOVERY_PREFIX = "homeassistant"
 COMPONENT = "media_player"
-DEVICE_ID = "pixel_display_rpi"
+DEVICE_ID = settings["deviceID"]
+DEVICE_NAME = settings["deviceName"]
 
-MQTT_BROKER_IP = "YOUR_MQTT_BROKER_IP"  # Replace with your MQTT broker IP
-MQTT_BROKER_PORT = 1883  # Default MQTT port
+MQTT_BROKER_IP = settings["mqttIP"]
+MQTT_BROKER_PORT = int(settings["mqttPort"])  # Default MQTT port
 
 def publish_mqtt(topic, payload, retain=False):
     client = mqtt.Client()
@@ -23,16 +27,16 @@ def publish_mqtt(topic, payload, retain=False):
 def publish_discovery_info():
     device_info = {
         "identifiers": [DEVICE_ID],
-        "name": "Pixel Display",  # Consider making this configurable
-        "manufacturer": "Your Manufacturer",  # Replace
-        "model": "Pixel Array Controller",  # Replace
+        "name": DEVICE_ID,
+        "manufacturer": "Raspberry Pi",
+        "model": "N.P.M.R RGB Led Matrix Frontend",
         "sw_version": read_infos().get('currentApplicationVersion', 'unknown'),
     }
 
     discovery_topic = f"{HA_DISCOVERY_PREFIX}/{COMPONENT}/{DEVICE_ID}/config"
     discovery_payload = {
         "device": device_info,
-        "name": "Pixel Display",  # Consider making this configurable
+        "name": DEVICE_NAME,  # Consider making this configurable
         "unique_id": f"{DEVICE_ID}_media_player",
         "command_topic": f"{COMPONENT}/{DEVICE_ID}/command",
         "state_topic": f"{COMPONENT}/{DEVICE_ID}/state",
