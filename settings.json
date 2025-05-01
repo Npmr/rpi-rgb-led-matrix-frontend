@@ -11,5 +11,5 @@
     "mqttIP": "YOUR_MQTT_IP",
     "mqttPort": "1883",
     "deviceID": "pixel_display_rpi",
-    "deciveName": "Pixel Display"
+    "deviceName": "Pixel Display"
 }

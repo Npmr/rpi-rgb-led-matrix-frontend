@@ -128,15 +128,25 @@ if __name__ == '__main__':
             mqtt_thread.daemon = True
             mqtt_thread.start()
 
+            # Publish discovery information
             mqtt_handler.publish_binary_sensor_discovery()
+            mqtt_handler.publish_picture_count_discovery()
+            mqtt_handler.publish_gif_count_discovery()
+            mqtt_handler.publish_disk_space_discovery()
+
+            # Publish initial state
             mqtt_handler.publish_online_status()
+            mqtt_handler.publish_picture_count()
+            mqtt_handler.publish_gif_count()
+            mqtt_handler.publish_disk_space()
 
             import atexit
+
             atexit.register(mqtt_handler.publish_offline_status)
         else:
             print("Warning: MQTT listener could not be started.")
     else:
-        print("Warning: MQTT Broker IP not configured. Home Assistant discovery will not work.")
+        print("Warning: MQTT Broker IP not configured. Home Assistant discovery and control will not work.")
 
     upload_image(app)
     app.run(host='0.0.0.0', port=5000, debug=True)
