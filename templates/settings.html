@@ -218,11 +218,26 @@
                             <span class="mdl-textfield__error">Input is not a number!</span>
                         </div>
                         <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <input class="mdl-textfield__input" minlength="3" maxlength="5" type="number" name="height"
+                            <input class="mdl-textfield__input" minlength="3" maxlength="5" type="number" name="mqttPort"
                                    pattern="-?[0-9]*(\.[0-9]+)?" name="mqttPort"
                                    id="mqttPort" value="{{ settings['mqttPort'] }}">
                             <label class="mdl-textfield__label" for="mqttPort">PORT of your MQTT-Server</label>
                             <span class="mdl-textfield__error">Input is not a number!</span>
+                        </div>
+
+                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                            <input class="mdl-textfield__input" minlength="5" type="text" name="deviceID"
+                                   pattern="-?[0-9]*(\.[0-9]+)?" name="deviceID"
+                                   id="deviceID" value="{{ settings['deviceID'] }}">
+                            <label class="mdl-textfield__label" for="deviceID">Device ID for Home Assistant</label>
+                            <span class="mdl-textfield__error">Input is not a text!</span>
+                        </div>
+                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                            <input class="mdl-textfield__input" minlength="5" type="text" name="deviceName"
+                                   pattern="-?[0-9]*(\.[0-9]+)?" name="deviceName"
+                                   id="deviceName" value="{{ settings['deviceName'] }}">
+                            <label class="mdl-textfield__label" for="deviceName">Device Name for Home Assistant</label>
+                            <span class="mdl-textfield__error">Input is not a text!</span>
                         </div>
 
                         <button type="submit"
