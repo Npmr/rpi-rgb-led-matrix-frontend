@@ -1,7 +1,8 @@
 import os
 from flask import Flask, render_template, request, url_for, redirect
+from threading import Thread
+import paho.mqtt.client as mqtt # Import paho-mqtt here
 
-from modules import mqtt_handler
 from upload_handler import upload_image
 from modules.settings_handler import read_settings, save_settings
 from modules.info_handler import read_infos
@@ -9,8 +10,7 @@ from modules.media_handler import countMediaTypeAndNumber
 from modules.display_control import process_image_async, stopProcess
 from modules.system_handler import getFreeDiskSpace, reboot_system, shutdown_system
 from modules.update_handler import trigger_update, fetch_update_info
-from modules.mqtt_handler import publish_discovery_info, mqtt_listener, publish_mqtt
-from threading import Thread
+from modules import mqtt_handler # Import the whole module
 
 app = Flask(__name__)
 app.config['STATIC_FOLDER'] = 'static/pictures'
@@ -74,15 +74,11 @@ def save_settings_route():
     new_playlistTime = request.form['playlistTime']
     new_displayTimeAndDate = request.form.get('showClockAndPicture')
     new_language = request.form.get('language')
-    new_mqttIP = request.form.get('mqttIP')
-    new_mqttPort = request.form['mqttPort']
-    new_deviceName = request.form.get('deviceName')
-    new_deviceId = request.form.get('deviceId')
 
     new_settings = {'heightInPixel': new_height, 'widthInPixel': new_width, 'direction': new_direction,
                     'chainLength': new_chainLength, 'parallelChains': new_parallelChains, 'ledSlowdown': new_ledSlowdown,
                     'playlistTime': new_playlistTime, 'displayTimeAndDate': "checked" if new_displayTimeAndDate == 'on' else "",
-                    'language': new_language, 'mqttIP': new_mqttIP, 'mqttPort': new_mqttPort, 'deviceName': new_deviceName, 'deviceId': new_deviceId}
+                    'language': new_language}
     save_settings(new_settings)
     return redirect(url_for('settings'))
 
@@ -122,22 +118,25 @@ def shutdown_route():
     return result
 
 if __name__ == '__main__':
-    # Start the MQTT listener in a separate thread
-    if mqtt_handler.MQTT_BROKER_IP != "YOUR_MQTT_BROKER_IP":
+    settings = read_settings()
+    mqtt_broker_ip = settings.get("mqttIP", "YOUR_MQTT_BROKER_IP")
+
+    if mqtt_broker_ip != "YOUR_MQTT_BROKER_IP":
         mqtt_client = mqtt_handler.mqtt_listener(handle_play_media, handle_stop)
         if mqtt_client:
             mqtt_thread = Thread(target=mqtt_client.loop_forever)
             mqtt_thread.daemon = True
             mqtt_thread.start()
 
-            # Publish discovery info after a short delay to ensure MQTT client is connected
-            import time
-            time.sleep(2)
-            publish_discovery_info()
+            mqtt_handler.publish_binary_sensor_discovery()
+            mqtt_handler.publish_online_status()
+
+            import atexit
+            atexit.register(mqtt_handler.publish_offline_status)
         else:
             print("Warning: MQTT listener could not be started.")
     else:
-        print("Warning: MQTT Broker IP not configured. Home Assistant discovery and control will not work.")
+        print("Warning: MQTT Broker IP not configured. Home Assistant discovery will not work.")
 
     upload_image(app)
     app.run(host='0.0.0.0', port=5000, debug=True)
