@@ -101,3 +101,78 @@ def publish_disk_space_discovery():
     }
     publish_mqtt(discovery_topic, discovery_payload, retain=True)
     print(f"Published disk space discovery info to: {discovery_topic}")
+
+def publish_pixels_per_module_height_discovery():
+    device_info = get_device_info()
+    discovery_topic = f"{HA_DISCOVERY_PREFIX}/number/{DEVICE_ID}/pixels_per_module_height/config"
+    discovery_payload = {
+        "device": device_info,
+        "name": f"Pixels Per Module Height",
+        "unique_id": f"{DEVICE_ID}_pixels_per_module_height",
+        "command_topic": f"number/{DEVICE_ID}/pixels_per_module_height/set",
+        "state_topic": f"sensor/{DEVICE_ID}/pixels_per_module_height_state", # Optional: to display current state
+        "value_template": "{{ value_json.pixels_per_module }}", # If publishing state as JSON
+        "min": 16,  # Example minimum value
+        "max": 256, # Example maximum value
+        "step": 16, # Example step value
+        "default": 32,
+        "unit_of_measurement": "int",
+        "icon": "mdi:led-strip",
+        "availability_topic": f"binary_sensor/{DEVICE_ID}/state",
+        "payload_available": "online",
+        "payload_not_available": "offline",
+        "retain": True,
+        "mode": "box"
+    }
+    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    print(f"Published pixels per module discovery info to: {discovery_topic}")
+
+def publish_pixels_per_module_width_discovery():
+    device_info = get_device_info()
+    discovery_topic = f"{HA_DISCOVERY_PREFIX}/number/{DEVICE_ID}/pixels_per_module_width/config"
+    discovery_payload = {
+        "device": device_info,
+        "name": f"Pixels Per Module Width",
+        "unique_id": f"{DEVICE_ID}_pixels_per_module_width",
+        "command_topic": f"number/{DEVICE_ID}/pixels_per_module_width/set",
+        "state_topic": f"sensor/{DEVICE_ID}/pixels_per_module_width_state", # Optional: to display current state
+        "value_template": "{{ value_json.pixels_per_module }}", # If publishing state as JSON
+        "min": 16,  # Example minimum value
+        "max": 256, # Example maximum value
+        "step": 16, # Example step value
+        "default": 32,
+        "unit_of_measurement": "int",
+        "icon": "mdi:led-strip",
+        "availability_topic": f"binary_sensor/{DEVICE_ID}/state",
+        "payload_available": "online",
+        "payload_not_available": "offline",
+        "retain": True,
+        "mode": "box"
+    }
+    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    print(f"Published pixels per module discovery info to: {discovery_topic}")
+
+def publish_chain_length_discovery():
+    device_info = get_device_info()
+    discovery_topic = f"{HA_DISCOVERY_PREFIX}/number/{DEVICE_ID}/chain_length/config"
+    discovery_payload = {
+        "device": device_info,
+        "name": f"{DEVICE_NAME} Chain Length",
+        "unique_id": f"{DEVICE_ID}_chain_length",
+        "command_topic": f"number/{DEVICE_ID}/chain_length/set",
+        "state_topic": f"sensor/{DEVICE_ID}/chain_length_state",
+        "value_template": "{{ value_json.chain_length }}",
+        "min": 1,
+        "max": 24,  # Example maximum chain length
+        "step": 1,
+        "default": 1,
+        "unit_of_measurement": "int",
+        "icon": "mdi:link",
+        "availability_topic": f"binary_sensor/{DEVICE_ID}/state",
+        "payload_available": "online",
+        "payload_not_available": "offline",
+        "retain": True,
+        "mode": "box"
+    }
+    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    print(f"Published chain length discovery info to: {discovery_topic}")

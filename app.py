@@ -74,11 +74,15 @@ def save_settings_route():
     new_playlistTime = request.form['playlistTime']
     new_displayTimeAndDate = request.form.get('showClockAndPicture')
     new_language = request.form.get('language')
+    new_mqttIp = request.form['mqttIP']
+    new_mqttPort = request.form['mqttPort']
+    new_deviceId = request.form['deviceID']
+    new_deviceName = request.form['deviceName']
 
     new_settings = {'heightInPixel': new_height, 'widthInPixel': new_width, 'direction': new_direction,
                     'chainLength': new_chainLength, 'parallelChains': new_parallelChains, 'ledSlowdown': new_ledSlowdown,
                     'playlistTime': new_playlistTime, 'displayTimeAndDate': "checked" if new_displayTimeAndDate == 'on' else "",
-                    'language': new_language}
+                    'language': new_language, 'mqttIP': new_mqttIp, 'mqttPort': new_mqttPort, 'deviceID': new_deviceId, 'deviceName': new_deviceName}
     save_settings(new_settings)
     return redirect(url_for('settings'))
 
@@ -133,12 +137,18 @@ if __name__ == '__main__':
             mqtt_handler.publish_picture_count_discovery()
             mqtt_handler.publish_gif_count_discovery()
             mqtt_handler.publish_disk_space_discovery()
+            mqtt_handler.publish_pixels_per_module_height_discovery()
+            mqtt_handler.publish_pixels_per_module_width_discovery()
+            mqtt_handler.publish_chain_length_discovery()
 
             # Publish initial state
             mqtt_handler.publish_online_status()
             mqtt_handler.publish_picture_count()
             mqtt_handler.publish_gif_count()
             mqtt_handler.publish_disk_space()
+            mqtt_handler.publish_pixels_per_module_height_state()
+            mqtt_handler.publish_pixels_per_module_width_state()
+            mqtt_handler.publish_chain_length_state()
 
             import atexit
 

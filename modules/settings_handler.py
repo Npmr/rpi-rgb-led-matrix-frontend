@@ -1,5 +1,6 @@
 # modules/settings_handler.py
 import json
+import os
 
 def read_settings(filename="settings.json"):
     try:
@@ -15,9 +16,15 @@ def read_settings(filename="settings.json"):
 
 def save_settings(new_settings, filename="settings.json"):
     try:
-        with open(filename, 'w') as f:
+        # Get the directory of the current script (settings_handler.py)
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        # Go up one level to the project root
+        project_root = os.path.dirname(script_dir)
+        # Construct the full path to settings.json
+        filepath = os.path.join(project_root, filename)
+        with open(filepath, 'w') as f:
             json.dump(new_settings, f, indent=4)
         return True
-    except IOError:
-        print(f"Error: Could not write to {filename}.")
+    except IOError as e:
+        print(f"Error: Could not write to {filepath}: {e}")
         return False
