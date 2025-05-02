@@ -1,4 +1,4 @@
 {
-  "currentApplicationVersion": "v0.0.23",
-  "whatChanged": "Added a new param in the setting to display the date and time together with a normal conent."
+  "currentApplicationVersion": "v0.0.26",
+  "whatChanged": "Added new options to the settings page as well as added the first part of the Home Assistant integration together with a GIPHY Integration."
 }
