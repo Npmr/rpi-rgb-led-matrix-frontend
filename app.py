@@ -1,7 +1,6 @@
 import os
 from flask import Flask, render_template, request, url_for, redirect
 from threading import Thread
-import paho.mqtt.client as mqtt # Import paho-mqtt here
 
 from upload_handler import upload_image
 from modules.settings_handler import read_settings, save_settings
@@ -10,7 +9,7 @@ from modules.media_handler import countMediaTypeAndNumber
 from modules.display_control import process_image_async, stopProcess
 from modules.system_handler import getFreeDiskSpace, reboot_system, shutdown_system
 from modules.update_handler import trigger_update, fetch_update_info
-from modules import mqtt_handler # Import the whole module
+from modules import mqtt_handler
 
 app = Flask(__name__)
 app.config['STATIC_FOLDER'] = 'static/pictures'
@@ -78,11 +77,12 @@ def save_settings_route():
     new_mqttPort = request.form['mqttPort']
     new_deviceId = request.form['deviceID']
     new_deviceName = request.form['deviceName']
+    new_giphyApiCode = request.form['giphyApiKey']
 
     new_settings = {'heightInPixel': new_height, 'widthInPixel': new_width, 'direction': new_direction,
                     'chainLength': new_chainLength, 'parallelChains': new_parallelChains, 'ledSlowdown': new_ledSlowdown,
                     'playlistTime': new_playlistTime, 'displayTimeAndDate': "checked" if new_displayTimeAndDate == 'on' else "",
-                    'language': new_language, 'mqttIP': new_mqttIp, 'mqttPort': new_mqttPort, 'deviceID': new_deviceId, 'deviceName': new_deviceName}
+                    'language': new_language, 'mqttIP': new_mqttIp, 'mqttPort': new_mqttPort, 'deviceID': new_deviceId, 'deviceName': new_deviceName, 'giphyApiKey': new_giphyApiCode}
     save_settings(new_settings)
     return redirect(url_for('settings'))
 
@@ -131,24 +131,36 @@ if __name__ == '__main__':
             mqtt_thread = Thread(target=mqtt_client.loop_forever)
             mqtt_thread.daemon = True
             mqtt_thread.start()
+            mqtt_initialized = True
 
             # Publish discovery information
             mqtt_handler.publish_binary_sensor_discovery()
             mqtt_handler.publish_picture_count_discovery()
             mqtt_handler.publish_gif_count_discovery()
             mqtt_handler.publish_disk_space_discovery()
-            mqtt_handler.publish_pixels_per_module_height_discovery()
-            mqtt_handler.publish_pixels_per_module_width_discovery()
-            mqtt_handler.publish_chain_length_discovery()
+            # mqtt_handler.publish_device_settings_sensor_discovery()
+
+            mqtt_handler.publish_settings_pixel_height_discovery()
+            mqtt_handler.publish_settings_pixel_width_discovery()
+            mqtt_handler.publish_settings_chain_length_discovery()
+            mqtt_handler.publish_settings_parallel_chains_discovery()
+            mqtt_handler.publish_settings_display_slowdown_discovery()
+            mqtt_handler.publish_settings_display_image_in_sec_discovery()
+            mqtt_handler.publish_device_rotation_settings_discovery()
+
+            mqtt_handler.publish_reboot_button_discovery()
+            mqtt_handler.publish_shutdown_button_discovery()
+            mqtt_handler.publish_giphy_button_start_discovery()
+            mqtt_handler.publish_giphy_button_stop_discovery()
+
 
             # Publish initial state
             mqtt_handler.publish_online_status()
             mqtt_handler.publish_picture_count()
             mqtt_handler.publish_gif_count()
             mqtt_handler.publish_disk_space()
-            mqtt_handler.publish_pixels_per_module_height_state()
-            mqtt_handler.publish_pixels_per_module_width_state()
-            mqtt_handler.publish_chain_length_state()
+            mqtt_handler.publish_device_settings_state()
+            mqtt_handler.publish_device_rotation_settings_state()
 
             import atexit
 
@@ -159,4 +171,4 @@ if __name__ == '__main__':
         print("Warning: MQTT Broker IP not configured. Home Assistant discovery and control will not work.")
 
     upload_image(app)
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=False)

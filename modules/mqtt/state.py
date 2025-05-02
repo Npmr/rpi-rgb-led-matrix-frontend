@@ -29,23 +29,31 @@ def publish_disk_space():
     freeDiskSpaceInPercent = getFreeDiskSpace()
     publish_mqtt(f"sensor/{DEVICE_ID}/disk_space", str(round(freeDiskSpaceInPercent[0])))
 
-def publish_pixels_per_module_height_state():
+def publish_device_settings_state():
     settings = read_settings()
-    pixels_per_module = settings.get("heightInPixel", 32) # Default value
-    payload = json.dumps({"pixels_per_module": pixels_per_module})
-    publish_mqtt(f"sensor/{DEVICE_ID}/pixels_per_module_height_state", payload)
-    print(f"Published pixelsPerModule state: {payload}")
+    payload = {
+        "height": settings.get("heightInPixel"),
+        "width": settings.get("widthInPixel"),
+        "chain_length": settings.get("chainLength"),
+        "parallel_chains": settings.get("parallelChains"),
+        "display_slowdown": settings.get("ledSlowdown"),
+        "display_image_in_sec": settings.get("playlistTime")
+    }
+    publish_mqtt(f"sensor/{DEVICE_ID}/device_settings_state", json.dumps(payload))
+    print(f"Published device settings state: {payload}")
 
-def publish_pixels_per_module_width_state():
+def publish_device_rotation_settings_state():
     settings = read_settings()
-    pixels_per_module = settings.get("widthInPixel", 32)  # Default value
-    payload = json.dumps({"pixels_per_module": pixels_per_module})
-    publish_mqtt(f"sensor/{DEVICE_ID}/pixels_per_module_width_state", payload)
-    print(f"Published pixelsPerModule state: {payload}")
+    current_value = settings.get("direction", "vertical") # Replace
+    publish_mqtt(f"sensor/{DEVICE_ID}/device_rotation_settings_state", current_value)
+    print(f"Published device_rotation_settings state: {current_value}")
 
-def publish_chain_length_state():
-    settings = read_settings()
-    chain_length = settings.get("chainLength", 1) # Default value
-    payload = json.dumps({"chain_length": chain_length})
-    publish_mqtt(f"sensor/{DEVICE_ID}/chain_length_state", payload)
-    print(f"Published chainLength state: {chain_length}")
+def publish_reboot_button_state(state):
+    topic = f"switch/{DEVICE_ID}/reboot/state"
+    payload = "ON" if state == "ON" else "OFF"
+    publish_mqtt(topic, payload, retain=True)
+
+def publish_shutdown_button_state(state):
+    topic = f"switch/{DEVICE_ID}/shutdown/state"
+    payload = "ON" if state == "ON" else "OFF"
+    publish_mqtt(topic, payload, retain=True)

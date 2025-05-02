@@ -11,5 +11,6 @@
     "mqttIP": "YOUR_MQTT_IP",
     "mqttPort": "1883",
     "deviceID": "pixel_display_rpi",
-    "deviceName": "Pixel Display"
+    "deviceName": "Pixel Display",
+    "giphyApiKey": "YOUR_GIPHY_API_CODE"
 }

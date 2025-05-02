@@ -241,6 +241,13 @@
                             <label class="mdl-textfield__label" for="deviceName">Device Name for Home Assistant</label>
                             <span class="mdl-textfield__error">Input is not a text!</span>
                         </div>
+                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                            <input class="mdl-textfield__input" minlength="5" type="text" name="giphyApiKey"
+                                   name="deviceName"
+                                   id="giphyApiKey" value="{{ settings['giphyApiKey'] }}">
+                            <label class="mdl-textfield__label" for="giphyApiKey">Your Giphy API Key</label>
+                            <span class="mdl-textfield__error">Input is not a text!</span>
+                        </div>
 
                         <button type="submit"
                                 class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect fw">
