@@ -3,6 +3,17 @@
 A easy to understand frontend to control the rpi-rgb-led-matrix from your mobile device without programming knowledge.
 
 -----
+# TODOs
+A small list of things that have to be done and wil come in the future for this project.
+- Integrate the GIPHY Search API and make it accessible via Home Assistant
+- check GIFS from GIPHY to determine if they are horizontal or vertical to display them correct
+- get all the settings values into Home Assistant 
+- clean up / refactor (this will never get old)
+- write some test (only if there is enough time & desire & not new ideas & ...) :stuck_out_tongue_winking_eye:
+- add the GIPHY functionality also into the native frontend of the application
+- rework the installation and update process
+
+-----
 
 # Installation Guide
 
