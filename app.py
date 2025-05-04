@@ -9,7 +9,7 @@ from modules.media_handler import countMediaTypeAndNumber
 from modules.display_control import process_image_async, stopProcess
 from modules.system_handler import getFreeDiskSpace, reboot_system, shutdown_system
 from modules.update_handler import trigger_update, fetch_update_info
-from modules import mqtt_handler
+from modules import mqtt_handler, giphy_controller
 
 app = Flask(__name__)
 app.config['STATIC_FOLDER'] = 'static/pictures'
@@ -40,6 +40,12 @@ def delete_image():
         return redirect(url_for('index'))
     except OSError as e:
         return redirect(url_for('index'))
+
+@app.route('/start_giphy_web', methods=['POST'])
+def start_giphy_web():
+    print("Web request received to start Giphy")
+    giphy_controller.start_giphy_loop()
+    return redirect(url_for('index'))
 
 @app.route('/settings')
 def settings():

@@ -184,8 +184,14 @@
         <section class="mdl-layout__tab-panel" id="fixed-tab-4">
             <div class="page-content">
                 <div class="mdl-grid">
-                    <h2>Demos</h2>
+                    <h2>Start Giphy</h2>
+                    <form action="/start_giphy_web" method="post">
+                        <button type="submit">Start Giphy Loop</button>
+                    </form>
+                </div>
 
+                <div class="mdl-grid">
+                    <h2>Demos</h2>
                     <div class="mdl-cell mdl-cell--12-col "></div>
                     <form method="post" action="/process_demo" class="from-normal">
                         <ul class="demo-list-item mdl-list">
