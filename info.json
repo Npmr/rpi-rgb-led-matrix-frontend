@@ -1,4 +1,4 @@
 {
-  "currentApplicationVersion": "v0.0.26",
-  "whatChanged": "Added new options to the settings page as well as added the first part of the Home Assistant integration together with a GIPHY Integration."
+  "currentApplicationVersion": "v0.0.27",
+  "whatChanged": "Now the Giphy Art & Design is integrated into the Web-Application. You can now choose from a all of the sub categories of the Art & Design part. "
 }
