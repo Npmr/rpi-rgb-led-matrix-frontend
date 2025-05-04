@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, url_for, redirect
+from flask import Flask, render_template, request, url_for, redirect, jsonify
 from threading import Thread
 
 from upload_handler import upload_image
@@ -46,6 +46,21 @@ def start_giphy_web():
     print("Web request received to start Giphy")
     giphy_controller.start_giphy_loop()
     return redirect(url_for('index'))
+
+@app.route('/get_art_design_subcategories')
+def get_art_design_subcategories():
+    subcategories = giphy_controller.get_art_design_subcategories()
+    return jsonify(subcategories)
+
+@app.route('/start_giphy_category', methods=['POST'])
+def start_giphy_category():
+    category_encoded = request.form.get('giphy_category')
+    if category_encoded:
+        print(f"Web request received to start Giphy for category: {category_encoded}")
+        giphy_controller.start_giphy_loop(search_term=category_encoded)
+        return redirect(url_for('index'))
+    else:
+        return "Error: No category selected.", 400
 
 @app.route('/settings')
 def settings():

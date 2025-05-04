@@ -190,6 +190,58 @@
                     </form>
                 </div>
 
+                <h2>Start Giphy by Category (Art & Design)</h2>
+<div id="art_design_categories">
+    <p>Loading Art & Design subcategories...</p>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        fetch('/get_art_design_subcategories')
+            .then(response => response.json())
+            .then(data => {
+                const categoriesDiv = document.getElementById('art_design_categories');
+                categoriesDiv.innerHTML = ''; // Clear loading message
+
+                if (data && data.length > 0) {
+                    const selectElement = document.createElement('select');
+                    selectElement.name = 'giphy_category';
+
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = 'Select a Category';
+                    selectElement.appendChild(defaultOption);
+
+                    data.forEach(subcategory => {
+                        const option = document.createElement('option');
+                        option.value = subcategory.name_encoded;
+                        option.textContent = subcategory.name;
+                        selectElement.appendChild(option);
+                    });
+
+                    const submitButton = document.createElement('button');
+                    submitButton.type = 'submit';
+                    submitButton.textContent = 'Start Giphy with Category';
+
+                    const categoryForm = document.createElement('form');
+                    categoryForm.action = '/start_giphy_category';
+                    categoryForm.method = 'post';
+                    categoryForm.appendChild(selectElement);
+                    categoryForm.appendChild(submitButton);
+
+                    categoriesDiv.appendChild(categoryForm);
+                } else {
+                    categoriesDiv.textContent = 'Could not load Art & Design subcategories.';
+                }
+            })
+            .catch(error => {
+                const categoriesDiv = document.getElementById('art_design_categories');
+                categoriesDiv.textContent = 'Error loading Art & Design subcategories.';
+                console.error('Error fetching subcategories:', error);
+            });
+    });
+</script>
+
                 <div class="mdl-grid">
                     <h2>Demos</h2>
                     <div class="mdl-cell mdl-cell--12-col "></div>
