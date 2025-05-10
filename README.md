@@ -10,8 +10,10 @@ A small list of things that have to be done and wil come in the future for this 
 - get all the settings values into Home Assistant 
 - clean up / refactor (this will never get old)
 - write some test (only if there is enough time & desire & not new ideas & ...) :stuck_out_tongue_winking_eye:
-- add the GIPHY functionality also into the native frontend of the application
 - rework the installation and update process
+
+# TODOs Done ✔️
+- add the GIPHY functionality also into the native frontend of the application ✔️
 
 -----
 
