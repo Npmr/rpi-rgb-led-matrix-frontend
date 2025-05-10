@@ -6,6 +6,7 @@
     "parallelChains": "2",
     "ledSlowdown": "2",
     "playlistTime": "30",
+    "displayBrightness" : "50",
     "displayTimeAndDate": "checked",
     "language": "en",
     "mqttIP": "YOUR_MQTT_IP",

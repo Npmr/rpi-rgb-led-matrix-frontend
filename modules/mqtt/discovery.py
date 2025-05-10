@@ -203,11 +203,11 @@ def publish_settings_pixel_height_discovery():
         "state_topic": f"sensor/{DEVICE_ID}/pixels_per_module_height_state",
         "value_template": "{{ value_json.height }}",
         "command_topic": f"number/{DEVICE_ID}/pixels_per_module_height/set",
-        "min": 16,  # Set appropriate minimum
-        "max": 128, # Set appropriate maximum
-        "step": 16, # Set appropriate step
-        "unit_of_measurement": "pixels",
-        "icon": "mdi:arrow-vertical",
+        # "min": 16,  # Set appropriate minimum
+        # "max": 128, # Set appropriate maximum
+        # "step": 16, # Set appropriate step
+        "unit_of_measurement": "int",
+        "icon": "mdi:dots-horizontal",
         "availability_topic": f"binary_sensor/{DEVICE_ID}/state",
         "payload_available": "online",
         "payload_not_available": "offline",
@@ -230,8 +230,8 @@ def publish_settings_pixel_width_discovery():
         "min": 16,  # Set appropriate minimum
         "max": 128, # Set appropriate maximum
         "step": 16, # Set appropriate step
-        "unit_of_measurement": "pixels",
-        "icon": "mdi:arrow-vertical",
+        "unit_of_measurement": "int",
+        "icon": "mdi:dots-vertical",
         "availability_topic": f"binary_sensor/{DEVICE_ID}/state",
         "payload_available": "online",
         "payload_not_available": "offline",
@@ -254,8 +254,8 @@ def publish_settings_chain_length_discovery():
         "min": 1,  # Set appropriate minimum
         "max": 24, # Set appropriate maximum
         "step": 1, # Set appropriate step
-        "unit_of_measurement": "pixels",
-        "icon": "mdi:arrow-vertical",
+        "unit_of_measurement": "int",
+        "icon": "mdi:counter",
         "availability_topic": f"binary_sensor/{DEVICE_ID}/state",
         "payload_available": "online",
         "payload_not_available": "offline",
@@ -279,7 +279,7 @@ def publish_settings_parallel_chains_discovery():
         "max": 3, # Set appropriate maximum
         "step": 1, # Set appropriate step
         "unit_of_measurement": "int",
-        "icon": "mdi:arrow-vertical",
+        "icon": "mdi:view-parallel",
         "availability_topic": f"binary_sensor/{DEVICE_ID}/state",
         "payload_available": "online",
         "payload_not_available": "offline",
@@ -289,7 +289,7 @@ def publish_settings_parallel_chains_discovery():
     publish_mqtt(discovery_topic, discovery_payload, retain=True)
     print(f"Published pixel height discovery info to: {discovery_topic}")
 
-def publish_settings_display_slowdonw_discovery():
+def publish_settings_display_slowdown_discovery():
     device_info = get_device_info()
     discovery_topic = f"{HA_DISCOVERY_PREFIX}/number/{DEVICE_ID}/display_slowdown/config"
     discovery_payload = {
@@ -303,7 +303,7 @@ def publish_settings_display_slowdonw_discovery():
         "max": 3, # Set appropriate maximum
         "step": 1, # Set appropriate step
         "unit_of_measurement": "int",
-        "icon": "mdi:arrow-vertical",
+        "icon": "mdi:speedometer-slow",
         "availability_topic": f"binary_sensor/{DEVICE_ID}/state",
         "payload_available": "online",
         "payload_not_available": "offline",
@@ -327,7 +327,7 @@ def publish_settings_display_image_in_sec_discovery():
         "max": 600, # Set appropriate maximum
         "step": 1, # Set appropriate step
         "unit_of_measurement": "int",
-        "icon": "mdi:arrow-vertical",
+        "icon": "mdi:timer-refresh-outline",
         "availability_topic": f"binary_sensor/{DEVICE_ID}/state",
         "payload_available": "online",
         "payload_not_available": "offline",
@@ -336,3 +336,27 @@ def publish_settings_display_image_in_sec_discovery():
     }
     publish_mqtt(discovery_topic, discovery_payload, retain=True)
     print(f"Published pixel height discovery info to: {discovery_topic}")
+
+def publish_settings_display_brightness_discovery():
+    device_info = get_device_info()
+    discovery_topic = f"{HA_DISCOVERY_PREFIX}/number/{DEVICE_ID}/display_brightness/config"
+    discovery_payload = {
+        "device": device_info,
+        "name": f"{DEVICE_NAME} Brightness in Percentage",
+        "unique_id": f"{DEVICE_ID}_display_brightness",
+        "state_topic": f"sensor/{DEVICE_ID}/display_brightness_state",
+        "value_template": "{{ value_json.display_brightness }}",
+        "command_topic": f"number/{DEVICE_ID}/display_brightness/set",
+        "min": 1,  # Set appropriate minimum
+        "max": 100, # Set appropriate maximum
+        "step": 1, # Set appropriate step
+        "unit_of_measurement": "%",
+        "icon": "mdi:brightness-6",
+        "availability_topic": f"binary_sensor/{DEVICE_ID}/state",
+        "payload_available": "online",
+        "payload_not_available": "offline",
+        "retain": True,
+        "entity_category": "config"
+    }
+    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    print(f"Published display bightness to discovery info to: {discovery_topic}")

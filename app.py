@@ -14,22 +14,27 @@ from modules import mqtt_handler, giphy_controller
 app = Flask(__name__)
 app.config['STATIC_FOLDER'] = 'static/pictures'
 
+
 def handle_play_media(image_name):
     process_thread = Thread(target=process_image_async, args=(image_name, "displayImage", app.config['STATIC_FOLDER']))
     process_thread.start()
 
+
 def handle_stop():
     stopProcess()
+
 
 @app.route('/')
 def index():
     medias = countMediaTypeAndNumber(app.config['STATIC_FOLDER'])
     return render_template('index.html', images=medias[0], gifs=medias[1], videos=medias[2])
 
+
 @app.route('/upload')
 def upload():
     freeDiskSpaceInPercent = getFreeDiskSpace()
     return render_template('upload.html', freeDiskSpaceInPercent=round(freeDiskSpaceInPercent[0]))
+
 
 @app.route('/delete_image', methods=['POST'])
 def delete_image():
@@ -41,16 +46,19 @@ def delete_image():
     except OSError as e:
         return redirect(url_for('index'))
 
+
 @app.route('/start_giphy_web', methods=['POST'])
 def start_giphy_web():
     print("Web request received to start Giphy")
     giphy_controller.start_giphy_loop()
     return redirect(url_for('index'))
 
+
 @app.route('/get_art_design_subcategories')
 def get_art_design_subcategories():
     subcategories = giphy_controller.get_art_design_subcategories()
     return jsonify(subcategories)
+
 
 @app.route('/start_giphy_category', methods=['POST'])
 def start_giphy_category():
@@ -61,6 +69,7 @@ def start_giphy_category():
         return redirect(url_for('index'))
     else:
         return "Error: No category selected.", 400
+
 
 @app.route('/settings')
 def settings():
@@ -83,6 +92,7 @@ def settings():
                            applicationInfo=infos, updateText=updateText, currentAvailableVersion=updateVersion,
                            enableUpdateButton=enableUpdateButton)
 
+
 @app.route('/save_settings', methods=['POST'])
 def save_settings_route():
     new_height = request.form['height']
@@ -99,13 +109,18 @@ def save_settings_route():
     new_deviceId = request.form['deviceID']
     new_deviceName = request.form['deviceName']
     new_giphyApiCode = request.form['giphyApiKey']
+    new_displayBrightness = request.form['displayBrightness']
 
     new_settings = {'heightInPixel': new_height, 'widthInPixel': new_width, 'direction': new_direction,
-                    'chainLength': new_chainLength, 'parallelChains': new_parallelChains, 'ledSlowdown': new_ledSlowdown,
-                    'playlistTime': new_playlistTime, 'displayTimeAndDate': "checked" if new_displayTimeAndDate == 'on' else "",
-                    'language': new_language, 'mqttIP': new_mqttIp, 'mqttPort': new_mqttPort, 'deviceID': new_deviceId, 'deviceName': new_deviceName, 'giphyApiKey': new_giphyApiCode}
+                    'chainLength': new_chainLength, 'parallelChains': new_parallelChains,
+                    'ledSlowdown': new_ledSlowdown, 'playlistTime': new_playlistTime,
+                    'displayTimeAndDate': "checked" if new_displayTimeAndDate == 'on' else "", 'language': new_language,
+                    'mqttIP': new_mqttIp, 'mqttPort': new_mqttPort, 'deviceID': new_deviceId,
+                    'deviceName': new_deviceName, 'giphyApiKey': new_giphyApiCode,
+                    'displayBrightness': new_displayBrightness}
     save_settings(new_settings)
     return redirect(url_for('settings'))
+
 
 @app.route('/process_image', methods=['POST'])
 def process_image():
@@ -114,33 +129,40 @@ def process_image():
     process_thread.start()
     return redirect(url_for('index'))
 
+
 @app.route('/process_demo', methods=['POST'])
 def process_demo():
     demo_options = request.form['options']
     number_option = int(demo_options)
-    process_thread = Thread(target=process_image_async, args=(number_option, "displayDemo", app.config['STATIC_FOLDER']))
+    process_thread = Thread(target=process_image_async,
+                            args=(number_option, "displayDemo", app.config['STATIC_FOLDER']))
     process_thread.start()
     return redirect(url_for('index'))
+
 
 @app.route('/stop_process', methods=['POST'])
 def stop_process_route():
     stopProcess()
     return redirect(url_for('index'))
 
+
 @app.route('/update_process', methods=['POST'])
 def update_process_route():
     result = trigger_update()
     return result
+
 
 @app.route('/reboot', methods=['POST'])
 def reboot_route():
     result = reboot_system()
     return result
 
+
 @app.route('/shutdown', methods=['POST'])
 def shutdown_route():
     result = shutdown_system()
     return result
+
 
 if __name__ == '__main__':
     settings = read_settings()
@@ -167,13 +189,13 @@ if __name__ == '__main__':
             mqtt_handler.publish_settings_parallel_chains_discovery()
             mqtt_handler.publish_settings_display_slowdown_discovery()
             mqtt_handler.publish_settings_display_image_in_sec_discovery()
+            mqtt_handler.publish_settings_display_brightness_discovery()
             mqtt_handler.publish_device_rotation_settings_discovery()
 
             mqtt_handler.publish_reboot_button_discovery()
             mqtt_handler.publish_shutdown_button_discovery()
             mqtt_handler.publish_giphy_button_start_discovery()
             mqtt_handler.publish_giphy_button_stop_discovery()
-
 
             # Publish initial state
             mqtt_handler.publish_online_status()

@@ -37,7 +37,9 @@ def publish_device_settings_state():
         "chain_length": settings.get("chainLength"),
         "parallel_chains": settings.get("parallelChains"),
         "display_slowdown": settings.get("ledSlowdown"),
-        "display_image_in_sec": settings.get("playlistTime")
+        "display_image_in_sec": settings.get("playlistTime"),
+        "giphy_api_key": settings.get("giphy_api_key"),
+        "display_brightness": settings.get("displayBrightness")
     }
     publish_mqtt(f"sensor/{DEVICE_ID}/device_settings_state", json.dumps(payload))
     print(f"Published device settings state: {payload}")
