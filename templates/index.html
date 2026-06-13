@@ -4,8 +4,8 @@
     <title>Image Selection</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
-    <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+    <link rel="stylesheet" href="https://traycar.npmr.de/static/ledBild/css/material.min.css">
+    <script defer src="https://traycar.npmr.de/static/ledBild/js/material.min.js"></script>
     <link rel="stylesheet" href="static/css/main.css">
 </head>
 <body>
@@ -26,6 +26,17 @@
             <div class="mdl-tooltip" for="stop_process_button">
                 Stop Displaying<br>and turn display off
             </div>
+            <!-- Rotation Controls -->
+            <form method="post" action="/rotate_left">
+                <button type="submit" class="mdl-button mdl-js-button mdl-button--icon">
+                    <i class="material-icons">rotate_left</i>
+                </button>
+            </form>
+            <form method="post" action="/rotate_right">
+                <button type="submit" class="mdl-button mdl-js-button mdl-button--icon">
+                    <i class="material-icons">rotate_right</i>
+                </button>
+            </form>
             <nav class="mdl-navigation">
                 <a class="mdl-navigation__link" href="{{ url_for('upload') }}">Dateien Hochladen</a>
                 <a class="mdl-navigation__link" href="{{ url_for('settings') }}">Einstellungen</a>
@@ -190,10 +201,12 @@
                     </form>
                 </div>
 
-                <h2>Start Giphy by Category (Art & Design)</h2>
-<div id="art_design_categories">
-    <p>Loading Art & Design subcategories...</p>
-</div>
+                <div class="mdl-grid">
+                    <h2>Start Giphy by Category (Art & Design)</h2>
+                    <div id="art_design_categories">
+                        <p>Loading Art & Design subcategories...</p>
+                    </div>
+                </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {

@@ -1,4 +1,4 @@
 {
-  "currentApplicationVersion": "v0.0.27",
-  "whatChanged": "Now the Giphy Art & Design is integrated into the Web-Application. You can now choose from a all of the sub categories of the Art & Design part. "
+  "currentApplicationVersion": "v0.0.28",
+  "whatChanged": "New version where it is now possible to change the rotation of the selected image."
 }
