@@ -6,7 +6,7 @@ from upload_handler import upload_image
 from modules.settings_handler import read_settings, save_settings
 from modules.info_handler import read_infos
 from modules.media_handler import countMediaTypeAndNumber
-from modules.display_control import process_image_async, stopProcess, _current_image_name, _current_command_line, _current_static_folder
+from modules.display_control import process_image_async, stopProcess, _current_image_name, _current_command_line, _current_static_folder, trigger_rotation
 from modules.system_handler import getFreeDiskSpace, reboot_system, shutdown_system
 from modules.update_handler import trigger_update, fetch_update_info
 from modules import mqtt_handler, giphy_controller
@@ -148,17 +148,12 @@ def stop_process_route():
 
 @app.route('/rotate_left', methods=['POST'])
 def rotate_left():
-    if _current_image_name:
-        process_thread = Thread(target=process_image_async, args=(_current_image_name, _current_command_line, _current_static_folder, -90))
-        process_thread.start()
+    trigger_rotation(-90)
     return redirect(url_for('index'))
-
 
 @app.route('/rotate_right', methods=['POST'])
 def rotate_right():
-    if _current_image_name:
-        process_thread = Thread(target=process_image_async, args=(_current_image_name, _current_command_line, _current_static_folder, 90))
-        process_thread.start()
+    trigger_rotation(90)
     return redirect(url_for('index'))
 
 

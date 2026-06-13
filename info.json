@@ -1,4 +1,4 @@
 {
-  "currentApplicationVersion": "v0.0.28",
-  "whatChanged": "New version where it is now possible to change the rotation of the selected image."
+  "currentApplicationVersion": "v0.0.29",
+  "whatChanged": "Bug fix for rotation"
 }

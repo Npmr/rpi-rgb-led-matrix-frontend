@@ -12,11 +12,13 @@ _throttle_timer = None
 _current_image_name = None
 _current_command_line = None
 _current_static_folder = None
+_current_rotation_offset = 0
+
 
 def _start_display_process(image_name, command_line, static_folder, rotation_offset=0):
     stopProcess()
     settings = read_settings()
-    
+
     base_rotation = 270
     if settings["direction"] == "horizontal":
         base_rotation = 180
@@ -33,12 +35,12 @@ def _start_display_process(image_name, command_line, static_folder, rotation_off
 
     command = ""
     if command_line == "displayImage":
-        command = f"sudo .././rpi-rgb-led-matrix/utils/led-image-viewer -C --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness={settings['displayBrightness']} --led-pixel-mapper=\"U-mapper{rotation}\" --led-slowdown-gpio={settings['ledSlowdown']} {static_folder}/{image_name} &"
+        command = f"sudo .././rpi-rgb-led-matrix/utils/led-image-viewer -C --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness={settings.get('displayBrightness', 100)} --led-pixel-mapper=\"U-mapper{rotation}\" --led-slowdown-gpio={settings['ledSlowdown']} {static_folder}/{image_name} &"
     elif command_line == "displayDemo":
         if image_name == 12:
-            command = f"sudo .././rpi-rgb-led-matrix/examples-api-use/clock -f ../rpi-rgb-led-matrix/fonts/4x6.bdf -d '%A' -d '%H:%M:%S' --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness={settings['displayBrightness']} --led-pixel-mapper=\"U-mapper{rotation}\" --led-slowdown-gpio={settings['ledSlowdown']} &"
+            command = f"sudo .././rpi-rgb-led-matrix/examples-api-use/clock -f ../rpi-rgb-led-matrix/fonts/4x6.bdf -d '%A' -d '%H:%M:%S' --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness={settings.get('displayBrightness', 100)} --led-pixel-mapper=\"U-mapper{rotation}\" --led-slowdown-gpio={settings['ledSlowdown']} &"
         elif image_name <= 11:
-            command = f"sudo .././rpi-rgb-led-matrix/examples-api-use/demo -D{image_name} --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness={settings['displayBrightness']} --led-pixel-mapper=\"U-mapper{rotation}\" --led-slowdown-gpio={settings['ledSlowdown']} &"
+            command = f"sudo .././rpi-rgb-led-matrix/examples-api-use/demo -D{image_name} --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness={settings.get('displayBrightness', 100)} --led-pixel-mapper=\"U-mapper{rotation}\" --led-slowdown-gpio={settings['ledSlowdown']} &"
 
     if command:
         print(f"Executing command: {command}")
@@ -59,30 +61,38 @@ def _start_display_process(image_name, command_line, static_folder, rotation_off
     else:
         _is_process_running = False
 
-def process_image_async(image_name, command_line, static_folder, rotation_offset=0):
-    global _last_process_call_time, _pending_process_args, _throttle_timer, _current_image_name, _current_command_line, _current_static_folder
+
+def process_image_async(image_name, command_line, static_folder, angle_delta=None):
+    global _last_process_call_time, _pending_process_args, _throttle_timer
+    global _current_image_name, _current_command_line, _current_static_folder, _current_rotation_offset
 
     _current_image_name = image_name
     _current_command_line = command_line
     _current_static_folder = static_folder
+
+    if angle_delta is None:
+        _current_rotation_offset = 0
+    else:
+        _current_rotation_offset = (_current_rotation_offset + angle_delta) % 360
 
     current_time = time.time()
     time_since_last_call = current_time - _last_process_call_time
 
     if time_since_last_call >= _throttle_interval:
         _last_process_call_time = current_time
-        _start_display_process(image_name, command_line, static_folder, rotation_offset)
+        _start_display_process(image_name, command_line, static_folder, _current_rotation_offset)
         if _throttle_timer and _throttle_timer.is_alive():
             _throttle_timer.cancel()
         _pending_process_args = None
     else:
         # A call happened recently, schedule a call if one isn't already pending
-        _pending_process_args = (image_name, command_line, static_folder, rotation_offset)
+        _pending_process_args = (image_name, command_line, static_folder, _current_rotation_offset)
         if not _throttle_timer or not _throttle_timer.is_alive():
             _throttle_timer = Timer(_throttle_interval, _process_pending_call)
             _throttle_timer.start()
         else:
             print("Throttling: A pending process call is already scheduled.")
+
 
 def _process_pending_call():
     global _pending_process_args, _last_process_call_time, _throttle_timer
@@ -92,6 +102,7 @@ def _process_pending_call():
         _start_display_process(image_name, command_line, static_folder, rotation_offset)
         _pending_process_args = None
         _throttle_timer = None
+
 
 def stopProcess():
     for process in psutil.process_iter():
@@ -107,5 +118,12 @@ def stopProcess():
                 process.kill()
                 break
 
-# Initialize the flag
+def trigger_rotation(angle_delta):
+    global _current_image_name, _current_command_line, _current_static_folder
+    if _current_image_name:
+        process_thread = Thread(target=process_image_async,
+                                args=(_current_image_name, _current_command_line, _current_static_folder, angle_delta))
+        process_thread.start()
+
+
 is_not_running = True
