@@ -7,18 +7,18 @@
     <link rel="stylesheet" href="https://traycar.npmr.de/static/ledBild/css/material.min.css">
     <script defer src="https://traycar.npmr.de/static/ledBild/js/material.min.js"></script>
     <link rel="stylesheet" href="static/css/main.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 <body>
 <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-tabs">
     <header class="mdl-layout__header">
         <div class="mdl-layout__header-row">
-            <!-- Title -->
             <span class="mdl-layout-title">
                 <a class="mdl-navigation__link" href="/">Matrix Steuerung</a></span>
-            <!-- Add spacer, to align navigation to the right -->
             <div class="mdl-layout-spacer">
                 <form method="post" action="/stop_process">
-                    <button id="stop_process_button" type="submit" class="mdl-button mdl-js-button mdl-button--icon">
+                    <button id="stop_process_button" type="submit" class="mdl-button mdl-js-button mdl-button--icon" aria-label="Stop display">
                         <div class="control-icon icon-pause-circle"></div>
                     </button>
                 </form>
@@ -26,13 +26,12 @@
             <div class="mdl-tooltip" for="stop_process_button">
                 Stop Displaying<br>and turn display off
             </div>
-            <!-- Rotation Controls -->
-            <form method="post" action="/rotate_left">
+            <form method="post" action="/rotate_left" aria-label="Rotate left">
                 <button type="submit" class="mdl-button mdl-js-button mdl-button--icon">
                     <i class="material-icons">rotate_left</i>
                 </button>
             </form>
-            <form method="post" action="/rotate_right">
+            <form method="post" action="/rotate_right" aria-label="Rotate right">
                 <button type="submit" class="mdl-button mdl-js-button mdl-button--icon">
                     <i class="material-icons">rotate_right</i>
                 </button>
@@ -42,162 +41,208 @@
                 <a class="mdl-navigation__link" href="{{ url_for('settings') }}">Einstellungen</a>
             </nav>
         </div>
-        <div class="mdl-layout__tab-bar mdl-js-ripple-effect">
-            <a href="#fixed-tab-1" class="mdl-layout__tab is-active">Bilder</a>
-            <a href="#fixed-tab-2" class="mdl-layout__tab">GIFs</a>
-            <a href="#fixed-tab-3" class="mdl-layout__tab">Videos</a>
-            <a href="#fixed-tab-4" class="mdl-layout__tab">Demos</a>
+        <div class="mdl-layout__tab-bar mdl-js-ripple-effect" role="tablist">
+            <a href="#fixed-tab-1" class="mdl-layout__tab is-active" role="tab" aria-controls="fixed-tab-1" aria-selected="true">Bilder</a>
+            <a href="#fixed-tab-2" class="mdl-layout__tab" role="tab" aria-controls="fixed-tab-2" aria-selected="false">GIFs</a>
+            <a href="#fixed-tab-3" class="mdl-layout__tab" role="tab" aria-controls="fixed-tab-3" aria-selected="false">Videos</a>
+            <a href="#fixed-tab-4" class="mdl-layout__tab" role="tab" aria-controls="fixed-tab-4" aria-selected="false">Demos</a>
         </div>
     </header>
     <main class="mdl-layout__content">
-        <div class="mdl-grid">
-            <div>
-                <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect is-checked" for="checkbox-vertical">
-                    <input type="checkbox" id="checkbox-vertical" class="mdl-checkbox__input"
-                           onclick="filterFunction()">
-                    <span class="mdl-checkbox__label">Vertical</span>
-                </label>
-                <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect is-checked" for="checkbox-horizontal">
-                    <input type="checkbox" id="checkbox-horizontal" class="mdl-checkbox__input"
-                           onclick="filterFunction()">
-                    <span class="mdl-checkbox__label">Horizontal</span>
-                </label>
-                <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect is-checked" for="checkbox-square">
-                    <input type="checkbox" id="checkbox-square" class="mdl-checkbox__input" onclick="filterFunction()">
-                    <span class="mdl-checkbox__label">Rechteckig</span>
-                </label>
+        <div class="mdl-grid filter-bar">
+            <div class="mdl-cell mdl-cell--12-col">
+                <fieldset class="mdl-cell mdl-cell--12-col filter-fieldset">
+                    <legend>Filter by orientation</legend>
+                    <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="checkbox-vertical">
+                        <input type="checkbox" id="checkbox-vertical" class="mdl-checkbox__input" checked onchange="filterFunction()">
+                        <span class="mdl-checkbox__label">Vertical</span>
+                    </label>
+                    <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="checkbox-horizontal">
+                        <input type="checkbox" id="checkbox-horizontal" class="mdl-checkbox__input" checked onchange="filterFunction()">
+                        <span class="mdl-checkbox__label">Horizontal</span>
+                    </label>
+                    <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="checkbox-square">
+                        <input type="checkbox" id="checkbox-square" class="mdl-checkbox__input" checked onchange="filterFunction()">
+                        <span class="mdl-checkbox__label">Square</span>
+                    </label>
+                </fieldset>
             </div>
-            <div>
+            <div class="mdl-cell mdl-cell--12-col">
                 <form method="post" action="/stop_process">
-                    <button id="stop_process_button" type="submit" class="mdl-button mdl-js-button mdl-button--icon">
+                    <button id="stop_process_button_main" type="submit" class="mdl-button mdl-js-button mdl-button--icon" aria-label="Stop display">
                         <div class="control-icon icon-playlist-play"></div>
                     </button>
                 </form>
             </div>
-
         </div>
 
-    <script src="static/js/contentLazyLoad.js"></script>
-
-        <section class="mdl-layout__tab-panel is-active" id="fixed-tab-1">
+        <section class="mdl-layout__tab-panel is-active" id="fixed-tab-1" role="tabpanel">
             <div class="page-content">
-                <div class="mdl-grid">
+                <div class="media-grid" id="images-grid">
                     {% for image in images %}
-                        <div class="mdl-cell mdl-cell--2-col-desktop mdl-cell--2-col-tablet mdl-cell--2-col-phone {{ image['orientation'] }}">
-
-                            <div class="demo-card-image mdl-card mdl-shadow--2dp lazyLoadClass" data-bgimage="{{ url_for('static', filename='pictures/' + image['filename']) }}">
-                                <div class="mdl-card__title mdl-card--expand">
-                                </div>
-                                <div class="mdl-card__actions demo-card-image__filename">
-                                    <form method="post" action="/process_image" class="fl">
-                                        <button class="mdl-button mdl-js-button mdl-button--icon"
-                                                type="submit"
-                                                name="image_name" value="{{ image['filename'] }}">
+                        <article class="media-card {{ image['orientation'] }}" data-orientation="{{ image['orientation'] }}">
+                            <div class="media-thumb">
+                                <picture class="responsive-image-wrapper">
+                                    {% if image.avif_url and image.thumbnails %}
+                                        <source type="image/avif" 
+                                                srcset="{{ image.avif_url }} 600w,
+                                                        {{ image.thumbnails.large.url }} 600w,
+                                                        {{ image.thumbnails.medium.url }} 300w,
+                                                        {{ image.thumbnails.small.url }} 150w"
+                                                sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw">
+                                    {% endif %}
+                                    {% if image.webp_url and image.thumbnails %}
+                                        <source type="image/webp" 
+                                                srcset="{{ image.webp_url }} 600w,
+                                                        {{ image.thumbnails.large.url }} 600w,
+                                                        {{ image.thumbnails.medium.url }} 300w,
+                                                        {{ image.thumbnails.small.url }} 150w"
+                                                sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw">
+                                    {% endif %}
+                                    {% if image.thumbnails %}
+                                        <img src="data:image/webp;base64,{{ image.lqip }}" 
+                                             srcset="{{ image.thumbnails.small.url }} 150w, {{ image.thumbnails.medium.url }} 300w, {{ image.thumbnails.large.url }} 600w"
+                                             sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw"
+                                             alt="{{ image['filename'] }}"
+                                             loading="lazy"
+                                             class="lazy-image blur-up"
+                                             width="300" height="300"
+                                             decoding="async"
+                                             style="filter: blur(20px); transition: filter 0.3s ease-out;"
+                                             data-full-avif="{{ image.avif_url }}"
+                                             data-full-webp="{{ image.webp_url }}"
+                                             data-full-original="{{ url_for('static', filename='pictures/' + image['filename']) }}">
+                                    {% else %}
+                                        <img src="{{ url_for('static', filename='pictures/' + image['filename']) }}" 
+                                             alt="{{ image['filename'] }}"
+                                             loading="lazy"
+                                             class="lazy-image"
+                                             width="300" height="300"
+                                             decoding="async">
+                                    {% endif %}
+                                </picture>
+                                <div class="media-overlay">
+                                    <form method="post" action="/process_image" class="media-action play-action" title="Display on matrix">
+                                        <button class="mdl-button mdl-js-button mdl-button--icon" type="submit" name="image_name" value="{{ image['filename'] }}">
                                             <div class="control-icon icon-play-circle"></div>
                                         </button>
                                     </form>
-
-                                    <form action="/delete_image" method="POST" class="fr">
-                                        <button class="mdl-button mdl-js-button mdl-button--icon"
-                                                type="submit"
-                                                name="image_name_to_delete" value="{{ image['filename'] }}">
+                                    <form action="/delete_image" method="POST" class="media-action delete-action" title="Delete">
+                                        <button class="mdl-button mdl-js-button mdl-button--icon" type="submit" name="image_name_to_delete" value="{{ image['filename'] }}">
                                             <div class="control-icon icon-delete"></div>
                                         </button>
                                     </form>
                                 </div>
-                                <div class="mdl-card__menu">
-                                    <div class="control-icon
-                                    {% if image['orientation'] == 'vertical' %}icon-portrait{% endif %}
-                                    {% if image['orientation'] == 'horizontal' %}icon-landscape{% endif %}
-                                    {% if image['orientation'] == 'square' %}icon-square{% endif %}
-                                    "></div>
-                                </div>
                             </div>
-                        </div>
+                            <div class="media-info">
+                                <span class="media-filename">{{ image['filename'] }}</span>
+                                <span class="media-orientation">
+                                    {% if image['orientation'] == 'vertical' %}<i class="material-icons">portrait</i>{% endif %}
+                                    {% if image['orientation'] == 'horizontal' %}<i class="material-icons">landscape</i>{% endif %}
+                                    {% if image['orientation'] == 'square' %}<i class="material-icons">crop_square</i>{% endif %}
+                                </span>
+                            </div>
+                        </article>
                     {% endfor %}
                 </div>
             </div>
         </section>
-        <section class="mdl-layout__tab-panel" id="fixed-tab-2">
+        <section class="mdl-layout__tab-panel" id="fixed-tab-2" role="tabpanel">
             <div class="page-content">
-                <div class="mdl-grid">
+                <div class="media-grid" id="gifs-grid">
                     {% for gif in gifs %}
-                        <div class="mdl-cell mdl-cell--2-col-desktop mdl-cell--2-col-tablet mdl-cell--2-col-phone {{ gif['orientation'] }}">
-                            <div class="demo-card-image mdl-card mdl-shadow--2dp lazyLoadClass" data-bgimage="{{ url_for('static', filename='pictures/' + gif['filename']) }}">
-                                <div class="mdl-card__title mdl-card--expand">
-                                </div>
-                                <div class="mdl-card__actions demo-card-image__filename">
-                                    <form method="post" action="/process_image" class="fl">
-                                        <button class="mdl-button mdl-js-button mdl-button--icon"
-                                                type="submit"
-                                                name="image_name" value="{{ gif['filename'] }}">
+                        <article class="media-card {{ gif['orientation'] }}" data-orientation="{{ gif['orientation'] }}">
+                            <div class="media-thumb">
+                                <picture class="responsive-image-wrapper">
+                                    {% if gif.thumbnails %}
+                                        <img src="data:image/webp;base64,{{ gif.lqip }}" 
+                                             srcset="{{ gif.thumbnails.small.url }} 150w, {{ gif.thumbnails.medium.url }} 300w, {{ gif.thumbnails.large.url }} 600w"
+                                             sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw"
+                                             alt="{{ gif['filename'] }}"
+                                             loading="lazy"
+                                             class="lazy-image blur-up"
+                                             width="300" height="300"
+                                             decoding="async"
+                                             style="filter: blur(20px); transition: filter 0.3s ease-out;"
+                                             data-full-original="{{ url_for('static', filename='pictures/' + gif['filename']) }}">
+                                    {% else %}
+                                        <img src="{{ url_for('static', filename='pictures/' + gif['filename']) }}" 
+                                             alt="{{ gif['filename'] }}"
+                                             loading="lazy"
+                                             class="lazy-image"
+                                             width="300" height="300"
+                                             decoding="async">
+                                    {% endif %}
+                                </picture>
+                                <div class="media-overlay">
+                                    <form method="post" action="/process_image" class="media-action play-action" title="Display on matrix">
+                                        <button class="mdl-button mdl-js-button mdl-button--icon" type="submit" name="image_name" value="{{ gif['filename'] }}">
                                             <div class="control-icon icon-play-circle"></div>
                                         </button>
                                     </form>
-                                    <form action="/delete_image" method="POST" class="fr">
-                                        <button class="mdl-button mdl-js-button mdl-button--icon"
-                                                type="submit"
-                                                name="image_name_to_delete" value="{{ gif['filename'] }}">
+                                    <form action="/delete_image" method="POST" class="media-action delete-action" title="Delete">
+                                        <button class="mdl-button mdl-js-button mdl-button--icon" type="submit" name="image_name_to_delete" value="{{ gif['filename'] }}">
                                             <div class="control-icon icon-delete"></div>
                                         </button>
                                     </form>
                                 </div>
-                                <div class="mdl-card__menu">
-                                    <div class="control-icon
-                                    {% if gif['orientation'] == 'vertical' %}icon-portrait{% endif %}
-                                    {% if gif['orientation'] == 'horizontal' %}icon-landscape{% endif %}
-                                    {% if gif['orientation'] == 'square' %}icon-square{% endif %}
-                                    "></div>
-                                </div>
                             </div>
-                        </div>
+                            <div class="media-info">
+                                <span class="media-filename">{{ gif['filename'] }}</span>
+                                <span class="media-orientation">
+                                    {% if gif['orientation'] == 'vertical' %}<i class="material-icons">portrait</i>{% endif %}
+                                    {% if gif['orientation'] == 'horizontal' %}<i class="material-icons">landscape</i>{% endif %}
+                                    {% if gif['orientation'] == 'square' %}<i class="material-icons">crop_square</i>{% endif %}
+                                </span>
+                            </div>
+                        </article>
                     {% endfor %}
                 </div>
             </div>
         </section>
-    <section class="mdl-layout__tab-panel" id="fixed-tab-3">
-<div class="page-content">
-                <div class="mdl-grid">
+        <section class="mdl-layout__tab-panel" id="fixed-tab-3" role="tabpanel">
+            <div class="page-content">
+                <div class="media-grid" id="videos-grid">
                     {% for video in videos %}
-                        <div class="mdl-cell mdl-cell--2-col-desktop mdl-cell--2-col-tablet mdl-cell--2-col-phone {{ video['orientation'] }}">
-                            <div class="demo-card-image mdl-card mdl-shadow--2dp lazyLoadClass" data-bgimage="{{ url_for('static', filename='pictures/' + video['filename']) }}">
-                                <div class="mdl-card__title mdl-card--expand">
-                                </div>
-                                <div class="mdl-card__actions demo-card-image__filename">
-                                    <form method="post" action="/process_image" class="fl">
-                                        <button class="mdl-button mdl-js-button mdl-button--icon"
-                                                type="submit"
-                                                name="image_name" value="{{ video['filename'] }}">
+                        <article class="media-card {{ video['orientation'] }}" data-orientation="{{ video['orientation'] }}">
+                            <div class="media-thumb">
+                                <video src="{{ url_for('static', filename='pictures/' + video['filename']) }}" 
+                                       class="lazy-video" 
+                                       preload="metadata"
+                                       muted
+                                       loop
+                                       playsinline
+                                       width="300" height="300"
+                                       poster="{{ url_for('static', filename='pictures/thumbnails/' + video['filename'].replace('.webm', '_thumb_medium.webp')) }}">
+                                </video>
+                                <div class="media-overlay">
+                                    <form method="post" action="/process_image" class="media-action play-action" title="Display on matrix">
+                                        <button class="mdl-button mdl-js-button mdl-button--icon" type="submit" name="image_name" value="{{ video['filename'] }}">
                                             <div class="control-icon icon-play-circle"></div>
                                         </button>
                                     </form>
-                                    <form action="/delete_image" method="POST" class="fr">
-                                        <button class="mdl-button mdl-js-button mdl-button--icon"
-                                                type="submit"
-                                                name="image_name_to_delete" value="{{ video['filename'] }}">
+                                    <form action="/delete_image" method="POST" class="media-action delete-action" title="Delete">
+                                        <button class="mdl-button mdl-js-button mdl-button--icon" type="submit" name="image_name_to_delete" value="{{ video['filename'] }}">
                                             <div class="control-icon icon-delete"></div>
                                         </button>
                                     </form>
                                 </div>
-                                <div class="mdl-card__menu">
-                                    <div class="control-icon
-                                    {% if video['orientation'] == 'vertical' %}icon-portrait{% endif %}
-                                    {% if video['orientation'] == 'horizontal' %}icon-landscape{% endif %}
-                                    {% if video['orientation'] == 'square' %}icon-square{% endif %}
-                                    "></div>
-                                </div>
                             </div>
-                        </div>
+                            <div class="media-info">
+                                <span class="media-filename">{{ video['filename'] }}</span>
+                                <span class="media-orientation"><i class="material-icons">videocam</i></span>
+                            </div>
+                        </article>
                     {% endfor %}
                 </div>
             </div>
-    </section>
-        <section class="mdl-layout__tab-panel" id="fixed-tab-4">
+        </section>
+        <section class="mdl-layout__tab-panel" id="fixed-tab-4" role="tabpanel">
             <div class="page-content">
                 <div class="mdl-grid">
                     <h2>Start Giphy</h2>
                     <form action="/start_giphy_web" method="post">
-                        <button type="submit">Start Giphy Loop</button>
+                        <button type="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">Start Giphy Loop</button>
                     </form>
                 </div>
 
@@ -208,52 +253,55 @@
                     </div>
                 </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        fetch('/get_art_design_subcategories')
-            .then(response => response.json())
-            .then(data => {
-                const categoriesDiv = document.getElementById('art_design_categories');
-                categoriesDiv.innerHTML = ''; // Clear loading message
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        fetch('/get_art_design_subcategories')
+                            .then(response => response.json())
+                            .then(data => {
+                                const categoriesDiv = document.getElementById('art_design_categories');
+                                categoriesDiv.innerHTML = '';
 
-                if (data && data.length > 0) {
-                    const selectElement = document.createElement('select');
-                    selectElement.name = 'giphy_category';
+                                if (data && data.length > 0) {
+                                    const selectElement = document.createElement('select');
+                                    selectElement.name = 'giphy_category';
+                                    selectElement.className = 'mdl-textfield__input';
 
-                    const defaultOption = document.createElement('option');
-                    defaultOption.value = '';
-                    defaultOption.textContent = 'Select a Category';
-                    selectElement.appendChild(defaultOption);
+                                    const defaultOption = document.createElement('option');
+                                    defaultOption.value = '';
+                                    defaultOption.textContent = 'Select a Category';
+                                    selectElement.appendChild(defaultOption);
 
-                    data.forEach(subcategory => {
-                        const option = document.createElement('option');
-                        option.value = subcategory.name_encoded;
-                        option.textContent = subcategory.name;
-                        selectElement.appendChild(option);
+                                    data.forEach(subcategory => {
+                                        const option = document.createElement('option');
+                                        option.value = subcategory.name_encoded;
+                                        option.textContent = subcategory.name;
+                                        selectElement.appendChild(option);
+                                    });
+
+                                    const submitButton = document.createElement('button');
+                                    submitButton.type = 'submit';
+                                    submitButton.textContent = 'Start Giphy with Category';
+                                    submitButton.className = 'mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect';
+
+                                    const categoryForm = document.createElement('form');
+                                    categoryForm.action = '/start_giphy_category';
+                                    categoryForm.method = 'post';
+                                    categoryForm.className = 'category-form';
+                                    categoryForm.appendChild(selectElement);
+                                    categoryForm.appendChild(submitButton);
+
+                                    categoriesDiv.appendChild(categoryForm);
+                                } else {
+                                    categoriesDiv.textContent = 'Could not load Art & Design subcategories.';
+                                }
+                            })
+                            .catch(error => {
+                                const categoriesDiv = document.getElementById('art_design_categories');
+                                categoriesDiv.textContent = 'Error loading Art & Design subcategories.';
+                                console.error('Error fetching subcategories:', error);
+                            });
                     });
-
-                    const submitButton = document.createElement('button');
-                    submitButton.type = 'submit';
-                    submitButton.textContent = 'Start Giphy with Category';
-
-                    const categoryForm = document.createElement('form');
-                    categoryForm.action = '/start_giphy_category';
-                    categoryForm.method = 'post';
-                    categoryForm.appendChild(selectElement);
-                    categoryForm.appendChild(submitButton);
-
-                    categoriesDiv.appendChild(categoryForm);
-                } else {
-                    categoriesDiv.textContent = 'Could not load Art & Design subcategories.';
-                }
-            })
-            .catch(error => {
-                const categoriesDiv = document.getElementById('art_design_categories');
-                categoriesDiv.textContent = 'Error loading Art & Design subcategories.';
-                console.error('Error fetching subcategories:', error);
-            });
-    });
-</script>
+                </script>
 
                 <div class="mdl-grid">
                     <h2>Demos</h2>
@@ -262,96 +310,80 @@
                         <ul class="demo-list-item mdl-list">
                             <li class="mdl-list__item">
                                 <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-1">
-                                    <input type="radio" id="option-1" class="mdl-radio__button" name="options" value="0"
-                                           checked>
+                                    <input type="radio" id="option-1" class="mdl-radio__button" name="options" value="0" checked>
                                     <span class="mdl-radio__label">A rotating Square</span>
                                 </label>
                             </li>
                             <li class="mdl-list__item">
                                 <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-2">
-                                    <input type="radio" id="option-2" class="mdl-radio__button" name="options"
-                                           value="3">
+                                    <input type="radio" id="option-2" class="mdl-radio__button" name="options" value="3">
                                     <span class="mdl-radio__label">Test image, a square</span>
                                 </label>
                             </li>
                             <li class="mdl-list__item">
                                 <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-3">
-                                    <input type="radio" id="option-3" class="mdl-radio__button" name="options"
-                                           value="4">
+                                    <input type="radio" id="option-3" class="mdl-radio__button" name="options" value="4">
                                     <span class="mdl-radio__label">Pulsing color</span>
                                 </label>
                             </li>
 
                             <li class="mdl-list__item">
                                 <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-4">
-                                    <input type="radio" id="option-4" class="mdl-radio__button" name="options"
-                                           value="5">
+                                    <input type="radio" id="option-4" class="mdl-radio__button" name="options" value="5">
                                     <span class="mdl-radio__label">Grayscale Block</span>
                                 </label>
                             </li>
                             <li class="mdl-list__item">
                                 <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-5">
-                                    <input type="radio" id="option-5" class="mdl-radio__button" name="options"
-                                           value="6">
+                                    <input type="radio" id="option-5" class="mdl-radio__button" name="options" value="6">
                                     <span class="mdl-radio__label">Abelian sandpile model</span>
                                 </label>
                             </li>
                             <li class="mdl-list__item">
                                 <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-6">
-                                    <input type="radio" id="option-6" class="mdl-radio__button" name="options"
-                                           value="7">
+                                    <input type="radio" id="option-6" class="mdl-radio__button" name="options" value="7">
                                     <span class="mdl-radio__label">Conway's game of life</span>
                                 </label>
                             </li>
                             <li class="mdl-list__item">
                                 <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-7">
-                                    <input type="radio" id="option-7" class="mdl-radio__button" name="options"
-                                           value="8">
+                                    <input type="radio" id="option-7" class="mdl-radio__button" name="options" value="8">
                                     <span class="mdl-radio__label">Langton's ant</span>
                                 </label>
                             </li>
                             <li class="mdl-list__item">
                                 <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-8">
-                                    <input type="radio" id="option-8" class="mdl-radio__button" name="options"
-                                           value="9">
+                                    <input type="radio" id="option-8" class="mdl-radio__button" name="options" value="9">
                                     <span class="mdl-radio__label">Volume bars</span>
                                 </label>
                             </li>
                             <li class="mdl-list__item">
                                 <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-9">
-                                    <input type="radio" id="option-9" class="mdl-radio__button" name="options"
-                                           value="10">
+                                    <input type="radio" id="option-9" class="mdl-radio__button" name="options" value="10">
                                     <span class="mdl-radio__label">Evolution of color</span>
                                 </label>
                             </li>
 
-                            <li class="mdl-list__item"><label class="mdl-radio mdl-js-radio mdl-js-ripple-effect"
-                                                              for="option-10">
+                            <li class="mdl-list__item"><label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-10">
                                 <input type="radio" id="option-10" class="mdl-radio__button" name="options" value="11">
                                 <span class="mdl-radio__label">Brightness pulse generator</span>
                             </label></li>
-                            <li class="mdl-list__item"><label class="mdl-radio mdl-js-radio mdl-js-ripple-effect"
-                                                              for="option-11">
+                            <li class="mdl-list__item"><label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-11">
                                 <input type="radio" id="option-11" class="mdl-radio__button" name="options" value="12">
                                 <span class="mdl-radio__label">Current Day and  Time</span>
                             </label></li>
                         </ul>
 
-
-                        <button class="mdl-button mdl-js-button"
-                                type="submit">Submit
-                        </button>
+                        <button class="mdl-button mdl-js-button" type="submit">Submit</button>
                     </form>
 
-                    <p> TODO add the text option as well as the option to show multiple at once, like the clock together
-                        with a image or so</p>
+                    <p> TODO add the text option as well as the option to show multiple at once, like the clock together with a image or so</p>
                 </div>
-
             </div>
         </section>
     </main>
 </div>
 
-<script src="static/js/formatFilter.js"></script>
+<script src="static/js/progressiveLoad.js"></script>
 </body>
 </html>

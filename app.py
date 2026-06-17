@@ -1,6 +1,7 @@
 import os
-from flask import Flask, render_template, request, url_for, redirect, jsonify
+from flask import Flask, render_template, request, url_for, redirect, jsonify, send_from_directory
 from threading import Thread
+from datetime import timedelta
 
 from upload_handler import upload_image
 from modules.settings_handler import read_settings, save_settings
@@ -13,6 +14,7 @@ from modules import mqtt_handler, giphy_controller
 
 app = Flask(__name__)
 app.config['STATIC_FOLDER'] = 'static/pictures'
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = timedelta(days=365).total_seconds()
 
 
 def handle_play_media(image_name):
@@ -42,9 +44,39 @@ def delete_image():
     image_path = os.path.join(app.config['STATIC_FOLDER'], image_name)
     try:
         os.remove(image_path)
+        thumb_dir = os.path.join(app.config['STATIC_FOLDER'], 'thumbnails')
+        base_name = os.path.splitext(image_name)[0]
+        for size_name in ['small', 'medium', 'large']:
+            thumb_path = os.path.join(thumb_dir, f"{base_name}_thumb_{size_name}.webp")
+            if os.path.exists(thumb_path):
+                os.remove(thumb_path)
+        lqip_path = os.path.join(thumb_dir, f"{base_name}_lqip.txt")
+        if os.path.exists(lqip_path):
+            os.remove(lqip_path)
+        webp_path = os.path.join(app.config['STATIC_FOLDER'], base_name + '.webp')
+        if os.path.exists(webp_path):
+            os.remove(webp_path)
+        avif_path = os.path.join(app.config['STATIC_FOLDER'], base_name + '.avif')
+        if os.path.exists(avif_path):
+            os.remove(avif_path)
         return redirect(url_for('index'))
     except OSError as e:
         return redirect(url_for('index'))
+
+
+@app.route('/static/pictures/<path:filename>')
+def serve_picture(filename):
+    response = send_from_directory(app.config['STATIC_FOLDER'], filename)
+    response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+    return response
+
+
+@app.route('/static/pictures/thumbnails/<path:filename>')
+def serve_thumbnail(filename):
+    thumb_dir = os.path.join(app.config['STATIC_FOLDER'], 'thumbnails')
+    response = send_from_directory(thumb_dir, filename)
+    response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+    return response
 
 
 @app.route('/start_giphy_web', methods=['POST'])
@@ -110,6 +142,9 @@ def save_settings_route():
     new_deviceName = request.form['deviceName']
     new_giphyApiCode = request.form['giphyApiKey']
     new_displayBrightness = request.form['displayBrightness']
+    new_webpQuality = request.form.get('webpQuality', '85')
+    new_avifQuality = request.form.get('avifQuality', '50')
+    new_thumbnailQuality = request.form.get('thumbnailQuality', '80')
 
     new_settings = {'heightInPixel': new_height, 'widthInPixel': new_width, 'direction': new_direction,
                     'chainLength': new_chainLength, 'parallelChains': new_parallelChains,
@@ -117,9 +152,62 @@ def save_settings_route():
                     'displayTimeAndDate': "checked" if new_displayTimeAndDate == 'on' else "", 'language': new_language,
                     'mqttIP': new_mqttIp, 'mqttPort': new_mqttPort, 'deviceID': new_deviceId,
                     'deviceName': new_deviceName, 'giphyApiKey': new_giphyApiCode,
-                    'displayBrightness': new_displayBrightness}
+                    'displayBrightness': new_displayBrightness,
+                    'webpQuality': new_webpQuality, 'avifQuality': new_avifQuality,
+                    'thumbnailQuality': new_thumbnailQuality}
     save_settings(new_settings)
     return redirect(url_for('settings'))
+
+
+@app.route('/regenerate_thumbnails', methods=['POST'])
+def regenerate_thumbnails():
+    from upload_handler import generate_thumbnails, convert_to_webp, convert_to_avif, generate_lqip, get_image_metadata
+    static_folder = app.config['STATIC_FOLDER']
+    thumb_dir = os.path.join(static_folder, 'thumbnails')
+    os.makedirs(thumb_dir, exist_ok=True)
+    
+    image_files = os.listdir(static_folder)
+    regenerated = []
+    errors = []
+    
+    for file in image_files:
+        if file.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
+            file_path = os.path.join(static_folder, file)
+            try:
+                with open(file_path, 'rb') as f:
+                    image_data = f.read()
+                
+                base_name = os.path.splitext(file)[0]
+                
+                thumbnails = generate_thumbnails(image_data, file)
+                for size_name, thumb_info in thumbnails.items():
+                    thumb_path = os.path.join(thumb_dir, thumb_info['filename'])
+                    with open(thumb_path, 'wb') as f:
+                        f.write(thumb_info['data'])
+                
+                lqip_base64 = generate_lqip(image_data)
+                if lqip_base64:
+                    lqip_path = os.path.join(thumb_dir, f"{base_name}_lqip.txt")
+                    with open(lqip_path, 'w') as f:
+                        f.write(lqip_base64)
+                
+                webp_filename, webp_data = convert_to_webp(image_data, file)
+                if webp_filename and webp_data:
+                    webp_path = os.path.join(static_folder, webp_filename)
+                    with open(webp_path, 'wb') as f:
+                        f.write(webp_data)
+                
+                avif_filename, avif_data = convert_to_avif(image_data, file)
+                if avif_filename and avif_data:
+                    avif_path = os.path.join(static_folder, avif_filename)
+                    with open(avif_path, 'wb') as f:
+                        f.write(avif_data)
+                
+                regenerated.append(file)
+            except Exception as e:
+                errors.append(f"{file}: {str(e)}")
+    
+    return jsonify({'regenerated': regenerated, 'errors': errors})
 
 
 @app.route('/process_image', methods=['POST'])

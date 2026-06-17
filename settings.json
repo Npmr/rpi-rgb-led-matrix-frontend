@@ -13,5 +13,8 @@
     "mqttPort": "1883",
     "deviceID": "pixel_display_rpi",
     "deviceName": "Pixel Display",
-    "giphyApiKey": "YOUR_GIPHY_API_CODE"
+    "giphyApiKey": "YOUR_GIPHY_API_CODE",
+    "webpQuality": 85,
+    "avifQuality": 50,
+    "thumbnailQuality": 80
 }

@@ -124,6 +124,27 @@
                             <span class="mdl-textfield__error">Input is not a number!</span>
                         </div>
                         <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                            <input class="mdl-textfield__input" type="number" min="1" max="100" name="webpQuality"
+                                   pattern="-?[0-9]*(\.[0-9]+)?"
+                                   id="webpQuality" value="{{ settings.get('webpQuality', 85) }}">
+                            <label class="mdl-textfield__label" for="webpQuality">WebP Quality (1-100) - Default 85</label>
+                            <span class="mdl-textfield__error">Input is not a number!</span>
+                        </div>
+                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                            <input class="mdl-textfield__input" type="number" min="1" max="100" name="avifQuality"
+                                   pattern="-?[0-9]*(\.[0-9]+)?"
+                                   id="avifQuality" value="{{ settings.get('avifQuality', 50) }}">
+                            <label class="mdl-textfield__label" for="avifQuality">AVIF Quality (1-100) - Default 50</label>
+                            <span class="mdl-textfield__error">Input is not a number!</span>
+                        </div>
+                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                            <input class="mdl-textfield__input" type="number" min="1" max="100" name="thumbnailQuality"
+                                   pattern="-?[0-9]*(\.[0-9]+)?"
+                                   id="thumbnailQuality" value="{{ settings.get('thumbnailQuality', 80) }}">
+                            <label class="mdl-textfield__label" for="thumbnailQuality">Thumbnail Quality (1-100) - Default 80</label>
+                            <span class="mdl-textfield__error">Input is not a number!</span>
+                        </div>
+                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
                             <select name="direction" id="direction" class="mdl-textfield__input">
                                 <option value="vertical"
                                         {% if settings[
@@ -257,6 +278,15 @@
                             <label class="mdl-textfield__label" for="giphyApiKey">Your Giphy API Key</label>
                             <span class="mdl-textfield__error">Input is not a text!</span>
                         </div>
+
+                        <hr>
+                        <h3>Image Optimization</h3>
+                        <form action="/regenerate_thumbnails" method="POST">
+                            <button type="submit"
+                                    class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect fw">
+                                Regenerate All Thumbnails & Optimized Formats
+                            </button>
+                        </form>
 
                         <button type="submit"
                                 class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect fw">
