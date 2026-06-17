@@ -16,5 +16,6 @@
     "giphyApiKey": "YOUR_GIPHY_API_CODE",
     "webpQuality": 85,
     "avifQuality": 50,
-    "thumbnailQuality": 80
+    "thumbnailQuality": 80,
+    "updateBranch": "main"
 }

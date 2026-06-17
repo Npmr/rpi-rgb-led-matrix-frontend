@@ -322,6 +322,14 @@
                     <div>Current GIT Version: {{ currentAvailableVersion }}</div>
                     <div>Changes in the new Version: {{ updateText }}</div>
                     <br>
+                    <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                        <select name="updateBranch" id="updateBranch" class="mdl-textfield__input">
+                            <option value="main" {% if settings['updateBranch'] == 'main' %}selected{% endif %}>Main (Stable)</option>
+                            <option value="dev" {% if settings['updateBranch'] == 'dev' %}selected{% endif %}>Dev (Development)</option>
+                        </select>
+                        <label class="mdl-textfield__label" for="updateBranch">Update Branch</label>
+                    </div>
+                    <br>
                     <form action="/update_process" method="POST">
                         <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent"
                                 {{ enableUpdateButton }}>

@@ -1,13 +1,17 @@
 #!/bin/sh
+BRANCH=${1:-main}
+
 #go into the application directory and make a git pull
 cd /home/pi/rpi-rgb-led-matrix
 git fetch --all
+git checkout "$BRANCH" || git checkout main
 git reset HEAD --hard
 git pull
 
 cd /home/pi/rpi-rgb-led-matrix-frontend
 cp settings.json /home/pi/settings.json
 git fetch --all
+git checkout "$BRANCH" || git checkout main
 git reset HEAD --hard
 git pull
 chmod +x update_application.sh

@@ -111,7 +111,8 @@ def settings():
     numberOfGifs = len(medias[1])
     freeDiskSpaceInPercent = getFreeDiskSpace()
     infos = read_infos()
-    update_info = fetch_update_info()
+    update_branch = settings.get('updateBranch', 'main')
+    update_info = fetch_update_info(update_branch)
 
     updateVersion = update_info.get('currentApplicationVersion') if update_info else 'unknown'
     updateText = update_info.get('whatChanged') if update_info else ''
@@ -145,6 +146,7 @@ def save_settings_route():
     new_webpQuality = request.form.get('webpQuality', '85')
     new_avifQuality = request.form.get('avifQuality', '50')
     new_thumbnailQuality = request.form.get('thumbnailQuality', '80')
+    new_updateBranch = request.form.get('updateBranch', 'main')
 
     new_settings = {'heightInPixel': new_height, 'widthInPixel': new_width, 'direction': new_direction,
                     'chainLength': new_chainLength, 'parallelChains': new_parallelChains,
@@ -154,7 +156,8 @@ def save_settings_route():
                     'deviceName': new_deviceName, 'giphyApiKey': new_giphyApiCode,
                     'displayBrightness': new_displayBrightness,
                     'webpQuality': new_webpQuality, 'avifQuality': new_avifQuality,
-                    'thumbnailQuality': new_thumbnailQuality}
+                    'thumbnailQuality': new_thumbnailQuality,
+                    'updateBranch': new_updateBranch}
     save_settings(new_settings)
     return redirect(url_for('settings'))
 
@@ -247,7 +250,9 @@ def rotate_right():
 
 @app.route('/update_process', methods=['POST'])
 def update_process_route():
-    result = trigger_update()
+    settings = read_settings()
+    update_branch = settings.get('updateBranch', 'main')
+    result = trigger_update(update_branch)
     return result
 
 
