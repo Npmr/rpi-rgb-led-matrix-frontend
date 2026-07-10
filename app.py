@@ -10,7 +10,7 @@ from modules.media_handler import countMediaTypeAndNumber
 from modules.display_control import process_image_async, stopProcess, _current_image_name, _current_command_line, _current_static_folder, trigger_rotation
 from modules.system_handler import getFreeDiskSpace, reboot_system, shutdown_system
 from modules.update_handler import trigger_update, fetch_update_info
-from modules import mqtt_handler, giphy_controller
+from modules import mqtt_handler, giphy_controller, immich_controller, immich_handler
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
@@ -104,6 +104,48 @@ def start_giphy_category():
         return "Error: No category selected.", 400
 
 
+@app.route('/start_immich_random', methods=['POST'])
+def start_immich_random():
+    print("Web request received to start Immich random")
+    immich_controller.start_immich_loop("random")
+    return redirect(url_for('index'))
+
+
+@app.route('/start_immich_album', methods=['POST'])
+def start_immich_album():
+    album_id = request.form.get('immich_album_id')
+    if album_id:
+        print(f"Web request received to start Immich album: {album_id}")
+        immich_controller.start_immich_loop("album", album_id=album_id)
+        return redirect(url_for('index'))
+    else:
+        return "Error: No album selected.", 400
+
+
+@app.route('/start_immich_search', methods=['POST'])
+def start_immich_search():
+    query = request.form.get('immich_search_query')
+    if query:
+        print(f"Web request received to start Immich search: {query}")
+        immich_controller.start_immich_loop("search", search_query=query)
+        return redirect(url_for('index'))
+    else:
+        return "Error: No search query provided.", 400
+
+
+@app.route('/stop_immich', methods=['POST'])
+def stop_immich():
+    print("Web request received to stop Immich")
+    immich_controller.stop_immich_loop()
+    return redirect(url_for('index'))
+
+
+@app.route('/get_immich_albums')
+def get_immich_albums():
+    albums = immich_handler.get_albums()
+    return jsonify(albums)
+
+
 @app.route('/settings')
 def settings():
     settings = read_settings()
@@ -132,7 +174,7 @@ def changelog():
     infos = read_infos()
     changelog = infos.get('changelog', [])
     current_version = infos.get('currentApplicationVersion', 'unknown')
-    return render_template('changelog.html', changelog=changelog, current_version=current_version)
+    return render_template('changelog.html', changelog=changelog, current_version=current_version, applicationInfo=infos)
 
 
 @app.route('/save_settings', methods=['POST'])
@@ -156,6 +198,13 @@ def save_settings_route():
     new_avifQuality = request.form.get('avifQuality', '50')
     new_thumbnailQuality = request.form.get('thumbnailQuality', '80')
     new_updateBranch = request.form.get('updateBranch', 'main')
+    new_immichUrl = request.form.get('immichUrl', '')
+    new_immichApiKey = request.form.get('immichApiKey', '')
+    new_immichAlbumId = request.form.get('immichAlbumId', '')
+    new_immichSearchQuery = request.form.get('immichSearchQuery', '')
+    new_immichDisplayDurationRandom = request.form.get('immichDisplayDurationRandom', '30')
+    new_immichDisplayDurationAlbum = request.form.get('immichDisplayDurationAlbum', '30')
+    new_immichDisplayDurationSearch = request.form.get('immichDisplayDurationSearch', '30')
 
     new_settings = {'heightInPixel': new_height, 'widthInPixel': new_width, 'direction': new_direction,
                     'chainLength': new_chainLength, 'parallelChains': new_parallelChains,
@@ -166,7 +215,12 @@ def save_settings_route():
                     'displayBrightness': new_displayBrightness,
                     'webpQuality': new_webpQuality, 'avifQuality': new_avifQuality,
                     'thumbnailQuality': new_thumbnailQuality,
-                    'updateBranch': new_updateBranch}
+                    'updateBranch': new_updateBranch,
+                    'immichUrl': new_immichUrl, 'immichApiKey': new_immichApiKey,
+                    'immichAlbumId': new_immichAlbumId, 'immichSearchQuery': new_immichSearchQuery,
+                    'immichDisplayDurationRandom': new_immichDisplayDurationRandom,
+                    'immichDisplayDurationAlbum': new_immichDisplayDurationAlbum,
+                    'immichDisplayDurationSearch': new_immichDisplayDurationSearch}
     save_settings(new_settings)
     return redirect(url_for('settings'))
 

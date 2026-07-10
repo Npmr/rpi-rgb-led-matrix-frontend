@@ -268,6 +268,36 @@
                     </div>
                 </div>
 
+                <div class="mdl-grid">
+                    <h2>Start Immich Random</h2>
+                    <form action="/start_immich_random" method="post">
+                        <button type="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">Start Immich Random</button>
+                    </form>
+                </div>
+
+                <div class="mdl-grid">
+                    <h2>Start Immich Album</h2>
+                    <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" onclick="openImmichAlbumModal()">Start Immich Album</button>
+                </div>
+
+                <div class="mdl-grid">
+                    <h2>Start Immich Search</h2>
+                    <form action="/start_immich_search" method="post">
+                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                            <input class="mdl-textfield__input" type="text" name="immich_search_query" id="immich_search_query" placeholder=" ">
+                            <label class="mdl-textfield__label" for="immich_search_query">Search Query</label>
+                        </div>
+                        <button type="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">Start Immich Search</button>
+                    </form>
+                </div>
+
+                <div class="mdl-grid">
+                    <h2>Stop Immich</h2>
+                    <form action="/stop_immich" method="post">
+                        <button type="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent">Stop Immich</button>
+                    </form>
+                </div>
+
                 <script>
                     document.addEventListener('DOMContentLoaded', function() {
                         fetch('/get_art_design_subcategories')
@@ -316,6 +346,74 @@
                                 console.error('Error fetching subcategories:', error);
                             });
                     });
+
+                    // Immich Album Modal
+                    function openImmichAlbumModal() {
+                        const modal = document.createElement('div');
+                        modal.className = 'modal';
+                        modal.innerHTML = `
+                            <div class="modal-content">
+                                <h3>Select Immich Album</h3>
+                                <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                                    <select class="mdl-textfield__input" id="immich_album_select" name="immich_album_id">
+                                        <option value="">Loading albums...</option>
+                                    </select>
+                                    <label class="mdl-textfield__label" for="immich_album_select">Album</label>
+                                </div>
+                                <div class="modal-actions">
+                                    <button class="mdl-button mdl-js-button mdl-button--raised" onclick="startImmichAlbum()">Start</button>
+                                    <button class="mdl-button mdl-js-button" onclick="closeModal(this)">Cancel</button>
+                                </div>
+                            </div>
+                        `;
+                        document.body.appendChild(modal);
+                        
+                        // Fetch albums
+                        fetch('/get_immich_albums')
+                            .then(response => response.json())
+                            .then(data => {
+                                const select = document.getElementById('immich_album_select');
+                                select.innerHTML = '<option value="">Select an album</option>';
+                                if (data && data.length > 0) {
+                                    data.forEach(album => {
+                                        const option = document.createElement('option');
+                                        option.value = album.id;
+                                        option.textContent = album.name + ' (' + album.assetCount + ' assets)';
+                                        select.appendChild(option);
+                                    });
+                                } else {
+                                    select.innerHTML = '<option value="">No albums found</option>';
+                                }
+                            })
+                            .catch(error => {
+                                const select = document.getElementById('immich_album_select');
+                                select.innerHTML = '<option value="">Error loading albums</option>';
+                                console.error('Error fetching albums:', error);
+                            });
+                    }
+
+                    function startImmichAlbum() {
+                        const select = document.getElementById('immich_album_select');
+                        const albumId = select.value;
+                        if (albumId) {
+                            const form = document.createElement('form');
+                            form.method = 'post';
+                            form.action = '/start_immich_album';
+                            const input = document.createElement('input');
+                            input.type = 'hidden';
+                            input.name = 'immich_album_id';
+                            input.value = albumId;
+                            form.appendChild(input);
+                            document.body.appendChild(form);
+                            form.submit();
+                        }
+                        closeModal(document.querySelector('.modal .mdl-button'));
+                    }
+
+                    function closeModal(button) {
+                        const modal = button.closest('.modal');
+                        if (modal) modal.remove();
+                    }
                 </script>
 
                 <div class="mdl-grid">

@@ -20,6 +20,11 @@ CATEGORIES_URL = f"https://api.giphy.com/v1/gifs/categories?api_key={GIPHY_API_K
 
 _current_search_term = None
 
+# Retry configuration
+GIPHY_RETRY_INITIAL_DELAY = 10  # seconds
+GIPHY_RETRY_MAX_DELAY = 300  # 5 minutes
+GIPHY_RETRY_MULTIPLIER = 2
+
 def set_mqtt_publish_callback(callback):
     global mqtt_publish_callback
     mqtt_publish_callback = callback
@@ -46,13 +51,28 @@ def get_art_design_subcategories():
         print(f"Error fetching Giphy categories: {e}")
         return []
 
+def _fetch_with_backoff(fetch_func, *args, **kwargs):
+    """Fetch with exponential backoff retry logic"""
+    delay = GIPHY_RETRY_INITIAL_DELAY
+    max_delay = GIPHY_RETRY_MAX_DELAY
+    multiplier = GIPHY_RETRY_MULTIPLIER
+    
+    while giphy_running:
+        try:
+            return fetch_func(*args, **kwargs)
+        except Exception as e:
+            print(f"Giphy fetch failed: {e}. Retrying in {delay}s...")
+            time.sleep(delay)
+            delay = min(delay * multiplier, max_delay)
+    return None
+
 def giphy_display_loop():
     global giphy_running, _current_search_term
     while giphy_running:
         if _current_search_term:
-            gif_url = giphy_handler.fetch_searched_gif(_current_search_term) # Assuming you have this in giphy_handler
+            gif_url = _fetch_with_backoff(giphy_handler.fetch_searched_gif, _current_search_term)
         else:
-            gif_url = giphy_handler.fetch_trending_gif()
+            gif_url = _fetch_with_backoff(giphy_handler.fetch_trending_gif)
 
         if gif_url:
             local_path = giphy_handler.download_gif(gif_url)

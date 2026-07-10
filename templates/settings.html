@@ -272,12 +272,56 @@
                             <label class="mdl-textfield__label" for="deviceName">Device Name for Home Assistant</label>
                             <span class="mdl-textfield__error">Input is not a text!</span>
                         </div>
-                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <input class="mdl-textfield__input" minlength="5" type="text" name="giphyApiKey"
-                                   name="deviceName"
+                        <div class="field field--floating">
+                            <input class="field__input" minlength="5" type="text" name="giphyApiKey"
                                    id="giphyApiKey" value="{{ settings['giphyApiKey'] }}">
-                            <label class="mdl-textfield__label" for="giphyApiKey">Your Giphy API Key</label>
-                            <span class="mdl-textfield__error">Input is not a text!</span>
+                            <label class="field__label" for="giphyApiKey">Your Giphy API Key</label>
+                            <span class="field__error">Input is not a text!</span>
+                        </div>
+
+                        <hr>
+                        <h3>Immich Integration</h3>
+                        <div class="field field--floating">
+                            <input class="field__input" type="text" name="immichUrl"
+                                   id="immichUrl" value="{{ settings.get('immichUrl', '') }}">
+                            <label class="field__label" for="immichUrl">Immich Server URL (e.g., http://immich:2283)</label>
+                            <span class="field__error">Invalid URL!</span>
+                        </div>
+                        <div class="field field--floating">
+                            <input class="field__input" type="text" name="immichApiKey"
+                                   id="immichApiKey" value="{{ settings.get('immichApiKey', '') }}">
+                            <label class="field__label" for="immichApiKey">Immich API Key</label>
+                            <span class="field__error">Input is not a text!</span>
+                        </div>
+                        <div class="field field--floating">
+                            <input class="field__input" type="text" name="immichAlbumId"
+                                   id="immichAlbumId" value="{{ settings.get('immichAlbumId', '') }}">
+                            <label class="field__label" for="immichAlbumId">Immich Album ID (optional, for album mode)</label>
+                            <span class="field__error">Input is not a text!</span>
+                        </div>
+                        <div class="field field--floating">
+                            <input class="field__input" type="text" name="immichSearchQuery"
+                                   id="immichSearchQuery" value="{{ settings.get('immichSearchQuery', '') }}">
+                            <label class="field__label" for="immichSearchQuery">Immich Search Query (optional, for search mode)</label>
+                            <span class="field__error">Input is not a text!</span>
+                        </div>
+                        <div class="field field--floating">
+                            <input class="field__input" type="number" min="1" name="immichDisplayDurationRandom"
+                                   id="immichDisplayDurationRandom" value="{{ settings.get('immichDisplayDurationRandom', 30) }}">
+                            <label class="field__label" for="immichDisplayDurationRandom">Display Duration Random (seconds)</label>
+                            <span class="field__error">Input is not a number!</span>
+                        </div>
+                        <div class="field field--floating">
+                            <input class="field__input" type="number" min="1" name="immichDisplayDurationAlbum"
+                                   id="immichDisplayDurationAlbum" value="{{ settings.get('immichDisplayDurationAlbum', 30) }}">
+                            <label class="field__label" for="immichDisplayDurationAlbum">Display Duration Album (seconds)</label>
+                            <span class="field__error">Input is not a number!</span>
+                        </div>
+                        <div class="field field--floating">
+                            <input class="field__input" type="number" min="1" name="immichDisplayDurationSearch"
+                                   id="immichDisplayDurationSearch" value="{{ settings.get('immichDisplayDurationSearch', 30) }}">
+                            <label class="field__label" for="immichDisplayDurationSearch">Display Duration Search (seconds)</label>
+                            <span class="field__error">Input is not a number!</span>
                         </div>
 
                         <hr>

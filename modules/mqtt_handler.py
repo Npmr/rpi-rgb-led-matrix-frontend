@@ -5,6 +5,7 @@ import os
 import time
 from threading import Timer
 from . import giphy_controller  # Import the new controller
+from . import immich_controller  # Import Immich controller
 
 from .display_control import stopProcess
 from .system_handler import reboot_system, shutdown_system
@@ -30,6 +31,7 @@ from .mqtt import discovery
 from .mqtt import state
 
 giphy_controller.set_mqtt_publish_callback(publish_mqtt)
+immich_controller.set_mqtt_publish_callback(publish_mqtt)
 
 publish_binary_sensor_discovery = discovery.publish_binary_sensor_discovery
 publish_picture_count_discovery = discovery.publish_picture_count_discovery
@@ -41,6 +43,10 @@ publish_reboot_button_discovery = discovery.publish_reboot_button_discovery
 publish_shutdown_button_discovery = discovery.publish_shutdown_button_discovery
 publish_giphy_button_start_discovery = discovery.publish_giphy_start_button_discovery
 publish_giphy_button_stop_discovery = discovery.publish_giphy_stop_button_discovery
+publish_immich_button_random_discovery = discovery.publish_immich_button_random_discovery
+publish_immich_button_album_discovery = discovery.publish_immich_button_album_discovery
+publish_immich_button_search_discovery = discovery.publish_immich_button_search_discovery
+publish_immich_button_stop_discovery = discovery.publish_immich_button_stop_discovery
 publish_settings_pixel_height_discovery = discovery.publish_settings_pixel_height_discovery
 publish_settings_pixel_width_discovery = discovery.publish_settings_pixel_width_discovery
 publish_settings_chain_length_discovery = discovery.publish_settings_chain_length_discovery
@@ -95,6 +101,10 @@ def mqtt_listener(callback_play_media, callback_stop):
             client.subscribe(f"button/{DEVICE_ID}/shutdown/press")
             client.subscribe(f"button/{DEVICE_ID}/giphy_start/press")
             client.subscribe(f"button/{DEVICE_ID}/giphy_stop/press")
+            client.subscribe(f"button/{DEVICE_ID}/immich_random/press")
+            client.subscribe(f"button/{DEVICE_ID}/immich_album/press")
+            client.subscribe(f"button/{DEVICE_ID}/immich_search/press")
+            client.subscribe(f"button/{DEVICE_ID}/immich_stop/press")
             _clear_processed_payloads() # Start the cleanup timer on connect
         else:
             print(f"Failed to connect to MQTT Broker, return code {rc}")
@@ -216,6 +226,23 @@ def mqtt_listener(callback_play_media, callback_stop):
                 elif msg.topic == f"button/{DEVICE_ID}/giphy_stop/press":
                     stopProcess()
                     giphy_controller.stop_giphy_loop()
+                elif msg.topic == f"button/{DEVICE_ID}/immich_random/press":
+                    if payload == "START":
+                        print("Received Immich random button press from Home Assistant.")
+                        immich_controller.start_immich_loop("random")
+                elif msg.topic == f"button/{DEVICE_ID}/immich_album/press":
+                    if payload:
+                        print(f"Received Immich album button press from Home Assistant: {payload}")
+                        immich_controller.start_immich_loop("album", album_id=payload)
+                elif msg.topic == f"button/{DEVICE_ID}/immich_search/press":
+                    if payload:
+                        print(f"Received Immich search button press from Home Assistant: {payload}")
+                        immich_controller.start_immich_loop("search", search_query=payload)
+                elif msg.topic == f"button/{DEVICE_ID}/immich_stop/press":
+                    if payload == "STOP":
+                        print("Received Immich stop button press from Home Assistant.")
+                        stopProcess()
+                        immich_controller.stop_immich_loop()
             else:
                 print(f"Ignoring duplicate message on topic `{msg.topic}` with payload `{payload}`")
         except Exception as e:

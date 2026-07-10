@@ -59,3 +59,9 @@ def publish_shutdown_button_state(state):
     topic = f"switch/{DEVICE_ID}/shutdown/state"
     payload = "ON" if state == "ON" else "OFF"
     publish_mqtt(topic, payload, retain=True)
+
+def publish_immich_state(state):
+    topic = f"switch/{DEVICE_ID}/immich_control/state"
+    payload = "on" if state == "on" else "off"
+    publish_mqtt(topic, payload, retain=True)
+    print(f"Published Immich state: {state}")

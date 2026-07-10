@@ -360,3 +360,79 @@ def publish_settings_display_brightness_discovery():
     }
     publish_mqtt(discovery_topic, discovery_payload, retain=True)
     print(f"Published display bightness to discovery info to: {discovery_topic}")
+
+
+def publish_immich_button_random_discovery():
+    device_info = get_device_info()
+    discovery_topic = f"{HA_DISCOVERY_PREFIX}/button/{DEVICE_ID}/immich_random/config"
+    discovery_payload = {
+        "device": device_info,
+        "name": f"{DEVICE_NAME} Immich Random",
+        "unique_id": f"{DEVICE_ID}_immich_random_button",
+        "command_topic": f"button/{DEVICE_ID}/immich_random/press",
+        "payload_press": "START",
+        "icon": "mdi:play",
+        "availability_topic": f"binary_sensor/{DEVICE_ID}/state",
+        "payload_available": "online",
+        "payload_not_available": "offline",
+        "retain": False
+    }
+    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    print(f"Published Immich random button discovery info to: {discovery_topic}")
+
+
+def publish_immich_button_album_discovery():
+    device_info = get_device_info()
+    discovery_topic = f"{HA_DISCOVERY_PREFIX}/button/{DEVICE_ID}/immich_album/config"
+    discovery_payload = {
+        "device": device_info,
+        "name": f"{DEVICE_NAME} Immich Album",
+        "unique_id": f"{DEVICE_ID}_immich_album_button",
+        "command_topic": f"button/{DEVICE_ID}/immich_album/press",
+        "payload_press": "START",
+        "icon": "mdi:photo-album",
+        "availability_topic": f"binary_sensor/{DEVICE_ID}/state",
+        "payload_available": "online",
+        "payload_not_available": "offline",
+        "retain": False
+    }
+    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    print(f"Published Immich album button discovery info to: {discovery_topic}")
+
+
+def publish_immich_button_search_discovery():
+    device_info = get_device_info()
+    discovery_topic = f"{HA_DISCOVERY_PREFIX}/button/{DEVICE_ID}/immich_search/config"
+    discovery_payload = {
+        "device": device_info,
+        "name": f"{DEVICE_NAME} Immich Search",
+        "unique_id": f"{DEVICE_ID}_immich_search_button",
+        "command_topic": f"button/{DEVICE_ID}/immich_search/press",
+        "payload_press": "START",
+        "icon": "mdi:magnify",
+        "availability_topic": f"binary_sensor/{DEVICE_ID}/state",
+        "payload_available": "online",
+        "payload_not_available": "offline",
+        "retain": False
+    }
+    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    print(f"Published Immich search button discovery info to: {discovery_topic}")
+
+
+def publish_immich_button_stop_discovery():
+    device_info = get_device_info()
+    discovery_topic = f"{HA_DISCOVERY_PREFIX}/button/{DEVICE_ID}/immich_stop/config"
+    discovery_payload = {
+        "device": device_info,
+        "name": f"{DEVICE_NAME} Immich Stop",
+        "unique_id": f"{DEVICE_ID}_immich_stop_button",
+        "command_topic": f"button/{DEVICE_ID}/immich_stop/press",
+        "payload_press": "STOP",
+        "icon": "mdi:stop",
+        "availability_topic": f"binary_sensor/{DEVICE_ID}/state",
+        "payload_available": "online",
+        "payload_not_available": "offline",
+        "retain": False
+    }
+    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    print(f"Published Immich stop button discovery info to: {discovery_topic}")
