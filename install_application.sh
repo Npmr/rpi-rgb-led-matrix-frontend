@@ -53,7 +53,7 @@ make led-image-viewer
 
 # Build and install Python bindings (rgbmatrix)
 cd /home/pi/rpi-rgb-led-matrix
-pip install -e . --break-system-packages
+sudo pip install -e . --break-system-packages
 
 # Make the Update script executable
 cd /home/pi/rpi-rgb-led-matrix-frontend

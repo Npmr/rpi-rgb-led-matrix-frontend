@@ -1,5 +1,5 @@
 {
-  "currentApplicationVersion": "v0.0.38",
+  "currentApplicationVersion": "v0.0.39",
   "whatChanged": "Added native text scrolling using rgbmatrix.graphics with REST API and MQTT/Home Assistant integration. TextScroller class supports configurable fonts, colors, speed, position, looping and blink effects. New API endpoints: POST /api/text_scroll/start, POST /api/text_scroll/stop, GET /api/text_scroll/status. MQTT buttons for start/stop with JSON payload support for full configuration.",
   "changelog": [
     {

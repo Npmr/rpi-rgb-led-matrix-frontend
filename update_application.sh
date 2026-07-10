@@ -43,7 +43,7 @@ cd /home/pi/rpi-rgb-led-matrix || exit 1
 
 # Rebuild Python bindings
 log "Building Python bindings..."
-pip install -e . --break-system-packages >> "$LOG_FILE" 2>&1
+sudo pip install -e . --break-system-packages >> "$LOG_FILE" 2>&1
 
 # Update rpi-rgb-led-matrix-frontend
 log "Updating rpi-rgb-led-matrix-frontend..."
