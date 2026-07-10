@@ -1,7 +1,30 @@
 {
-  "currentApplicationVersion": "v0.0.31",
-  "whatChanged": "New start screen, updated animations, better scrolling",
+  "currentApplicationVersion": "v0.0.32",
+  "whatChanged": "Added Immich integration for displaying photos from Immich server, exponential backoff retry for Giphy/Immich, Home Assistant MQTT buttons for Immich control",
   "changelog": [
+    {
+      "version": "v0.0.32",
+      "date": "2026-07-10",
+      "changes": [
+        "Added Immich integration for displaying photos from Immich server",
+        "Immich configuration in settings (URL, API key, album ID, search query)",
+        "Per-source-type display duration settings (random, album, search)",
+        "Immich display controls on Demo tab (Random, Album, Search, Stop)",
+        "Album selection modal with AJAX-loaded album dropdown",
+        "Exponential backoff retry for Immich and Giphy (10s → 20s → 40s → max 300s)",
+        "Home Assistant MQTT integration for Immich (4 buttons + state switch)",
+        "Self-hosted Material Icons and custom CSS/JS (no Google CDN dependencies)"
+      ]
+    },
+    {
+      "version": "v0.0.31",
+      "date": "2026-07-10",
+      "changes": [
+        "New start screen",
+        "Updated animations",
+        "Better scrolling"
+      ]
+    },
     {
       "version": "v0.0.30",
       "date": "2026-07-10",
