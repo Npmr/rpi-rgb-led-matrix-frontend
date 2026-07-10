@@ -100,6 +100,7 @@ def fetch_assets_by_album(album_id):
         return None
 
     try:
+        # Try main album endpoint first
         endpoint = f"{url}/api/albums/{album_id}"
         response = requests.get(
             endpoint,
@@ -110,7 +111,29 @@ def fetch_assets_by_album(album_id):
         if not album:
             return None
 
+        # Handle both array and paginated object formats
         assets = album.get("assets", [])
+        if isinstance(assets, dict):  # Paginated: { "items": [...], "total": N }
+            assets = assets.get("items", [])
+        elif not isinstance(assets, list):
+            assets = []
+
+        # If no assets in main response, try dedicated assets endpoint
+        if not assets:
+            print(f"Info: No assets in album response, trying /albums/{album_id}/assets endpoint")
+            assets_endpoint = f"{url}/api/albums/{album_id}/assets"
+            assets_response = requests.get(
+                assets_endpoint,
+                headers=_get_headers(api_key),
+                params={"size": 100},
+                timeout=30
+            )
+            assets_data = _handle_response(assets_response, f"albums/{album_id}/assets")
+            if assets_data and isinstance(assets_data, dict):
+                assets = assets_data.get("items", [])
+            elif isinstance(assets_data, list):
+                assets = assets_data
+
         if not assets:
             print(f"Error: No assets found in album {album_id}")
             return None

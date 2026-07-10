@@ -1,5 +1,5 @@
 {
-  "currentApplicationVersion": "v0.0.35",
+  "currentApplicationVersion": "v0.0.36",
   "whatChanged": "Fixed Immich API integration: updated all endpoints to current Immich v2+ API (POST /api/search/random, GET /api/albums/{id}, GET /api/assets/{id}/original), fixed response parsing for new SearchAssetResponseDto format, added proper error logging for 404/401/403 responses, settings now reload on each API call, added comprehensive unit tests",
   "changelog": [
     {

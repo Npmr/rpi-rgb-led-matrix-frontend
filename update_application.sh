@@ -7,7 +7,25 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
 }
 
+backup_configs() {
+    CONFIG_BACKUP_DIR="/tmp/rpi-rgb-matrix-config-backup-$$"
+    mkdir -p "$CONFIG_BACKUP_DIR"
+    [ -f "/home/pi/rpi-rgb-led-matrix-frontend/settings.json" ] && cp "/home/pi/rpi-rgb-led-matrix-frontend/settings.json" "$CONFIG_BACKUP_DIR/" && log "Backed up settings.json"
+    [ -f "/home/pi/rpi-rgb-led-matrix-frontend/info.json" ] && cp "/home/pi/rpi-rgb-led-matrix-frontend/info.json" "$CONFIG_BACKUP_DIR/" && log "Backed up info.json"
+}
+
+restore_configs() {
+    [ -f "$CONFIG_BACKUP_DIR/settings.json" ] && cp "$CONFIG_BACKUP_DIR/settings.json" "/home/pi/rpi-rgb-led-matrix-frontend/" && log "Restored settings.json"
+    [ -f "$CONFIG_BACKUP_DIR/info.json" ] && cp "$CONFIG_BACKUP_DIR/info.json" "/home/pi/rpi-rgb-led-matrix-frontend/" && log "Restored info.json"
+}
+
+cleanup_backup() {
+    rm -rf "$CONFIG_BACKUP_DIR"
+}
+
 log "Starting update on branch: $BRANCH"
+
+backup_configs
 
 # Update rpi-rgb-led-matrix
 log "Updating rpi-rgb-led-matrix..."
@@ -34,6 +52,8 @@ git pull >> "$LOG_FILE" 2>&1
 # Make update script executable
 chmod +x update_application.sh
 
+restore_configs
+
 # Restart the Flask application (instead of rebooting)
 log "Restarting Flask application..."
 pkill -f "python3 app.py" >> "$LOG_FILE" 2>&1
@@ -49,3 +69,5 @@ else
 fi
 
 log "Update completed successfully on branch: $BRANCH"
+
+cleanup_backup

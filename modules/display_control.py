@@ -113,7 +113,7 @@ def _start_display_process(image_name, command_line, static_folder, rotation_off
     final_rotation = (base_rotation + rotation_offset) % 360
     rotation = f";Rotate:{final_rotation}"
 
-    if static_folder != "static/giphy_cache":
+    if static_folder != "static/giphy_cache" and static_folder != "static/immich_cache":
         static_folder = "static/pictures"
 
     command = ""
