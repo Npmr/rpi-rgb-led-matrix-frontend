@@ -8,6 +8,7 @@ from typing import Optional
 from PIL import Image
 
 from .settings_handler import read_settings
+from .text_scroller import TextScroller
 
 
 class DisplayController:
@@ -23,6 +24,7 @@ class DisplayController:
         self._base_rotation = 270
         self._brightness = 100
         self._settings = None
+        self._text_scroller: Optional[TextScroller] = None
 
     def _get_base_rotation(self, direction: str) -> int:
         rotations = {
@@ -66,6 +68,9 @@ class DisplayController:
 
         self._matrix = RGBMatrix(options=self._options)
         self._matrix.brightness = self._brightness
+
+        # Initialize text scroller with the new matrix
+        self._text_scroller = TextScroller(self._matrix)
 
     def _ensure_matrix(self):
         if self._matrix is None:
@@ -207,6 +212,10 @@ class DisplayController:
         if self._matrix:
             self._matrix.Clear()
 
+        # Stop text scroller if running
+        if hasattr(self, '_text_scroller') and self._text_scroller:
+            self._text_scroller.stop()
+
         if self._current_task:
             task_type, task_obj = self._current_task
             if task_type == "subprocess" and task_obj.poll() is None:
@@ -258,6 +267,31 @@ class DisplayController:
                             self._display_gif(path)
                         else:
                             self._display_static_image(path)
+
+                elif action == "start_text_scroll":
+                    self._stop_current()
+                    self._stop_event.clear()
+                    if self._text_scroller:
+                        self._text_scroller.set_text(cmd["text"])
+                        if cmd.get("font"):
+                            self._text_scroller.load_font(cmd["font"])
+                        if cmd.get("text_color"):
+                            self._text_scroller.set_colors(cmd["text_color"], cmd.get("bg_color", (0, 0, 0)))
+                        if cmd.get("speed"):
+                            self._text_scroller.set_speed(cmd["speed"])
+                        if cmd.get("y_pos") is not None:
+                            self._text_scroller.set_y_pos(cmd["y_pos"])
+                        if cmd.get("loop") is not None:
+                            self._text_scroller.set_loop(cmd["loop"])
+                        if cmd.get("blink_on") is not None and cmd.get("blink_off") is not None:
+                            self._text_scroller.set_blink(cmd["blink_on"], cmd["blink_off"])
+                        self._text_scroller.start()
+                    self._current_task = ("text_scroll", cmd["text"])
+
+                elif action == "stop_text_scroll":
+                    if self._text_scroller:
+                        self._text_scroller.stop()
+                    self._stop_current()
 
             except Exception as e:
                 print(f"Display error: {e}")
@@ -314,6 +348,25 @@ class DisplayController:
         self._current_rotation = (self._current_rotation + angle_delta) % 360
         self._enqueue({"action": "rotate", "delta": angle_delta})
 
+    def start_text_scroll(self, text: str, font: str = None, text_color: tuple = (255, 255, 255),
+                          bg_color: tuple = (0, 0, 0), speed: float = 0.05, y_pos: int = 10,
+                          loop: bool = True, blink_on: int = 0, blink_off: int = 0):
+        self._enqueue({
+            "action": "start_text_scroll",
+            "text": text,
+            "font": font,
+            "text_color": text_color,
+            "bg_color": bg_color,
+            "speed": speed,
+            "y_pos": y_pos,
+            "loop": loop,
+            "blink_on": blink_on,
+            "blink_off": blink_off
+        })
+
+    def stop_text_scroll(self):
+        self._enqueue({"action": "stop_text_scroll"})
+
     def _enqueue(self, cmd: dict):
         if self._loop and self._loop.is_running():
             self._loop.call_soon_threadsafe(self._command_queue.put_nowait, cmd)
@@ -366,6 +419,20 @@ def set_brightness(value: int):
 def update_display_settings(settings: dict):
     controller = get_display_controller()
     controller.update_settings(settings)
+
+
+def start_text_scroll(text: str, font: str = None, text_color: tuple = (255, 255, 255),
+                      bg_color: tuple = (0, 0, 0), speed: float = 0.05, y_pos: int = 10,
+                      loop: bool = True, blink_on: int = 0, blink_off: int = 0):
+    controller = get_display_controller()
+    controller.start_text_scroll(text, font=font, text_color=text_color,
+                                  bg_color=bg_color, speed=speed, y_pos=y_pos,
+                                  loop=loop, blink_on=blink_on, blink_off=blink_off)
+
+
+def stop_text_scroll():
+    controller = get_display_controller()
+    controller.stop_text_scroll()
 
 
 is_not_running = True

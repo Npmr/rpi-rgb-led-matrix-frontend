@@ -7,7 +7,7 @@ from upload_handler import upload_image
 from modules.settings_handler import read_settings, save_settings
 from modules.info_handler import read_infos
 from modules.media_handler import countMediaTypeAndNumber
-from modules.display_control import process_image_async, stopProcess, trigger_rotation, set_brightness, update_display_settings
+from modules.display_control import process_image_async, stopProcess, trigger_rotation, set_brightness, update_display_settings, start_text_scroll, stop_text_scroll, get_display_controller, start_text_scroll, stop_text_scroll
 from modules.system_handler import getFreeDiskSpace, reboot_system, shutdown_system
 from modules.update_handler import trigger_update, fetch_update_info
 from modules import mqtt_handler, giphy_controller, immich_controller, immich_handler
@@ -144,6 +144,49 @@ def stop_immich():
 def get_immich_albums():
     albums = immich_handler.get_albums()
     return jsonify(albums)
+
+
+# Text Scroll API routes
+@app.route('/api/text_scroll/start', methods=['POST'])
+def start_text_scroll_api():
+    data = request.get_json() or request.form
+    text = data.get('text', '').strip()
+    if not text:
+        return jsonify({'error': 'Text is required'}), 400
+    
+    font = data.get('font')
+    text_color = data.get('text_color', [255, 255, 255])
+    bg_color = data.get('bg_color', [0, 0, 0])
+    speed = float(data.get('speed', 0.05))
+    y_pos = int(data.get('y_pos', 10))
+    loop = data.get('loop', True)
+    blink_on = int(data.get('blink_on', 0))
+    blink_off = int(data.get('blink_off', 0))
+    
+    # Convert color lists to tuples
+    if isinstance(text_color, list):
+        text_color = tuple(text_color)
+    if isinstance(bg_color, list):
+        bg_color = tuple(bg_color)
+    
+    start_text_scroll(text, font=font, text_color=text_color, bg_color=bg_color,
+                      speed=speed, y_pos=y_pos, loop=loop, blink_on=blink_on, blink_off=blink_off)
+    
+    return jsonify({'status': 'started', 'text': text})
+
+
+@app.route('/api/text_scroll/stop', methods=['POST'])
+def stop_text_scroll_api():
+    stop_text_scroll()
+    return jsonify({'status': 'stopped'})
+
+
+@app.route('/api/text_scroll/status')
+def text_scroll_status():
+    controller = get_display_controller()
+    if controller._text_scroller and controller._text_scroller.is_running():
+        return jsonify({'running': True, 'text': controller._current_task[1] if controller._current_task and controller._current_task[0] == 'text_scroll' else ''})
+    return jsonify({'running': False})
 
 
 @app.route('/settings')
@@ -363,6 +406,9 @@ if __name__ == '__main__':
             mqtt_handler.publish_shutdown_button_discovery()
             mqtt_handler.publish_giphy_button_start_discovery()
             mqtt_handler.publish_giphy_button_stop_discovery()
+            
+            mqtt_handler.publish_text_scroll_start_discovery()
+            mqtt_handler.publish_text_scroll_stop_discovery()
 
             # Publish initial state
             mqtt_handler.publish_online_status()

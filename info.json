@@ -1,21 +1,19 @@
 {
-  "currentApplicationVersion": "v0.0.37",
-  "whatChanged": "Major refactor: replaced subprocess-based rpi-rgb-led-matrix integration with native Python bindings (rgbmatrix package). Direct matrix control via RGBMatrix/FrameCanvas for better performance, GIF animation via SwapOnVSync, runtime brightness/rotation changes without process restart. Added async command queue with worker thread for throttling. Install/update scripts now build/install rgbmatrix Python package.",
+  "currentApplicationVersion": "v0.0.38",
+  "whatChanged": "Added native text scrolling using rgbmatrix.graphics with REST API and MQTT/Home Assistant integration. TextScroller class supports configurable fonts, colors, speed, position, looping and blink effects. New API endpoints: POST /api/text_scroll/start, POST /api/text_scroll/stop, GET /api/text_scroll/status. MQTT buttons for start/stop with JSON payload support for full configuration.",
   "changelog": [
     {
-      "version": "v0.0.37",
+      "version": "v0.0.38",
       "date": "2026-07-10",
       "changes": [
-        "Replaced subprocess calls (led-image-viewer, demo, clock) with native rgbmatrix Python bindings",
-        "Direct matrix control via RGBMatrix, RGBMatrixOptions, FrameCanvas classes",
-        "GIF animation now uses pre-processed FrameCanvas + SwapOnVSync for smooth playback",
-        "Runtime brightness control via matrix.brightness property (no process restart)",
-        "Runtime rotation via pixel_mapper_config (no process restart)",
-        "Async command queue with dedicated worker thread replaces global-variable throttling",
-        "Added set_brightness() and update_display_settings() public API",
-        "Install/update scripts now build/install rgbmatrix package via pip install -e .",
-        "Added python3-dev and cython3 to system dependencies for building bindings",
-        "Kept subprocess fallback for demo/clock (no Python equivalent yet)"
+        "Added native text scrolling using rgbmatrix.graphics (Font, Color, DrawText)",
+        "New TextScroller class with double-buffered animation via SwapOnVSync",
+        "Configurable: font (BDF), text/background color, Y position, scroll speed, loop count, blink pattern",
+        "REST API: POST /api/text_scroll/start (JSON: text, font, colors, speed, y_pos, loop, blink), POST /api/text_scroll/stop, GET /api/text_scroll/status",
+        "MQTT integration: button/{device_id}/text_scroll_start/press (JSON payload), button/{device_id}/text_scroll_stop/press",
+        "Home Assistant discovery for text scroll start/stop buttons",
+        "DisplayController integration: text scroll uses exclusive display mode (stops images/GIFs/demos)",
+        "Settings schema additions: textScrollFont, textScrollSpeed, textScrollYPos, textScrollTextColor, textScrollBgColor, textScrollLoop, textScrollBlinkOn, textScrollBlinkOff"
       ]
     },
     {

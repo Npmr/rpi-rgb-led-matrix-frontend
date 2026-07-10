@@ -7,7 +7,7 @@ from threading import Timer
 from . import giphy_controller  # Import the new controller
 from . import immich_controller  # Import Immich controller
 
-from .display_control import stopProcess
+from .display_control import stopProcess, start_text_scroll, stop_text_scroll
 from .system_handler import reboot_system, shutdown_system
 from .settings_handler import read_settings, save_settings
 
@@ -47,6 +47,8 @@ publish_immich_button_random_discovery = discovery.publish_immich_button_random_
 publish_immich_button_album_discovery = discovery.publish_immich_button_album_discovery
 publish_immich_button_search_discovery = discovery.publish_immich_button_search_discovery
 publish_immich_button_stop_discovery = discovery.publish_immich_button_stop_discovery
+publish_text_scroll_start_discovery = discovery.publish_text_scroll_start_discovery
+publish_text_scroll_stop_discovery = discovery.publish_text_scroll_stop_discovery
 publish_settings_pixel_height_discovery = discovery.publish_settings_pixel_height_discovery
 publish_settings_pixel_width_discovery = discovery.publish_settings_pixel_width_discovery
 publish_settings_chain_length_discovery = discovery.publish_settings_chain_length_discovery
@@ -105,6 +107,8 @@ def mqtt_listener(callback_play_media, callback_stop):
             client.subscribe(f"button/{DEVICE_ID}/immich_album/press")
             client.subscribe(f"button/{DEVICE_ID}/immich_search/press")
             client.subscribe(f"button/{DEVICE_ID}/immich_stop/press")
+            client.subscribe(f"button/{DEVICE_ID}/text_scroll_start/press")
+            client.subscribe(f"button/{DEVICE_ID}/text_scroll_stop/press")
             _clear_processed_payloads() # Start the cleanup timer on connect
         else:
             print(f"Failed to connect to MQTT Broker, return code {rc}")
@@ -243,6 +247,34 @@ def mqtt_listener(callback_play_media, callback_stop):
                         print("Received Immich stop button press from Home Assistant.")
                         stopProcess()
                         immich_controller.stop_immich_loop()
+                elif msg.topic == f"button/{DEVICE_ID}/text_scroll_start/press":
+                    try:
+                        data = json.loads(payload)
+                        text = data.get("text", "")
+                        if text:
+                            print(f"Received text scroll start from Home Assistant: {text}")
+                            start_text_scroll(
+                                text=text,
+                                font=data.get("font"),
+                                text_color=data.get("text_color"),
+                                bg_color=data.get("bg_color"),
+                                speed=data.get("speed"),
+                                y_pos=data.get("y_pos"),
+                                loop=data.get("loop", True),
+                                blink_on=data.get("blink_on"),
+                                blink_off=data.get("blink_off")
+                            )
+                        else:
+                            print("Text scroll start: No text provided")
+                    except json.JSONDecodeError:
+                        # Fallback: treat payload as plain text
+                        if payload.strip():
+                            print(f"Received text scroll start (plain text) from Home Assistant: {payload}")
+                            start_text_scroll(text=payload.strip())
+                elif msg.topic == f"button/{DEVICE_ID}/text_scroll_stop/press":
+                    if payload == "STOP":
+                        print("Received text scroll stop button press from Home Assistant.")
+                        stop_text_scroll()
             else:
                 print(f"Ignoring duplicate message on topic `{msg.topic}` with payload `{payload}`")
         except Exception as e:

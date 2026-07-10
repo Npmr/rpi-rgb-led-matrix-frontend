@@ -1,5 +1,4 @@
 # modules/mqtt/discovery.py
-from ..mqtt_handler import publish_mqtt
 from ..settings_handler import read_settings
 from ..info_handler import read_infos
 import socket
@@ -26,6 +25,14 @@ def get_device_info():
         "configuration_url": get_device_url()
     }
 
+def _get_publish_mqtt_wrapper():
+    from ..mqtt_handler import publish_mqtt
+    return publish_mqtt
+
+def publish_mqtt_wrapper(topic, payload, retain=False):
+    publish_mqtt = _get_publish_mqtt_wrapper()
+    publish_mqtt_wrapper(topic, payload, retain=retain)
+
 def publish_binary_sensor_discovery():
     device_info = get_device_info()
     discovery_topic = f"{HA_DISCOVERY_PREFIX}/binary_sensor/{DEVICE_ID}/config"
@@ -42,7 +49,7 @@ def publish_binary_sensor_discovery():
         "payload_not_available": "offline",
         "retain": True
     }
-    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    publish_mqtt_wrapper(discovery_topic, discovery_payload, retain=True)
     print(f"Published binary sensor discovery info to: {discovery_topic}")
 
 def publish_picture_count_discovery():
@@ -61,7 +68,7 @@ def publish_picture_count_discovery():
         "payload_not_available": "offline",
         "retain": True
     }
-    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    publish_mqtt_wrapper(discovery_topic, discovery_payload, retain=True)
     print(f"Published picture count discovery info to: {discovery_topic}")
 
 def publish_gif_count_discovery():
@@ -80,7 +87,7 @@ def publish_gif_count_discovery():
         "payload_not_available": "offline",
         "retain": True
     }
-    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    publish_mqtt_wrapper(discovery_topic, discovery_payload, retain=True)
     print(f"Published gif count discovery info to: {discovery_topic}")
 
 def publish_disk_space_discovery():
@@ -99,7 +106,7 @@ def publish_disk_space_discovery():
         "payload_not_available": "offline",
         "retain": True
     }
-    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    publish_mqtt_wrapper(discovery_topic, discovery_payload, retain=True)
     print(f"Published disk space discovery info to: {discovery_topic}")
 
 def publish_device_rotation_settings_discovery():
@@ -118,7 +125,7 @@ def publish_device_rotation_settings_discovery():
         "retain": True,
         "entity_category": "config"
     }
-    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    publish_mqtt_wrapper(discovery_topic, discovery_payload, retain=True)
     print(f"Published your select setting discovery info to: {discovery_topic}")
 
 def publish_reboot_button_discovery():
@@ -136,7 +143,7 @@ def publish_reboot_button_discovery():
         "payload_not_available": "offline",
         "retain": False # Buttons don't usually have a state to retain
     }
-    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    publish_mqtt_wrapper(discovery_topic, discovery_payload, retain=True)
     print(f"Published reboot button discovery info to: {discovery_topic}")
 
 def publish_shutdown_button_discovery():
@@ -154,7 +161,7 @@ def publish_shutdown_button_discovery():
         "payload_not_available": "offline",
         "retain": False # Buttons don't usually have a state to retain
     }
-    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    publish_mqtt_wrapper(discovery_topic, discovery_payload, retain=True)
     print(f"Published shutdown button discovery info to: {discovery_topic}")
 
 def publish_giphy_start_button_discovery():
@@ -172,7 +179,7 @@ def publish_giphy_start_button_discovery():
         "payload_not_available": "offline",
         "retain": False
     }
-    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    publish_mqtt_wrapper(discovery_topic, discovery_payload, retain=True)
     print(f"Published Giphy start button discovery info to: {discovery_topic}")
 
 def publish_giphy_stop_button_discovery():
@@ -190,7 +197,7 @@ def publish_giphy_stop_button_discovery():
         "payload_not_available": "offline",
         "retain": False
     }
-    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    publish_mqtt_wrapper(discovery_topic, discovery_payload, retain=True)
     print(f"Published Giphy stop button discovery info to: {discovery_topic}")
 
 def publish_settings_pixel_height_discovery():
@@ -214,7 +221,7 @@ def publish_settings_pixel_height_discovery():
         "retain": True,
         "entity_category": "config"
     }
-    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    publish_mqtt_wrapper(discovery_topic, discovery_payload, retain=True)
     print(f"Published pixel height discovery info to: {discovery_topic}")
 
 def publish_settings_pixel_width_discovery():
@@ -238,7 +245,7 @@ def publish_settings_pixel_width_discovery():
         "retain": True,
         "entity_category": "config"
     }
-    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    publish_mqtt_wrapper(discovery_topic, discovery_payload, retain=True)
     print(f"Published pixel width discovery info to: {discovery_topic}")
 
 def publish_settings_chain_length_discovery():
@@ -262,7 +269,7 @@ def publish_settings_chain_length_discovery():
         "retain": True,
         "entity_category": "config"
     }
-    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    publish_mqtt_wrapper(discovery_topic, discovery_payload, retain=True)
     print(f"Published pixel height discovery info to: {discovery_topic}")
 
 def publish_settings_parallel_chains_discovery():
@@ -286,7 +293,7 @@ def publish_settings_parallel_chains_discovery():
         "retain": True,
         "entity_category": "config"
     }
-    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    publish_mqtt_wrapper(discovery_topic, discovery_payload, retain=True)
     print(f"Published pixel height discovery info to: {discovery_topic}")
 
 def publish_settings_display_slowdown_discovery():
@@ -310,7 +317,7 @@ def publish_settings_display_slowdown_discovery():
         "retain": True,
         "entity_category": "config"
     }
-    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    publish_mqtt_wrapper(discovery_topic, discovery_payload, retain=True)
     print(f"Published pixel height discovery info to: {discovery_topic}")
 
 def publish_settings_display_image_in_sec_discovery():
@@ -334,7 +341,7 @@ def publish_settings_display_image_in_sec_discovery():
         "retain": True,
         "entity_category": "config"
     }
-    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    publish_mqtt_wrapper(discovery_topic, discovery_payload, retain=True)
     print(f"Published pixel height discovery info to: {discovery_topic}")
 
 def publish_settings_display_brightness_discovery():
@@ -358,7 +365,7 @@ def publish_settings_display_brightness_discovery():
         "retain": True,
         "entity_category": "config"
     }
-    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    publish_mqtt_wrapper(discovery_topic, discovery_payload, retain=True)
     print(f"Published display bightness to discovery info to: {discovery_topic}")
 
 
@@ -377,7 +384,7 @@ def publish_immich_button_random_discovery():
         "payload_not_available": "offline",
         "retain": False
     }
-    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    publish_mqtt_wrapper(discovery_topic, discovery_payload, retain=True)
     print(f"Published Immich random button discovery info to: {discovery_topic}")
 
 
@@ -396,7 +403,7 @@ def publish_immich_button_album_discovery():
         "payload_not_available": "offline",
         "retain": False
     }
-    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    publish_mqtt_wrapper(discovery_topic, discovery_payload, retain=True)
     print(f"Published Immich album button discovery info to: {discovery_topic}")
 
 
@@ -415,7 +422,7 @@ def publish_immich_button_search_discovery():
         "payload_not_available": "offline",
         "retain": False
     }
-    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    publish_mqtt_wrapper(discovery_topic, discovery_payload, retain=True)
     print(f"Published Immich search button discovery info to: {discovery_topic}")
 
 
@@ -434,5 +441,43 @@ def publish_immich_button_stop_discovery():
         "payload_not_available": "offline",
         "retain": False
     }
-    publish_mqtt(discovery_topic, discovery_payload, retain=True)
+    publish_mqtt_wrapper(discovery_topic, discovery_payload, retain=True)
     print(f"Published Immich stop button discovery info to: {discovery_topic}")
+
+
+def publish_text_scroll_start_discovery():
+    device_info = get_device_info()
+    discovery_topic = f"{HA_DISCOVERY_PREFIX}/button/{DEVICE_ID}/text_scroll_start/config"
+    discovery_payload = {
+        "device": device_info,
+        "name": f"{DEVICE_NAME} Text Scroll Start",
+        "unique_id": f"{DEVICE_ID}_text_scroll_start_button",
+        "command_topic": f"button/{DEVICE_ID}/text_scroll_start/press",
+        "payload_press": '{"text": "Hello World!"}',
+        "icon": "mdi:format-text-rotation-angle-down",
+        "availability_topic": f"binary_sensor/{DEVICE_ID}/state",
+        "payload_available": "online",
+        "payload_not_available": "offline",
+        "retain": False
+    }
+    publish_mqtt_wrapper(discovery_topic, discovery_payload, retain=True)
+    print(f"Published Text Scroll Start button discovery info to: {discovery_topic}")
+
+
+def publish_text_scroll_stop_discovery():
+    device_info = get_device_info()
+    discovery_topic = f"{HA_DISCOVERY_PREFIX}/button/{DEVICE_ID}/text_scroll_stop/config"
+    discovery_payload = {
+        "device": device_info,
+        "name": f"{DEVICE_NAME} Text Scroll Stop",
+        "unique_id": f"{DEVICE_ID}_text_scroll_stop_button",
+        "command_topic": f"button/{DEVICE_ID}/text_scroll_stop/press",
+        "payload_press": "STOP",
+        "icon": "mdi:stop",
+        "availability_topic": f"binary_sensor/{DEVICE_ID}/state",
+        "payload_available": "online",
+        "payload_not_available": "offline",
+        "retain": False
+    }
+    publish_mqtt_wrapper(discovery_topic, discovery_payload, retain=True)
+    print(f"Published Text Scroll Stop button discovery info to: {discovery_topic}")
