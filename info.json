@@ -1,7 +1,39 @@
 {
-  "currentApplicationVersion": "v0.0.36",
-  "whatChanged": "Fixed Immich API integration: updated all endpoints to current Immich v2+ API (POST /api/search/random, GET /api/albums/{id}, GET /api/assets/{id}/original), fixed response parsing for new SearchAssetResponseDto format, added proper error logging for 404/401/403 responses, settings now reload on each API call, added comprehensive unit tests",
+  "currentApplicationVersion": "v0.0.37",
+  "whatChanged": "Major refactor: replaced subprocess-based rpi-rgb-led-matrix integration with native Python bindings (rgbmatrix package). Direct matrix control via RGBMatrix/FrameCanvas for better performance, GIF animation via SwapOnVSync, runtime brightness/rotation changes without process restart. Added async command queue with worker thread for throttling. Install/update scripts now build/install rgbmatrix Python package.",
   "changelog": [
+    {
+      "version": "v0.0.37",
+      "date": "2026-07-10",
+      "changes": [
+        "Replaced subprocess calls (led-image-viewer, demo, clock) with native rgbmatrix Python bindings",
+        "Direct matrix control via RGBMatrix, RGBMatrixOptions, FrameCanvas classes",
+        "GIF animation now uses pre-processed FrameCanvas + SwapOnVSync for smooth playback",
+        "Runtime brightness control via matrix.brightness property (no process restart)",
+        "Runtime rotation via pixel_mapper_config (no process restart)",
+        "Async command queue with dedicated worker thread replaces global-variable throttling",
+        "Added set_brightness() and update_display_settings() public API",
+        "Install/update scripts now build/install rgbmatrix package via pip install -e .",
+        "Added python3-dev and cython3 to system dependencies for building bindings",
+        "Kept subprocess fallback for demo/clock (no Python equivalent yet)"
+      ]
+    },
+    {
+      "version": "v0.0.36",
+      "date": "2026-07-10",
+      "changes": [
+        "Fixed Immich API integration - updated all endpoints to current Immich v2+ API",
+        "Replaced deprecated GET /api/asset/random with POST /api/search/random",
+        "Replaced deprecated GET /api/album/{id} with GET /api/albums/{id}",
+        "Replaced deprecated GET /api/asset/file/{id} with GET /api/assets/{id}/original",
+        "Fixed search_assets response parsing for new SearchAssetResponseDto format",
+        "Added fallback to /original when edited thumbnail not available",
+        "Settings now reload on each API call (fixes stale config issue)",
+        "Added detailed error logging for 404/401/403 responses with actionable messages",
+        "Added comprehensive unit tests for all Immich handler functions (13 new tests)",
+        "Updated immich_controller.py to extract asset_id from URLs for download"
+      ]
+    },
     {
       "version": "v0.0.34",
       "date": "2026-07-10",
@@ -39,7 +71,7 @@
         "Per-source-type display duration settings (random, album, search)",
         "Immich display controls on Demo tab (Random, Album, Search, Stop)",
         "Album selection modal with AJAX-loaded album dropdown",
-        "Exponential backoff retry for Immich and Giphy (10s → 20s → 40s → max 300s)",
+        "Exponential backoff retry for Immich and Giphy (10s -> 20s -> 40s -> max 300s)",
         "Home Assistant MQTT integration for Immich (4 buttons + state switch)",
         "Self-hosted Material Icons and custom CSS/JS (no Google CDN dependencies)"
       ]

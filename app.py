@@ -7,7 +7,7 @@ from upload_handler import upload_image
 from modules.settings_handler import read_settings, save_settings
 from modules.info_handler import read_infos
 from modules.media_handler import countMediaTypeAndNumber
-from modules.display_control import process_image_async, stopProcess, _current_image_name, _current_command_line, _current_static_folder, trigger_rotation
+from modules.display_control import process_image_async, stopProcess, trigger_rotation, set_brightness, update_display_settings
 from modules.system_handler import getFreeDiskSpace, reboot_system, shutdown_system
 from modules.update_handler import trigger_update, fetch_update_info
 from modules import mqtt_handler, giphy_controller, immich_controller, immich_handler
