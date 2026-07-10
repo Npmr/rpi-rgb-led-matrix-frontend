@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Changelog</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="static/css/app.css">
+    <script type="module" src="static/js/app.js"></script>
+</head>
+<body>
+<div class="layout">
+    <header class="layout__header">
+        <div class="layout__header-row">
+            <span class="layout__title">
+                <a class="nav__link" href="/">Matrix Steuerung</a></span>
+            <div class="layout__spacer"></div>
+            <nav class="nav">
+                <a class="nav__link" href="{{ url_for('upload') }}">Dateien Hochladen</a>
+                <a class="nav__link" href="{{ url_for('changelog') }}">Changelog</a>
+                <a class="nav__link" href="{{ url_for('settings') }}">Einstellungen</a>
+            </nav>
+        </div>
+    </header>
+    <main class="layout__content">
+        <div class="grid">
+            <div class="col-12">
+                <h1>Changelog</h1>
+                <p>Current version: <strong>{{ applicationInfo.currentApplicationVersion }}</strong></p>
+            </div>
+
+            {% if applicationInfo.changelog %}
+                {% for entry in applicationInfo.changelog %}
+                <div class="col-12">
+                    <div class="changelog-entry">
+                        <div class="changelog-header">
+                            <span class="changelog-version">{{ entry.version }}</span>
+                            <span class="changelog-date">{{ entry.date }}</span>
+                            {% if entry.version == applicationInfo.currentApplicationVersion %}
+                            <span class="changelog-current-badge">Current</span>
+                            {% endif %}
+                        </div>
+                        <ul class="changelog-changes">
+                            {% for change in entry.changes %}
+                            <li>{{ change }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="col-12">
+                <p>No changelog entries available.</p>
+            </div>
+            {% endif %}
+        </div>
+    </main>
+</div>
+</body>
+</html>

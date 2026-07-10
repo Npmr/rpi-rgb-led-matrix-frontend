@@ -1,7 +1,19 @@
 {
-  "currentApplicationVersion": "v0.0.32",
-  "whatChanged": "Added Immich integration for displaying photos from Immich server, exponential backoff retry for Giphy/Immich, Home Assistant MQTT buttons for Immich control",
+  "currentApplicationVersion": "v0.0.33",
+  "whatChanged": "Fixed update mechanism: update_application.sh no longer overwrites settings.json (added .gitignore), replaced full system reboot with Flask app restart only (pkill + nohup), improved update script logging and error handling",
   "changelog": [
+    {
+      "version": "v0.0.33",
+      "date": "2026-07-10",
+      "changes": [
+        "Added .gitignore to exclude settings.json, info.json, uploaded images, and Python cache from git tracking",
+        "Fixed update_application.sh: removed fragile settings.json backup/restore that caused git conflicts",
+        "Replaced sudo reboot with Flask app restart (pkill + nohup python3 app.py) - no full system reboot needed",
+        "Added proper logging to /home/pi/update_application.log for debugging update issues",
+        "Added error handling and verification that Flask app restarts successfully after update",
+        "Updated install_application.sh to create .gitignore after cloning"
+      ]
+    },
     {
       "version": "v0.0.32",
       "date": "2026-07-10",

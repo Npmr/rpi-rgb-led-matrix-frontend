@@ -1,0 +1,29 @@
+# Local configuration files (not tracked in git)
+settings.json
+info.json
+
+# Uploaded images and generated thumbnails
+static/pictures/
+static/pictures/thumbnails/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyc
+
+# Virtual environments
+venv/
+env/
+.env
+
+# Logs
+*.log
+
+# PID files
+*.pid
+
+# OS files
+.DS_Store
+Thumbs.db

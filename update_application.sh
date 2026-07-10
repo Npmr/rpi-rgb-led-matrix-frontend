@@ -1,25 +1,51 @@
 #!/bin/sh
-BRANCH=${1:-main}
+BRANCH="${1:-main}"
 
-#go into the application directory and make a git pull
-cd /home/pi/rpi-rgb-led-matrix
-git fetch --all
-git checkout "$BRANCH" || git checkout main
-git reset HEAD --hard
-git pull
+LOG_FILE="/home/pi/update_application.log"
 
-cd /home/pi/rpi-rgb-led-matrix-frontend
-cp settings.json /home/pi/settings.json
-git fetch --all
-git checkout "$BRANCH" || git checkout main
-git reset HEAD --hard
-git pull
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+}
+
+log "Starting update on branch: $BRANCH"
+
+# Update rpi-rgb-led-matrix
+log "Updating rpi-rgb-led-matrix..."
+cd /home/pi/rpi-rgb-led-matrix || { log "ERROR: rpi-rgb-led-matrix directory not found"; exit 1; }
+git fetch --all >> "$LOG_FILE" 2>&1
+git checkout "$BRANCH" >> "$LOG_FILE" 2>&1 || git checkout main >> "$LOG_FILE" 2>&1
+git reset --hard HEAD >> "$LOG_FILE" 2>&1
+git pull >> "$LOG_FILE" 2>&1
+
+# Rebuild led-image-viewer and other utilities
+log "Building rpi-rgb-led-matrix..."
+make -C examples-api-use >> "$LOG_FILE" 2>&1
+cd utils && make led-image-viewer >> "$LOG_FILE" 2>&1
+cd /home/pi/rpi-rgb-led-matrix || exit 1
+
+# Update rpi-rgb-led-matrix-frontend
+log "Updating rpi-rgb-led-matrix-frontend..."
+cd /home/pi/rpi-rgb-led-matrix-frontend || { log "ERROR: Frontend directory not found"; exit 1; }
+git fetch --all >> "$LOG_FILE" 2>&1
+git checkout "$BRANCH" >> "$LOG_FILE" 2>&1 || git checkout main >> "$LOG_FILE" 2>&1
+git reset --hard HEAD >> "$LOG_FILE" 2>&1
+git pull >> "$LOG_FILE" 2>&1
+
+# Make update script executable
 chmod +x update_application.sh
 
-# copy the settings file back into the correct folder and remove the bck file afterwards
-cd
-cp /home/pi/settings.json /home/pi/rpi-rgb-led-matrix-frontend/settings.json
-rm settings.json
+# Restart the Flask application (instead of rebooting)
+log "Restarting Flask application..."
+pkill -f "python3 app.py" >> "$LOG_FILE" 2>&1
+sleep 2
+nohup sudo python3 app.py > /dev/null 2>&1 &
+sleep 2
 
-#reboot system with new version installed
-sudo reboot
+# Verify the app restarted
+if pgrep -f "python3 app.py" > /dev/null; then
+    log "Flask application restarted successfully"
+else
+    log "WARNING: Flask application may not have started properly"
+fi
+
+log "Update completed successfully on branch: $BRANCH"
