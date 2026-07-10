@@ -13,6 +13,7 @@ from modules.update_handler import trigger_update, fetch_update_info
 from modules import mqtt_handler, giphy_controller
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 app.config['STATIC_FOLDER'] = 'static/pictures'
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = timedelta(days=365).total_seconds()
 
@@ -124,6 +125,14 @@ def settings():
                            numberOfGifs=numberOfGifs, freeDiskSpaceInPercent=round(freeDiskSpaceInPercent[0]),
                            applicationInfo=infos, updateText=updateText, currentAvailableVersion=updateVersion,
                            enableUpdateButton=enableUpdateButton)
+
+
+@app.route('/changelog')
+def changelog():
+    infos = read_infos()
+    changelog = infos.get('changelog', [])
+    current_version = infos.get('currentApplicationVersion', 'unknown')
+    return render_template('changelog.html', changelog=changelog, current_version=current_version)
 
 
 @app.route('/save_settings', methods=['POST'])

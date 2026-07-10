@@ -28,14 +28,41 @@
                 Stop Displaying<br>and shut down the display
             </div>
             <nav class="mdl-navigation">
-                <a class="mdl-navigation__link" href="#">Dateien Hochladen</a>
+                <a class="mdl-navigation__link" href="{{ url_for('upload') }}">Dateien Hochladen</a>
+                <a class="mdl-navigation__link" href="{{ url_for('changelog') }}">Changelog</a>
                 <a class="mdl-navigation__link" href="{{ url_for('settings') }}">Einstellungen</a>
             </nav>
         </div>
     </header>
+    <div class="mdl-grid">
+        <div class="mdl-cell mdl-cell--12-col">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-message flash-{{ category }}">
+                            <span>{{ message }}</span>
+                            <button type="button" class="flash-dismiss" onclick="this.parentElement.remove()">×</button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
     <main class="mdl-layout__content">
 
         <div class="mdl-grid">
+            <div class="mdl-cell mdl-cell--12-col">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="flash-message flash-{{ category }}">
+                                <span>{{ message }}</span>
+                                <button type="button" class="flash-dismiss" onclick="this.parentElement.remove()">×</button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
 
             <div class="mdl-cell mdl-cell--4-col  mdl-cell--hide-tablet mdl-cell--hide-phone">
             </div>

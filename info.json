@@ -1,4 +1,15 @@
 {
-  "currentApplicationVersion": "v0.0.30",
-  "whatChanged": "New start screen, updated animations, better scrawling"
+  "currentApplicationVersion": "v0.0.31",
+  "whatChanged": "New start screen, updated animations, better scrolling",
+  "changelog": [
+    {
+      "version": "v0.0.30",
+      "date": "2026-07-10",
+      "changes": [
+        "New start screen",
+        "Updated animations",
+        "Better scrolling"
+      ]
+    }
+  ]
 }

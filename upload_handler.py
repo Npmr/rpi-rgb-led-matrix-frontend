@@ -1,7 +1,7 @@
 import os
 import io
 import base64
-from flask import request, redirect, jsonify
+from flask import request, redirect, jsonify, flash, url_for
 from PIL import Image
 
 THUMBNAIL_SIZES = {
@@ -233,8 +233,12 @@ def upload_image(app):
                     os.remove(image_path)
 
         if errors:
-            return jsonify({'success': len(uploaded), 'errors': errors}), 207 if uploaded else 400
-        return jsonify({'success': len(uploaded), 'uploaded': uploaded})
+            for error in errors:
+                flash(error, 'error')
+            flash(f"Upload completed with {len(errors)} error(s). {len(uploaded)} file(s) succeeded.", 'warning')
+        else:
+            flash(f"Successfully uploaded {len(uploaded)} file(s).", 'success')
+        return redirect(url_for('index'))
 
     @app.route('/api/images/metadata', methods=['GET'])
     def get_images_metadata():
