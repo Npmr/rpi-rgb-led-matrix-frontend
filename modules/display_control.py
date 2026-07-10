@@ -69,7 +69,8 @@ def process_image_for_display(image_path, settings):
                     append_images=frames[1:],
                     duration=durations,
                     loop=0,
-                    optimize=True
+                    optimize=False,
+                    colors=256
                 )
             else:
                 if img.mode in ('RGBA', 'LA', 'P'):

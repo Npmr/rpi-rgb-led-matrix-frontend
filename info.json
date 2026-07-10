@@ -1,7 +1,23 @@
 {
-  "currentApplicationVersion": "v0.0.33",
-  "whatChanged": "Fixed update mechanism: update_application.sh no longer overwrites settings.json (added .gitignore), replaced full system reboot with Flask app restart only (pkill + nohup), improved update script logging and error handling",
+  "currentApplicationVersion": "v0.0.34",
+  "whatChanged": "Fixed Immich API integration: updated all endpoints to current Immich v2+ API (POST /api/search/random, GET /api/albums/{id}, GET /api/assets/{id}/original), fixed response parsing for new SearchAssetResponseDto format, added proper error logging for 404/401/403 responses, settings now reload on each API call, added comprehensive unit tests",
   "changelog": [
+    {
+      "version": "v0.0.34",
+      "date": "2026-07-10",
+      "changes": [
+        "Fixed Immich API integration - updated all endpoints to current Immich v2+ API",
+        "Replaced deprecated GET /api/asset/random with POST /api/search/random",
+        "Replaced deprecated GET /api/album/{id} with GET /api/albums/{id}",
+        "Replaced deprecated GET /api/asset/file/{id} with GET /api/assets/{id}/original",
+        "Fixed search_assets response parsing for new SearchAssetResponseDto format",
+        "Added fallback to /original when edited thumbnail not available",
+        "Settings now reload on each API call (fixes stale config issue)",
+        "Added detailed error logging for 404/401/403 responses with actionable messages",
+        "Added comprehensive unit tests for all Immich handler functions (13 new tests)",
+        "Updated immich_controller.py to extract asset_id from URLs for download"
+      ]
+    },
     {
       "version": "v0.0.33",
       "date": "2026-07-10",

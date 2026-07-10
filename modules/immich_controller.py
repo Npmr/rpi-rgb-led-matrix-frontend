@@ -36,22 +36,23 @@ def _fetch_with_backoff(fetch_func, *args, **kwargs):
 def immich_display_loop():
     global immich_running, _current_source_type, _current_album_id, _current_search_query
     while immich_running:
-        asset_url = None
+        asset_id = None
         
         if _current_source_type == "random":
-            asset_url = _fetch_with_backoff(immich_handler.fetch_random_asset)
+            asset_id = _fetch_with_backoff(immich_handler.fetch_random_asset)
             display_duration = IMMICH_DISPLAY_DURATION_RANDOM
         elif _current_source_type == "album":
-            asset_url = _fetch_with_backoff(immich_handler.fetch_assets_by_album, _current_album_id)
+            asset_id = _fetch_with_backoff(immich_handler.fetch_assets_by_album, _current_album_id)
             display_duration = IMMICH_DISPLAY_DURATION_ALBUM
         elif _current_source_type == "search":
             asset_urls = _fetch_with_backoff(immich_handler.search_assets, _current_search_query)
             if asset_urls:
-                asset_url = random.choice(asset_urls)
+                # Extract asset_id from URL
+                asset_id = asset_urls[0].split("/")[-2] if asset_urls else None
             display_duration = IMMICH_DISPLAY_DURATION_SEARCH
         
-        if asset_url:
-            local_path = immich_handler.download_asset(asset_url)
+        if asset_id:
+            local_path = immich_handler.download_asset(asset_id)
             if local_path:
                 filename = os.path.basename(local_path)
                 print(f"Displaying Immich ({_current_source_type}): {filename}")
