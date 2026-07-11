@@ -174,63 +174,31 @@
                                 Default vertical</label>
                             <span class="mdl-textfield__error">Input is not a number!</span>
                         </div>
-                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <select name="direction" id="direction" class="mdl-textfield__input">
-                                <option value="vertical"
-                                        {% if settings[
-                                'direction'] == 'vertical' %}selected{% endif %}>
-                                Vertical
-                                </option>
-                                <option value="verticalTurned"
-                                        {% if settings[
-                                'direction'] == 'verticalTurned' %}selected{% endif %}>
-                                Vertical Gedreht
-                                </option>
-                                <option value="horizontal"
-                                        {% if settings[
-                                'direction'] == 'horizontal' %}selected{% endif %}>
-                                Horizontal
-                                </option>
-                                <option value="horizontalTurned"
-                                        {% if settings[
-                                'direction'] == 'horizontalTurned' %}selected{% endif %}>
-                                Horizontal Gedreht
-                                </option>
-                            </select>
-
-                            <label class="mdl-textfield__label" for="direction">Language selection for the applicationb
-                                direction.
-                                -
-                                Default english</label>
-                            <span class="mdl-textfield__error">Input is not a number!</span>
-                        </div>
-                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
                             <select name="language" id="language" class="mdl-textfield__input">
                                 <option value="de"
                                         {% if settings[
-                                'language'] == 'de' %}selected{% endif %}>
-                                Deutsch
-                                </option>
+                                    'language'] == 'de' %}selected{% endif %}>
+                                    Deutsch
+                                    </option>
                                 <option value="en"
                                         {% if settings[
-                                'language'] == 'en' %}selected{% endif %}>
-                                English
-                                </option>
+                                    'language'] == 'en' %}selected{% endif %}>
+                                    English
+                                    </option>
                                 <option value="it"
                                         {% if settings[
-                                'direction'] == 'it' %}selected{% endif %}>
-                                Italiano
-                                </option>
+                                    'language'] == 'it' %}selected{% endif %}>
+                                    Italiano
+                                    </option>
                                 <option value="ch"
                                         {% if settings[
-                                'direction'] == 'ch' %}selected{% endif %}>
-                                中国人
-                                </option>
+                                    'language'] == 'ch' %}selected{% endif %}>
+                                    中国人
+                                    </option>
                             </select>
 
-                            <label class="mdl-textfield__label" for="direction">Display direction. Where is the up part
-                                -
-                                Default vertical</label>
+                            <label class="mdl-textfield__label" for="language">Language</label>
                             <span class="mdl-textfield__error">Input is not a number!</span>
                         </div>
                         <div>

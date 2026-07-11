@@ -8,6 +8,7 @@ import uuid
 from PIL import Image
 from .settings_handler import read_settings
 
+from . import immich_controller
 _last_process_call_time = 0.0
 _throttle_interval = 5  # Adjust as needed (seconds)
 _pending_process_args = None
@@ -226,6 +227,9 @@ def stopProcess():
             if "clock" in process.name():
                 process.kill()
                 break
+
+    # Also stop Immich loop if running
+    immich_controller.stop_immich_loop()
 
 def trigger_rotation(angle_delta):
     global _current_image_name, _current_command_line, _current_static_folder

@@ -8,7 +8,7 @@ from modules.settings_handler import read_settings, save_settings
 from modules.info_handler import read_infos
 from modules.media_handler import countMediaTypeAndNumber
 from modules.display_control import process_image_async, stopProcess, _current_image_name, _current_command_line, _current_static_folder, trigger_rotation
-from modules.system_handler import getFreeDiskSpace, reboot_system, shutdown_system, sync_time, has_internet, COMMON_TIMEZONES, sync_time, has_internet, COMMON_TIMEZONES, validate_strftime
+from modules.system_handler import getFreeDiskSpace, reboot_system, shutdown_system, sync_time, has_internet, COMMON_TIMEZONES, validate_strftime
 from modules.update_handler import trigger_update, fetch_update_info
 from modules import mqtt_handler, giphy_controller, immich_controller, immich_handler
 
@@ -315,6 +315,7 @@ def process_demo():
 
 @app.route('/stop_process', methods=['POST'])
 def stop_process_route():
+    immich_controller.stop_immich_loop()
     stopProcess()
     return redirect(url_for('index'))
 

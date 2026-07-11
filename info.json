@@ -1,6 +1,6 @@
 {
-  "currentApplicationVersion": "v0.0.43",
-  "whatChanged": "Added timezone support, configurable clock format, NTP sync at startup and manual sync button",
+  "currentApplicationVersion": "v0.0.44",
+  "whatChanged": "Time zone function update",
   "changelog": [
     {
       "version": "v0.0.43",
