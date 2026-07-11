@@ -16,6 +16,10 @@ mqtt_publish_callback = None
 _current_source_type = "random"
 _current_album_id = None
 _current_search_query = None
+# Album asset caching for sequential playback
+_album_assets_cache = []
+_album_asset_index = 0
+_album_assets_fetched = False
 
 def set_mqtt_publish_callback(callback):
     global mqtt_publish_callback
@@ -35,6 +39,7 @@ def _fetch_with_backoff(fetch_func, *args, **kwargs):
 
 def immich_display_loop():
     global immich_running, _current_source_type, _current_album_id, _current_search_query
+    global _album_assets_cache, _album_asset_index, _album_assets_fetched
     while immich_running:
         asset_id = None
         
@@ -44,9 +49,28 @@ def immich_display_loop():
                 asset_id = asset_url.split("/")[-2]
             display_duration = IMMICH_DISPLAY_DURATION_RANDOM
         elif _current_source_type == "album":
-            asset_url = _fetch_with_backoff(immich_handler.fetch_assets_by_album, _current_album_id)
-            if asset_url:
-                asset_id = asset_url.split("/")[-2]
+            # For album mode, fetch all assets on first run, then cycle through them
+            if not _album_assets_fetched or not _album_assets_cache:
+                print(f"Fetching all assets for album {_current_album_id}...")
+                _album_assets_cache = _fetch_with_backoff(immich_handler.fetch_all_album_assets, _current_album_id) or []
+                _album_asset_index = 0
+                _album_assets_fetched = True
+                if not _album_assets_cache:
+                    print(f"No assets found in album {_current_album_id}")
+                    time.sleep(30)
+                    continue
+            
+            # Get next asset from cache
+            if _album_asset_index < len(_album_assets_cache):
+                asset_id = _album_assets_cache[_album_asset_index]
+                _album_asset_index += 1
+            else:
+                # We've shown all assets, refetch for any new additions
+                print("All album assets shown, refetching...")
+                _album_assets_fetched = False
+                time.sleep(5)
+                continue
+            
             display_duration = IMMICH_DISPLAY_DURATION_ALBUM
         elif _current_source_type == "search":
             asset_urls = _fetch_with_backoff(immich_handler.search_assets, _current_search_query)
@@ -86,6 +110,7 @@ def immich_display_loop():
 def start_immich_loop(source_type, album_id=None, search_query=None):
     global immich_running, IMMICH_DISPLAY_DURATION_RANDOM, IMMICH_DISPLAY_DURATION_ALBUM, IMMICH_DISPLAY_DURATION_SEARCH
     global _current_source_type, _current_album_id, _current_search_query
+    global _album_assets_cache, _album_asset_index, _album_assets_fetched
     
     settings = read_settings()
     IMMICH_DISPLAY_DURATION_RANDOM = int(settings.get("immichDisplayDurationRandom", 30))
@@ -96,6 +121,12 @@ def start_immich_loop(source_type, album_id=None, search_query=None):
     _current_source_type = source_type
     _current_album_id = album_id
     _current_search_query = search_query
+    
+    # Reset album cache when starting album mode
+    if source_type == "album":
+        _album_assets_cache = []
+        _album_asset_index = 0
+        _album_assets_fetched = False
     
     if not immich_running:
         print("Starting Immich display loop.")

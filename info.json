@@ -1,6 +1,6 @@
 {
-  "currentApplicationVersion": "v0.0.45",
-  "whatChanged": "Added EXIF auto-orientation support for Immich and uploaded images",
+  "currentApplicationVersion": "v0.0.46",
+  "whatChanged": "Changed update procidier",
   "changelog": [
     {
       "version": "v0.0.45",

@@ -136,6 +136,63 @@ def fetch_assets_by_album(album_id):
         return None
 
 
+def fetch_all_album_assets(album_id):
+    """Fetch ALL assets from a specific Immich album with pagination.
+    
+    Returns a list of asset IDs (not URLs) for the album.
+    """
+    api_key, url = _get_config()
+    if not _check_config(api_key, url):
+        return []
+
+    all_assets = []
+    page = 1
+    size = 100  # Max page size for Immich
+
+    try:
+        while True:
+            endpoint = f"{url}/api/search/metadata"
+            payload = {
+                "albumIds": [album_id],
+                "size": size,
+                "page": page,
+                "withExif": False
+            }
+            response = requests.post(
+                endpoint,
+                headers=_get_headers(api_key),
+                json=payload,
+                timeout=30
+            )
+            data = _handle_response(response, f"search/metadata (album: {album_id}, page: {page})")
+            if not data:
+                break
+
+            assets = data.get("assets", {}).get("items", [])
+            if not assets:
+                break
+
+            # Extract asset IDs
+            for asset in assets:
+                asset_id = asset.get("id")
+                if asset_id:
+                    all_assets.append(asset_id)
+
+            # Check if there are more pages
+            total = data.get("assets", {}).get("total", 0)
+            if len(all_assets) >= total:
+                break
+
+            page += 1
+
+        print(f"Fetched {len(all_assets)} assets from album {album_id}")
+        return all_assets
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching all album assets from Immich: {e}")
+        return []
+
+
 def search_assets(query="", size=50):
     """Search Immich assets by metadata query."""
     api_key, url = _get_config()
