@@ -67,30 +67,32 @@ class TestImmichHandler(unittest.TestCase):
         self.assertIsNone(result)
 
     @patch('modules.immich_handler.read_settings')
-    @patch('modules.immich_handler.requests.get')
-    def test_fetch_assets_by_album_success(self, mock_get, mock_read_settings):
+    @patch('modules.immich_handler.requests.post')
+    def test_fetch_assets_by_album_success(self, mock_post, mock_read_settings):
         mock_read_settings.return_value = self.mock_settings
         
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
-            "id": "album-1",
-            "albumName": "Test Album",
-            "assets": [
-                {"id": "asset-a", "type": "IMAGE"},
-                {"id": "asset-b", "type": "IMAGE"}
-            ]
+            "assets": {
+                "items": [
+                    {"id": "asset-a", "type": "IMAGE"},
+                    {"id": "asset-b", "type": "IMAGE"}
+                ],
+                "total": 2
+            }
         }
-        mock_get.return_value = mock_response
+        mock_post.return_value = mock_response
 
         result = immich_handler.fetch_assets_by_album("album-1")
         
         self.assertIsNotNone(result)
         self.assertIn("asset-", result)
         self.assertTrue(result.endswith("/original"))
-        mock_get.assert_called_once()
-        call_args = mock_get.call_args
-        self.assertIn("/api/albums/album-1", call_args[0][0])
+        mock_post.assert_called_once()
+        call_args = mock_post.call_args
+        self.assertIn("/api/search/metadata", call_args[0][0])
+        self.assertEqual(call_args[1]['json'], {"albumIds": ["album-1"], "size": 100, "withExif": False})
 
     @patch('modules.immich_handler.read_settings')
     @patch('modules.immich_handler.requests.get')

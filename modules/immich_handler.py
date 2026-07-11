@@ -100,40 +100,25 @@ def fetch_assets_by_album(album_id):
         return None
 
     try:
-        # Try main album endpoint first
-        endpoint = f"{url}/api/albums/{album_id}"
-        response = requests.get(
+        # Use search/metadata endpoint with albumIds filter (correct Immich v2+ API)
+        endpoint = f"{url}/api/search/metadata"
+        payload = {
+            "albumIds": [album_id],
+            "size": 100,
+            "withExif": False
+        }
+        response = requests.post(
             endpoint,
             headers=_get_headers(api_key),
+            json=payload,
             timeout=30
         )
-        album = _handle_response(response, f"albums/{album_id}")
-        if not album:
+        data = _handle_response(response, f"search/metadata (album: {album_id})")
+        if not data:
             return None
 
-        # Handle both array and paginated object formats
-        assets = album.get("assets", [])
-        if isinstance(assets, dict):  # Paginated: { "items": [...], "total": N }
-            assets = assets.get("items", [])
-        elif not isinstance(assets, list):
-            assets = []
-
-        # If no assets in main response, try dedicated assets endpoint
-        if not assets:
-            print(f"Info: No assets in album response, trying /albums/{album_id}/assets endpoint")
-            assets_endpoint = f"{url}/api/albums/{album_id}/assets"
-            assets_response = requests.get(
-                assets_endpoint,
-                headers=_get_headers(api_key),
-                params={"size": 100},
-                timeout=30
-            )
-            assets_data = _handle_response(assets_response, f"albums/{album_id}/assets")
-            if assets_data and isinstance(assets_data, dict):
-                assets = assets_data.get("items", [])
-            elif isinstance(assets_data, list):
-                assets = assets_data
-
+        # Handle paginated response: data.assets.items
+        assets = data.get("assets", {}).get("items", [])
         if not assets:
             print(f"Error: No assets found in album {album_id}")
             return None

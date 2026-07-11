@@ -1,7 +1,16 @@
 {
-  "currentApplicationVersion": "v0.0.41",
-  "whatChanged": "Fixed pixel-mapper logic: only use U-mapper when parallelChains > 1 AND chainLength >= 4 AND chainLength is even; otherwise just use rotation",
+  "currentApplicationVersion": "v0.0.42",
+  "whatChanged": "Fixed Immich album asset fetching: now uses POST /api/search/metadata with albumIds filter instead of broken /api/albums/{id}/assets endpoint",
   "changelog": [
+    {
+      "version": "v0.0.42",
+      "date": "2026-07-11",
+      "changes": [
+        "Fixed Immich album asset fetching in immich_handler.py",
+        "Replaced broken GET /api/albums/{id}/assets endpoint (404 in Immich v2+) with POST /api/search/metadata using albumIds filter",
+        "Album assets now correctly retrieved via search/metadata API which supports album filtering"
+      ]
+    },
     {
       "version": "v0.0.41",
       "date": "2026-07-11",
@@ -10,13 +19,6 @@
         "U-mapper now only used when parallelChains > 1 AND chainLength >= 4 AND chainLength is even (U-shaped/serpentine panel layouts)",
         "For normal single-chain setups (parallelChains=1) or invalid U-mapper configs, only rotation is applied",
         "Prevents incorrect display on standard panel chains that aren't arranged in U-shape"
-      ]
-    },
-    {
-      "version": "v0.0.40",
-      "date": "2026-07-10",
-      "changes": [
-        "Revert changes that didnt work"
       ]
     },
     {
