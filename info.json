@@ -1,37 +1,7 @@
 {
-  "currentApplicationVersion": "v0.0.39",
-  "whatChanged": "Added native text scrolling using rgbmatrix.graphics with REST API and MQTT/Home Assistant integration. TextScroller class supports configurable fonts, colors, speed, position, looping and blink effects. New API endpoints: POST /api/text_scroll/start, POST /api/text_scroll/stop, GET /api/text_scroll/status. MQTT buttons for start/stop with JSON payload support for full configuration.",
+  "currentApplicationVersion": "v0.0.40",
+  "whatChanged": "Revert changes that didnt work",
   "changelog": [
-    {
-      "version": "v0.0.38",
-      "date": "2026-07-10",
-      "changes": [
-        "Added native text scrolling using rgbmatrix.graphics (Font, Color, DrawText)",
-        "New TextScroller class with double-buffered animation via SwapOnVSync",
-        "Configurable: font (BDF), text/background color, Y position, scroll speed, loop count, blink pattern",
-        "REST API: POST /api/text_scroll/start (JSON: text, font, colors, speed, y_pos, loop, blink), POST /api/text_scroll/stop, GET /api/text_scroll/status",
-        "MQTT integration: button/{device_id}/text_scroll_start/press (JSON payload), button/{device_id}/text_scroll_stop/press",
-        "Home Assistant discovery for text scroll start/stop buttons",
-        "DisplayController integration: text scroll uses exclusive display mode (stops images/GIFs/demos)",
-        "Settings schema additions: textScrollFont, textScrollSpeed, textScrollYPos, textScrollTextColor, textScrollBgColor, textScrollLoop, textScrollBlinkOn, textScrollBlinkOff"
-      ]
-    },
-    {
-      "version": "v0.0.36",
-      "date": "2026-07-10",
-      "changes": [
-        "Fixed Immich API integration - updated all endpoints to current Immich v2+ API",
-        "Replaced deprecated GET /api/asset/random with POST /api/search/random",
-        "Replaced deprecated GET /api/album/{id} with GET /api/albums/{id}",
-        "Replaced deprecated GET /api/asset/file/{id} with GET /api/assets/{id}/original",
-        "Fixed search_assets response parsing for new SearchAssetResponseDto format",
-        "Added fallback to /original when edited thumbnail not available",
-        "Settings now reload on each API call (fixes stale config issue)",
-        "Added detailed error logging for 404/401/403 responses with actionable messages",
-        "Added comprehensive unit tests for all Immich handler functions (13 new tests)",
-        "Updated immich_controller.py to extract asset_id from URLs for download"
-      ]
-    },
     {
       "version": "v0.0.34",
       "date": "2026-07-10",
@@ -69,7 +39,7 @@
         "Per-source-type display duration settings (random, album, search)",
         "Immich display controls on Demo tab (Random, Album, Search, Stop)",
         "Album selection modal with AJAX-loaded album dropdown",
-        "Exponential backoff retry for Immich and Giphy (10s -> 20s -> 40s -> max 300s)",
+        "Exponential backoff retry for Immich and Giphy (10s → 20s → 40s → max 300s)",
         "Home Assistant MQTT integration for Immich (4 buttons + state switch)",
         "Self-hosted Material Icons and custom CSS/JS (no Google CDN dependencies)"
       ]

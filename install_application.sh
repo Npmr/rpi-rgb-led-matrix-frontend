@@ -5,8 +5,7 @@ sudo apt-get update  # To get the latest package lists
 sudo apt install git libgraphicsmagick++-dev libwebp-dev -y
 
 # Install everything for the rpi-rgb-led-matrix-frontend application
-# Added python3-dev and cython3 for building rgbmatrix Python bindings
-sudo apt install python3 python3-flask python3-psutil python3-pil python3-paho-mqtt python3-requests python3-dev cython3 -y
+sudo apt install python3 python3-flask python3-psutil  python3-pil python3-paho-mqtt python3-requests -y
 
 # Go into the home directory
 cd
@@ -50,10 +49,6 @@ cd rpi-rgb-led-matrix
 make -C examples-api-use
 cd utils
 make led-image-viewer
-
-# Build and install Python bindings (rgbmatrix)
-cd /home/pi/rpi-rgb-led-matrix
-sudo pip install -e . --break-system-packages
 
 # Make the Update script executable
 cd /home/pi/rpi-rgb-led-matrix-frontend

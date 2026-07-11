@@ -1,438 +1,223 @@
 # modules/display_control.py
-import asyncio
-import os
 import subprocess
+import psutil
+from threading import Thread, Timer
 import time
-from threading import Thread
-from typing import Optional
+import os
+import uuid
 from PIL import Image
-
 from .settings_handler import read_settings
-from .text_scroller import TextScroller
+
+_last_process_call_time = 0.0
+_throttle_interval = 5  # Adjust as needed (seconds)
+_pending_process_args = None
+_throttle_timer = None
+_current_image_name = None
+_current_command_line = None
+_current_static_folder = None
+_current_rotation_offset = 0
 
 
-class DisplayController:
-    def __init__(self):
-        self._matrix = None
-        self._options = None
-        self._current_task = None
-        self._stop_event = asyncio.Event()
-        self._command_queue: asyncio.Queue = asyncio.Queue()
-        self._worker_thread: Optional[Thread] = None
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
-        self._current_rotation = 0
-        self._base_rotation = 270
-        self._brightness = 100
-        self._settings = None
-        self._text_scroller: Optional[TextScroller] = None
+def get_matrix_dimensions(settings):
+    width = int(settings['widthInPixel']) * int(settings['chainLength'])
+    height = int(settings['heightInPixel']) * int(settings['parallelChains'])
+    return width, height
 
-    def _get_base_rotation(self, direction: str) -> int:
-        rotations = {
-            "horizontal": 180,
-            "verticalTurned": 90,
-            "horizontalTurned": 0,
-            "vertical": 270,
-        }
-        return rotations.get(direction, 270)
 
-    def _create_matrix_options(self, settings: dict, rotation: int):
-        from rgbmatrix import RGBMatrixOptions
+def fill_crop_image(img, target_width, target_height):
+    img_ratio = img.width / img.height
+    target_ratio = target_width / target_height
 
-        options = RGBMatrixOptions()
-        options.rows = int(settings["heightInPixel"])
-        options.cols = int(settings["widthInPixel"])
-        options.chain_length = int(settings["chainLength"])
-        options.parallel = int(settings["parallelChains"])
-        options.brightness = int(settings.get("displayBrightness", 100))
-        options.gpio_slowdown = int(settings.get("ledSlowdown", 1))
-        options.hardware_mapping = "regular"
-        options.drop_privileges = False
+    if img_ratio > target_ratio:
+        new_height = target_height
+        new_width = int(target_height * img_ratio)
+    else:
+        new_width = target_width
+        new_height = int(target_width / img_ratio)
 
-        pixel_mapper = f"U-mapper;Rotate:{rotation}"
-        options.pixel_mapper_config = pixel_mapper
+    img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
-        return options
+    left = (img.width - target_width) // 2
+    top = (img.height - target_height) // 2
+    right = left + target_width
+    bottom = top + target_height
 
-    def _initialize_matrix(self, settings: dict):
-        from rgbmatrix import RGBMatrix
+    return img.crop((left, top, right, bottom))
 
-        self._settings = settings
-        self._base_rotation = self._get_base_rotation(settings.get("direction", "vertical"))
-        rotation = (self._base_rotation + self._current_rotation) % 360
-        self._options = self._create_matrix_options(settings, rotation)
-        self._brightness = int(settings.get("displayBrightness", 100))
 
-        if self._matrix:
-            self._matrix.Clear()
-            del self._matrix
+def process_image_for_display(image_path, settings):
+    matrix_width, matrix_height = get_matrix_dimensions(settings)
+    temp_path = None
 
-        self._matrix = RGBMatrix(options=self._options)
-        self._matrix.brightness = self._brightness
-
-        # Initialize text scroller with the new matrix
-        self._text_scroller = TextScroller(self._matrix)
-
-    def _ensure_matrix(self):
-        if self._matrix is None:
-            self._initialize_matrix(read_settings())
-
-    def _process_image(self, image_path: str, settings: dict) -> Image.Image:
-        matrix_width = int(settings["widthInPixel"]) * int(settings["chainLength"])
-        matrix_height = int(settings["heightInPixel"]) * int(settings["parallelChains"])
-
+    try:
         with Image.open(image_path) as img:
-            if img.mode in ("RGBA", "LA", "P"):
-                background = Image.new("RGB", img.size, (0, 0, 0))
-                if img.mode == "P":
-                    img = img.convert("RGBA")
-                mask = img.split()[-1] if img.mode in ("RGBA", "LA") else None
-                background.paste(img, mask=mask)
-                img = background
-            elif img.mode != "RGB":
-                img = img.convert("RGB")
+            if img.format == 'GIF' and getattr(img, 'n_frames', 1) > 1:
+                frames = []
+                durations = []
 
-            img_ratio = img.width / img.height
-            target_ratio = matrix_width / matrix_height
+                for frame_idx in range(img.n_frames):
+                    img.seek(frame_idx)
+                    frame = img.convert('RGBA')
+                    processed_frame = fill_crop_image(frame, matrix_width, matrix_height)
+                    frames.append(processed_frame)
+                    durations.append(img.info.get('duration', 100))
 
-            if img_ratio > target_ratio:
-                new_height = matrix_height
-                new_width = int(matrix_height * img_ratio)
+                temp_path = f"/tmp/led_display_{uuid.uuid4().hex}.gif"
+                frames[0].save(
+                    temp_path,
+                    save_all=True,
+                    append_images=frames[1:],
+                    duration=durations,
+                    loop=0,
+                    optimize=False,
+                    colors=256
+                )
             else:
-                new_width = matrix_width
-                new_height = int(matrix_width / img_ratio)
+                if img.mode in ('RGBA', 'LA', 'P'):
+                    background = Image.new('RGB', img.size, (0, 0, 0))
+                    if img.mode == 'P':
+                        img = img.convert('RGBA')
+                    background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+                    img = background
+                elif img.mode != 'RGB':
+                    img = img.convert('RGB')
 
-            img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                processed_img = fill_crop_image(img, matrix_width, matrix_height)
 
-            left = (img.width - matrix_width) // 2
-            top = (img.height - matrix_height) // 2
-            right = left + matrix_width
-            bottom = top + matrix_height
+                ext = os.path.splitext(image_path)[1].lower()
+                if ext not in ['.jpg', '.jpeg', '.png', '.bmp', '.webp']:
+                    ext = '.png'
+                temp_path = f"/tmp/led_display_{uuid.uuid4().hex}{ext}"
+                processed_img.save(temp_path)
 
-            return img.crop((left, top, right, bottom))
-
-    def _display_static_image(self, image_path: str):
-        self._ensure_matrix()
-        processed = self._process_image(image_path, self._settings)
-        self._matrix.SetImage(processed.convert("RGB"))
-
-    def _display_gif(self, image_path: str, duration: float = 0):
-        self._ensure_matrix()
-        matrix_width = self._matrix.width
-        matrix_height = self._matrix.height
-
-        with Image.open(image_path) as gif:
-            n_frames = getattr(gif, "n_frames", 1)
-            if n_frames <= 1:
-                self._display_static_image(image_path)
-                return
-
-            frames = []
-            durations = []
-
-            for frame_idx in range(n_frames):
-                gif.seek(frame_idx)
-                frame = gif.convert("RGBA")
-
-                img_ratio = frame.width / frame.height
-                target_ratio = matrix_width / matrix_height
-
-                if img_ratio > target_ratio:
-                    new_height = matrix_height
-                    new_width = int(matrix_height * img_ratio)
-                else:
-                    new_width = matrix_width
-                    new_height = int(matrix_width / img_ratio)
-
-                frame = frame.resize((new_width, new_height), Image.Resampling.LANCZOS)
-
-                left = (frame.width - matrix_width) // 2
-                top = (frame.height - matrix_height) // 2
-                right = left + matrix_width
-                bottom = top + matrix_height
-
-                frame = frame.crop((left, top, right, bottom))
-
-                canvas = self._matrix.CreateFrameCanvas()
-                canvas.SetImage(frame.convert("RGB"))
-                frames.append(canvas)
-                durations.append(gif.info.get("duration", 100) / 1000.0)
-
-        if duration <= 0:
-            duration = sum(durations) * 3
-
-        end_time = time.time() + duration
-        frame_idx = 0
-
-        while time.time() < end_time and not self._stop_event.is_set():
-            canvas = frames[frame_idx]
-            canvas = self._matrix.SwapOnVSync(canvas)
-            time.sleep(durations[frame_idx])
-            frame_idx = (frame_idx + 1) % len(frames)
-
-        self._matrix.Clear()
-
-    def _run_demo(self, demo_num: int):
-        settings = self._settings or read_settings()
-        rotation = (self._base_rotation + self._current_rotation) % 360
-        pixel_mapper = f"U-mapper;Rotate:{rotation}"
-
-        if demo_num == 12:
-            cmd = [
-                "sudo", ".././rpi-rgb-led-matrix/examples-api-use/clock",
-                "-f", "../rpi-rgb-led-matrix/fonts/4x6.bdf",
-                "-d", "%A", "-d", "%H:%M:%S",
-                f"--led-rows={settings['heightInPixel']}",
-                f"--led-cols={settings['widthInPixel']}",
-                f"--led-chain={settings['chainLength']}",
-                f"--led-parallel={settings['parallelChains']}",
-                f"--led-brightness={settings.get('displayBrightness', 100)}",
-                f"--led-pixel-mapper={pixel_mapper}",
-                f"--led-slowdown-gpio={settings['ledSlowdown']}",
-            ]
-        else:
-            cmd = [
-                "sudo", ".././rpi-rgb-led-matrix/examples-api-use/demo",
-                f"-D{demo_num}",
-                f"--led-rows={settings['heightInPixel']}",
-                f"--led-cols={settings['widthInPixel']}",
-                f"--led-chain={settings['chainLength']}",
-                f"--led-parallel={settings['parallelChains']}",
-                f"--led-brightness={settings.get('displayBrightness', 100)}",
-                f"--led-pixel-mapper={pixel_mapper}",
-                f"--led-slowdown-gpio={settings['ledSlowdown']}",
-            ]
-
-        self._stop_current()
-        self._stop_event.clear()
-        process = subprocess.Popen(cmd)
-        self._current_task = ("subprocess", process)
-
-    def _stop_current(self):
-        self._stop_event.set()
-        if self._matrix:
-            self._matrix.Clear()
-
-        # Stop text scroller if running
-        if hasattr(self, '_text_scroller') and self._text_scroller:
-            self._text_scroller.stop()
-
-        if self._current_task:
-            task_type, task_obj = self._current_task
-            if task_type == "subprocess" and task_obj.poll() is None:
-                task_obj.terminate()
-                try:
-                    task_obj.wait(timeout=2)
-                except subprocess.TimeoutExpired:
-                    task_obj.kill()
-            self._current_task = None
-
-    async def _worker(self):
-        while True:
-            cmd = await self._command_queue.get()
-            if cmd is None:
-                break
-
-            action = cmd.get("action")
-            try:
-                if action == "display_image":
-                    self._stop_current()
-                    self._stop_event.clear()
-                    self._display_static_image(cmd["path"])
-                    self._current_task = ("static", cmd["path"])
-
-                elif action == "display_gif":
-                    self._stop_current()
-                    self._stop_event.clear()
-                    self._display_gif(cmd["path"], cmd.get("duration", 0))
-                    self._current_task = ("gif", cmd["path"])
-
-                elif action == "display_demo":
-                    self._run_demo(cmd["demo_num"])
-
-                elif action == "stop":
-                    self._stop_current()
-
-                elif action == "set_brightness":
-                    if self._matrix:
-                        self._matrix.brightness = cmd["value"]
-                    self._brightness = cmd["value"]
-
-                elif action == "rotate":
-                    self._current_rotation = (self._current_rotation + cmd["delta"]) % 360
-                    self._initialize_matrix(self._settings or read_settings())
-
-                    if self._current_task and self._current_task[0] in ("static", "gif"):
-                        path = self._current_task[1]
-                        if path.lower().endswith(".gif"):
-                            self._display_gif(path)
-                        else:
-                            self._display_static_image(path)
-
-                elif action == "start_text_scroll":
-                    self._stop_current()
-                    self._stop_event.clear()
-                    if self._text_scroller:
-                        self._text_scroller.set_text(cmd["text"])
-                        if cmd.get("font"):
-                            self._text_scroller.load_font(cmd["font"])
-                        if cmd.get("text_color"):
-                            self._text_scroller.set_colors(cmd["text_color"], cmd.get("bg_color", (0, 0, 0)))
-                        if cmd.get("speed"):
-                            self._text_scroller.set_speed(cmd["speed"])
-                        if cmd.get("y_pos") is not None:
-                            self._text_scroller.set_y_pos(cmd["y_pos"])
-                        if cmd.get("loop") is not None:
-                            self._text_scroller.set_loop(cmd["loop"])
-                        if cmd.get("blink_on") is not None and cmd.get("blink_off") is not None:
-                            self._text_scroller.set_blink(cmd["blink_on"], cmd["blink_off"])
-                        self._text_scroller.start()
-                    self._current_task = ("text_scroll", cmd["text"])
-
-                elif action == "stop_text_scroll":
-                    if self._text_scroller:
-                        self._text_scroller.stop()
-                    self._stop_current()
-
-            except Exception as e:
-                print(f"Display error: {e}")
-            finally:
-                self._command_queue.task_done()
-
-    def start(self):
-        if self._worker_thread is None or not self._worker_thread.is_alive():
-            def run_loop():
-                self._loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(self._loop)
-                self._loop.run_until_complete(self._worker())
-
-            self._worker_thread = Thread(target=run_loop, daemon=True)
-            self._worker_thread.start()
-            time.sleep(0.1)
-
-    def stop(self):
-        self._stop_current()
-        if self._loop and self._loop.is_running():
-            self._loop.call_soon_threadsafe(self._command_queue.put_nowait, None)
-        if self._worker_thread and self._worker_thread.is_alive():
-            self._worker_thread.join(timeout=2)
-        if self._matrix:
-            self._matrix.Clear()
-            del self._matrix
-            self._matrix = None
-
-    def display_image(self, image_name: str, static_folder: str):
-        path = os.path.join(static_folder, image_name)
-        if not os.path.exists(path):
-            print(f"Image not found: {path}")
-            return
-        self._enqueue({"action": "display_image", "path": path})
-
-    def display_gif(self, image_name: str, static_folder: str, duration: float = 0):
-        path = os.path.join(static_folder, image_name)
-        if not os.path.exists(path):
-            print(f"GIF not found: {path}")
-            return
-        self._enqueue({"action": "display_gif", "path": path, "duration": duration})
-
-    def display_demo(self, demo_num: int):
-        self._enqueue({"action": "display_demo", "demo_num": demo_num})
-
-    def stop(self):
-        self._enqueue({"action": "stop"})
-
-    def set_brightness(self, value: int):
-        self._brightness = max(1, min(100, value))
-        self._enqueue({"action": "set_brightness", "value": self._brightness})
-
-    def rotate(self, angle_delta: int):
-        self._current_rotation = (self._current_rotation + angle_delta) % 360
-        self._enqueue({"action": "rotate", "delta": angle_delta})
-
-    def start_text_scroll(self, text: str, font: str = None, text_color: tuple = (255, 255, 255),
-                          bg_color: tuple = (0, 0, 0), speed: float = 0.05, y_pos: int = 10,
-                          loop: bool = True, blink_on: int = 0, blink_off: int = 0):
-        self._enqueue({
-            "action": "start_text_scroll",
-            "text": text,
-            "font": font,
-            "text_color": text_color,
-            "bg_color": bg_color,
-            "speed": speed,
-            "y_pos": y_pos,
-            "loop": loop,
-            "blink_on": blink_on,
-            "blink_off": blink_off
-        })
-
-    def stop_text_scroll(self):
-        self._enqueue({"action": "stop_text_scroll"})
-
-    def _enqueue(self, cmd: dict):
-        if self._loop and self._loop.is_running():
-            self._loop.call_soon_threadsafe(self._command_queue.put_nowait, cmd)
-
-    def update_settings(self, settings: dict):
-        self._settings = settings
-        self._base_rotation = self._get_base_rotation(settings.get("direction", "vertical"))
-        self._initialize_matrix(settings)
+        return temp_path
+    except Exception as e:
+        print(f"Error processing image {image_path}: {e}")
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)
+        return image_path
 
 
-_display_controller: Optional[DisplayController] = None
+def _start_display_process(image_name, command_line, static_folder, rotation_offset=0):
+    stopProcess()
+    settings = read_settings()
 
+    base_rotation = 270
+    if settings["direction"] == "horizontal":
+        base_rotation = 180
+    elif settings["direction"] == "verticalTurned":
+        base_rotation = 90
+    elif settings["direction"] == "horizontalTurned":
+        base_rotation = 0
 
-def get_display_controller() -> DisplayController:
-    global _display_controller
-    if _display_controller is None:
-        _display_controller = DisplayController()
-        _display_controller.start()
-    return _display_controller
+    final_rotation = (base_rotation + rotation_offset) % 360
+    rotation = f";Rotate:{final_rotation}"
 
+    if static_folder != "static/giphy_cache" and static_folder != "static/immich_cache":
+        static_folder = "static/pictures"
 
-def process_image_async(image_name: str, command_line: str, static_folder: str, angle_delta: Optional[int] = None):
-    controller = get_display_controller()
-
-    if angle_delta is not None:
-        controller.rotate(angle_delta)
-        return
+    command = ""
+    processed_image_path = None
+    original_path = None
 
     if command_line == "displayImage":
-        controller.display_image(image_name, static_folder)
+        original_path = f"{static_folder}/{image_name}"
+        processed_image_path = process_image_for_display(original_path, settings)
+
+        command = f"sudo .././rpi-rgb-led-matrix/utils/led-image-viewer -C --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness={settings.get('displayBrightness', 100)} --led-pixel-mapper=\"U-mapper{rotation}\" --led-slowdown-gpio={settings['ledSlowdown']} {processed_image_path} &"
     elif command_line == "displayDemo":
-        controller.display_demo(int(image_name))
+        if image_name == 12:
+            command = f"sudo .././rpi-rgb-led-matrix/examples-api-use/clock -f ../rpi-rgb-led-matrix/fonts/4x6.bdf -d '%A' -d '%H:%M:%S' --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness={settings.get('displayBrightness', 100)} --led-pixel-mapper=\"U-mapper{rotation}\" --led-slowdown-gpio={settings['ledSlowdown']} &"
+        elif image_name <= 11:
+            command = f"sudo .././rpi-rgb-led-matrix/examples-api-use/demo -D{image_name} --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness={settings.get('displayBrightness', 100)} --led-pixel-mapper=\"U-mapper{rotation}\" --led-slowdown-gpio={settings['ledSlowdown']} &"
+
+    if command:
+        print(f"Executing command: {command}")
+        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        def capture_output():
+            stdout, stderr = process.communicate()
+            if stdout:
+                print(f"Process output: {stdout.decode()}")
+            if stderr:
+                print(f"Process error: {stderr.decode()}")
+            global _is_process_running
+            _is_process_running = False
+            if processed_image_path and processed_image_path != original_path and os.path.exists(processed_image_path):
+                try:
+                    os.remove(processed_image_path)
+                except Exception as e:
+                    print(f"Error cleaning up temp file {processed_image_path}: {e}")
+
+        output_thread = Thread(target=capture_output)
+        output_thread.daemon = True
+        output_thread.start()
+    else:
+        _is_process_running = False
+
+
+def process_image_async(image_name, command_line, static_folder, angle_delta=None):
+    global _last_process_call_time, _pending_process_args, _throttle_timer
+    global _current_image_name, _current_command_line, _current_static_folder, _current_rotation_offset
+
+    _current_image_name = image_name
+    _current_command_line = command_line
+    _current_static_folder = static_folder
+
+    if angle_delta is None:
+        _current_rotation_offset = 0
+    else:
+        _current_rotation_offset = (_current_rotation_offset + angle_delta) % 360
+
+    current_time = time.time()
+    time_since_last_call = current_time - _last_process_call_time
+
+    if time_since_last_call >= _throttle_interval:
+        _last_process_call_time = current_time
+        _start_display_process(image_name, command_line, static_folder, _current_rotation_offset)
+        if _throttle_timer and _throttle_timer.is_alive():
+            _throttle_timer.cancel()
+        _pending_process_args = None
+    else:
+        # A call happened recently, schedule a call if one isn't already pending
+        _pending_process_args = (image_name, command_line, static_folder, _current_rotation_offset)
+        if not _throttle_timer or not _throttle_timer.is_alive():
+            _throttle_timer = Timer(_throttle_interval, _process_pending_call)
+            _throttle_timer.start()
+        else:
+            print("Throttling: A pending process call is already scheduled.")
+
+
+def _process_pending_call():
+    global _pending_process_args, _last_process_call_time, _throttle_timer
+    if _pending_process_args:
+        image_name, command_line, static_folder, rotation_offset = _pending_process_args
+        _last_process_call_time = time.time()
+        _start_display_process(image_name, command_line, static_folder, rotation_offset)
+        _pending_process_args = None
+        _throttle_timer = None
 
 
 def stopProcess():
-    controller = get_display_controller()
-    controller.stop()
+    for process in psutil.process_iter():
+        if "led-image-viewer" in process.name():
+            process.kill()
+            break
+        if "demo" in process.name():
+            process.kill()
+            break
+        settings = read_settings()
+        if settings["displayTimeAndDate"] == "":
+            if "clock" in process.name():
+                process.kill()
+                break
 
-
-def trigger_rotation(angle_delta: int):
-    controller = get_display_controller()
-    controller.rotate(angle_delta)
-
-
-def set_brightness(value: int):
-    controller = get_display_controller()
-    controller.set_brightness(value)
-
-
-def update_display_settings(settings: dict):
-    controller = get_display_controller()
-    controller.update_settings(settings)
-
-
-def start_text_scroll(text: str, font: str = None, text_color: tuple = (255, 255, 255),
-                      bg_color: tuple = (0, 0, 0), speed: float = 0.05, y_pos: int = 10,
-                      loop: bool = True, blink_on: int = 0, blink_off: int = 0):
-    controller = get_display_controller()
-    controller.start_text_scroll(text, font=font, text_color=text_color,
-                                  bg_color=bg_color, speed=speed, y_pos=y_pos,
-                                  loop=loop, blink_on=blink_on, blink_off=blink_off)
-
-
-def stop_text_scroll():
-    controller = get_display_controller()
-    controller.stop_text_scroll()
+def trigger_rotation(angle_delta):
+    global _current_image_name, _current_command_line, _current_static_folder
+    if _current_image_name:
+        process_thread = Thread(target=process_image_async,
+                                args=(_current_image_name, _current_command_line, _current_static_folder, angle_delta))
+        process_thread.start()
 
 
 is_not_running = True
