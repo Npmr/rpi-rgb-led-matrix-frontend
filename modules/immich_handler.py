@@ -213,6 +213,38 @@ def get_albums():
         return []
 
 
+def get_asset_info(asset_id):
+    """Fetch asset info from Immich including EXIF orientation."""
+    api_key, url = _get_config()
+    if not _check_config(api_key, url):
+        return None
+
+    try:
+        endpoint = f"{url}/api/assets/{asset_id}"
+        response = requests.get(
+            endpoint,
+            headers=_get_headers(api_key),
+            timeout=30
+        )
+        data = _handle_response(response, f"assets/{asset_id}")
+        if not data:
+            return None
+
+        # Extract relevant fields including EXIF orientation
+        exif_info = data.get("exifInfo", {})
+        return {
+            "id": data.get("id"),
+            "width": data.get("width"),
+            "height": data.get("height"),
+            "orientation": exif_info.get("orientation"),  # EXIF orientation 1-8
+            "exifInfo": exif_info
+        }
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching asset info from Immich: {e}")
+        return None
+
+
 def download_asset(asset_id):
     """Download an asset from Immich by its ID."""
     api_key, url = _get_config()

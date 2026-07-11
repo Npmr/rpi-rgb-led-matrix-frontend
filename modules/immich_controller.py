@@ -54,12 +54,22 @@ def immich_display_loop():
                 asset_id = asset_urls[0].split("/")[-2]
             display_duration = IMMICH_DISPLAY_DURATION_SEARCH
         
+        exif_orientation = None
         if asset_id:
+            # Fetch asset info to get EXIF orientation
+            settings = read_settings()
+            if settings.get("immichAutoOrientation", "true").lower() == "true":
+                asset_info = immich_handler.get_asset_info(asset_id)
+                if asset_info:
+                    exif_orientation = asset_info.get("orientation")
+                    print(f"Immich asset {asset_id} EXIF orientation: {exif_orientation}")
+            
             local_path = immich_handler.download_asset(asset_id)
             if local_path:
                 filename = os.path.basename(local_path)
                 print(f"Displaying Immich ({_current_source_type}): {filename}")
-                display_control.process_image_async(filename, "displayImage", "static/immich_cache")
+                # Pass exif_orientation to display control
+                display_control.process_image_async(filename, "displayImage", "static/immich_cache", exif_orientation=exif_orientation)
                 time.sleep(display_duration + 5)
                 if os.path.exists(local_path):
                     os.remove(local_path)

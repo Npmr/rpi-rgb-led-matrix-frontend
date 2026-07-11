@@ -1,9 +1,21 @@
 {
-  "currentApplicationVersion": "v0.0.44",
-  "whatChanged": "Time zone function update",
+  "currentApplicationVersion": "v0.0.45",
+  "whatChanged": "Added EXIF auto-orientation support for Immich and uploaded images",
   "changelog": [
     {
-      "version": "v0.0.43",
+      "version": "v0.0.45",
+      "date": "2026-07-11",
+      "changes": [
+        "Added EXIF auto-orientation correction for images from Immich and local uploads",
+        "New setting 'immichAutoOrientation' (enabled by default) to automatically rotate images based on EXIF orientation tag",
+        "Immich integration now fetches asset EXIF orientation via /api/assets/{id} endpoint",
+        "display_control.py applies EXIF orientation (1-8) before display direction rotation",
+        "Manual rotate buttons (left/right) now rotate relative to EXIF-corrected orientation",
+        "Upload handler extracts and preserves EXIF orientation in metadata API"
+      ]
+    },
+    {
+      "version": "v0.0.44",
       "date": "2026-07-11",
       "changes": [
         "Added timezone configuration (40 common IANA zones)",

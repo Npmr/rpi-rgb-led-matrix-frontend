@@ -154,12 +154,19 @@ def convert_to_avif(image_data, filename):
 def get_image_metadata(image_data):
     try:
         img = Image.open(io.BytesIO(image_data))
+        # Extract EXIF orientation if available
+        exif_orientation = None
+        exif = img.getexif()
+        if exif:
+            exif_orientation = exif.get(0x0112)  # 0x0112 = Orientation tag
+        
         return {
             'width': img.width,
             'height': img.height,
             'format': img.format,
             'mode': img.mode,
-            'orientation': 'horizontal' if img.width > img.height else 'vertical' if img.height > img.width else 'square'
+            'orientation': 'horizontal' if img.width > img.height else 'vertical' if img.height > img.width else 'square',
+            'exif_orientation': exif_orientation
         }
     except Exception as e:
         print(f"Error getting metadata: {e}")

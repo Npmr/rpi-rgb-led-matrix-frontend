@@ -17,6 +17,8 @@ _current_image_name = None
 _current_command_line = None
 _current_static_folder = None
 _current_rotation_offset = 0
+_current_exif_orientation = None
+_current_exif_orientation = None
 
 
 def get_pixel_mapper_config(settings, rotation):
@@ -35,6 +37,45 @@ def get_matrix_dimensions(settings):
     width = int(settings['widthInPixel']) * int(settings['chainLength'])
     height = int(settings['heightInPixel']) * int(settings['parallelChains'])
     return width, height
+
+
+def apply_exif_orientation(img, orientation):
+    """Apply EXIF orientation correction to PIL Image.
+    
+    EXIF Orientation values (1-8):
+    1 = Normal (no rotation)
+    2 = Flip horizontal
+    3 = Rotate 180
+    4 = Flip vertical
+    5 = Transpose (flip horizontal + rotate 90 CW)
+    6 = Rotate 90 CW
+    7 = Transverse (flip horizontal + rotate 90 CCW)
+    8 = Rotate 90 CCW
+    """
+    if not orientation or orientation == 1:
+        return img
+    
+    try:
+        orientation = int(orientation)
+    except (ValueError, TypeError):
+        return img
+    
+    if orientation == 2:
+        return img.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+    elif orientation == 3:
+        return img.transpose(Image.Transpose.ROTATE_180)
+    elif orientation == 4:
+        return img.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+    elif orientation == 5:
+        return img.transpose(Image.Transpose.FLIP_LEFT_RIGHT).transpose(Image.Transpose.ROTATE_90)
+    elif orientation == 6:
+        return img.transpose(Image.Transpose.ROTATE_270)  # 90 CW
+    elif orientation == 7:
+        return img.transpose(Image.Transpose.FLIP_LEFT_RIGHT).transpose(Image.Transpose.ROTATE_270)
+    elif orientation == 8:
+        return img.transpose(Image.Transpose.ROTATE_90)   # 90 CCW
+    
+    return img
 
 
 def fill_crop_image(img, target_width, target_height):
@@ -58,12 +99,17 @@ def fill_crop_image(img, target_width, target_height):
     return img.crop((left, top, right, bottom))
 
 
-def process_image_for_display(image_path, settings):
+def process_image_for_display(image_path, settings, exif_orientation=None):
     matrix_width, matrix_height = get_matrix_dimensions(settings)
     temp_path = None
 
     try:
         with Image.open(image_path) as img:
+            # Apply EXIF orientation correction if enabled and available
+            auto_orient = settings.get('immichAutoOrientation', 'true') == 'true'
+            if auto_orient and exif_orientation:
+                img = apply_exif_orientation(img, exif_orientation)
+
             if img.format == 'GIF' and getattr(img, 'n_frames', 1) > 1:
                 frames = []
                 durations = []
@@ -71,6 +117,9 @@ def process_image_for_display(image_path, settings):
                 for frame_idx in range(img.n_frames):
                     img.seek(frame_idx)
                     frame = img.convert('RGBA')
+                    # Apply EXIF orientation to each frame
+                    if auto_orient and exif_orientation:
+                        frame = apply_exif_orientation(frame, exif_orientation)
                     processed_frame = fill_crop_image(frame, matrix_width, matrix_height)
                     frames.append(processed_frame)
                     durations.append(img.info.get('duration', 100))
@@ -111,7 +160,7 @@ def process_image_for_display(image_path, settings):
         return image_path
 
 
-def _start_display_process(image_name, command_line, static_folder, rotation_offset=0):
+def _start_display_process(image_name, command_line, static_folder, rotation_offset=0, exif_orientation=None):
     stopProcess()
     settings = read_settings()
 
@@ -135,7 +184,7 @@ def _start_display_process(image_name, command_line, static_folder, rotation_off
 
     if command_line == "displayImage":
         original_path = f"{static_folder}/{image_name}"
-        processed_image_path = process_image_for_display(original_path, settings)
+        processed_image_path = process_image_for_display(original_path, settings, exif_orientation)
 
         command = f"sudo .././rpi-rgb-led-matrix/utils/led-image-viewer -C --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness={settings.get('displayBrightness', 100)} --led-pixel-mapper=\"{pixel_mapper}\" --led-slowdown-gpio={settings['ledSlowdown']} {processed_image_path} &"
     elif command_line == "displayDemo":
@@ -172,13 +221,14 @@ def _start_display_process(image_name, command_line, static_folder, rotation_off
         _is_process_running = False
 
 
-def process_image_async(image_name, command_line, static_folder, angle_delta=None):
+def process_image_async(image_name, command_line, static_folder, angle_delta=None, exif_orientation=None):
     global _last_process_call_time, _pending_process_args, _throttle_timer
-    global _current_image_name, _current_command_line, _current_static_folder, _current_rotation_offset
+    global _current_image_name, _current_command_line, _current_static_folder, _current_rotation_offset, _current_exif_orientation
 
     _current_image_name = image_name
     _current_command_line = command_line
     _current_static_folder = static_folder
+    _current_exif_orientation = exif_orientation
 
     if angle_delta is None:
         _current_rotation_offset = 0
@@ -190,13 +240,13 @@ def process_image_async(image_name, command_line, static_folder, angle_delta=Non
 
     if time_since_last_call >= _throttle_interval:
         _last_process_call_time = current_time
-        _start_display_process(image_name, command_line, static_folder, _current_rotation_offset)
+        _start_display_process(image_name, command_line, static_folder, _current_rotation_offset, _current_exif_orientation)
         if _throttle_timer and _throttle_timer.is_alive():
             _throttle_timer.cancel()
         _pending_process_args = None
     else:
         # A call happened recently, schedule a call if one isn't already pending
-        _pending_process_args = (image_name, command_line, static_folder, _current_rotation_offset)
+        _pending_process_args = (image_name, command_line, static_folder, _current_rotation_offset, _current_exif_orientation)
         if not _throttle_timer or not _throttle_timer.is_alive():
             _throttle_timer = Timer(_throttle_interval, _process_pending_call)
             _throttle_timer.start()
@@ -207,9 +257,9 @@ def process_image_async(image_name, command_line, static_folder, angle_delta=Non
 def _process_pending_call():
     global _pending_process_args, _last_process_call_time, _throttle_timer
     if _pending_process_args:
-        image_name, command_line, static_folder, rotation_offset = _pending_process_args
+        image_name, command_line, static_folder, rotation_offset, exif_orientation = _pending_process_args
         _last_process_call_time = time.time()
-        _start_display_process(image_name, command_line, static_folder, rotation_offset)
+        _start_display_process(image_name, command_line, static_folder, rotation_offset, exif_orientation)
         _pending_process_args = None
         _throttle_timer = None
 
@@ -232,10 +282,10 @@ def stopProcess():
     immich_controller.stop_immich_loop()
 
 def trigger_rotation(angle_delta):
-    global _current_image_name, _current_command_line, _current_static_folder
+    global _current_image_name, _current_command_line, _current_static_folder, _current_exif_orientation
     if _current_image_name:
         process_thread = Thread(target=process_image_async,
-                                args=(_current_image_name, _current_command_line, _current_static_folder, angle_delta))
+                                args=(_current_image_name, _current_command_line, _current_static_folder, angle_delta, _current_exif_orientation))
         process_thread.start()
 
 

@@ -2,6 +2,7 @@ import os
 from flask import Flask, render_template, request, url_for, redirect, jsonify, send_from_directory
 from threading import Thread
 from datetime import timedelta
+from PIL import Image
 
 from upload_handler import upload_image
 from modules.settings_handler import read_settings, save_settings
@@ -205,6 +206,7 @@ def save_settings_route():
     new_immichDisplayDurationRandom = request.form.get('immichDisplayDurationRandom', '30')
     new_immichDisplayDurationAlbum = request.form.get('immichDisplayDurationAlbum', '30')
     new_immichDisplayDurationSearch = request.form.get('immichDisplayDurationSearch', '30')
+    new_immichAutoOrientation = request.form.get('immichAutoOrientation', 'true')
     new_timezone = request.form.get('timezone', 'UTC')
     new_clockFormatDate = request.form.get('clockFormatDate', '%A')
     new_clockFormatTime = request.form.get('clockFormatTime', '%H:%M:%S')
@@ -232,6 +234,7 @@ def save_settings_route():
                     'immichDisplayDurationRandom': new_immichDisplayDurationRandom,
                     'immichDisplayDurationAlbum': new_immichDisplayDurationAlbum,
                     'immichDisplayDurationSearch': new_immichDisplayDurationSearch,
+                    'immichAutoOrientation': new_immichAutoOrientation,
                     'timezone': new_timezone,
                     'clockFormatDate': new_clockFormatDate,
                     'clockFormatTime': new_clockFormatTime}
@@ -298,7 +301,19 @@ def regenerate_thumbnails():
 @app.route('/process_image', methods=['POST'])
 def process_image():
     image_name = request.form['image_name']
-    process_thread = Thread(target=process_image_async, args=(image_name, "displayImage", app.config['STATIC_FOLDER']))
+    # Extract EXIF orientation from the image file
+    exif_orientation = None
+    image_path = os.path.join(app.config['STATIC_FOLDER'], image_name)
+    if os.path.exists(image_path):
+        try:
+            with Image.open(image_path) as img:
+                exif = img.getexif()
+                if exif:
+                    exif_orientation = exif.get(0x0112)  # Orientation tag
+        except Exception as e:
+            print(f"Error reading EXIF orientation from {image_name}: {e}")
+    
+    process_thread = Thread(target=process_image_async, args=(image_name, "displayImage", app.config['STATIC_FOLDER'], None, exif_orientation))
     process_thread.start()
     return redirect(url_for('index'))
 

@@ -25,6 +25,7 @@
     "immichDisplayDurationRandom": "30",
     "immichDisplayDurationAlbum": "30",
     "immichDisplayDurationSearch": "30",
+    "immichAutoOrientation": "true",
     "timezone": "Europe/Berlin",
     "clockFormatDate": "%A",
     "clockFormatTime": "%H:%M:%S"

@@ -317,6 +317,10 @@
                             <label class="field__label" for="immichDisplayDurationSearch">Display Duration Search (seconds)</label>
                             <span class="field__error">Input is not a number!</span>
                         </div>
+                        <div class="field field--floating">
+                            <input class="field__input" type="checkbox" name="immichAutoOrientation" id="immichAutoOrientation" {% if settings.get('immichAutoOrientation', 'true') == 'true' %}checked{% endif %}>
+                            <label class="field__label" for="immichAutoOrientation">Auto-rotate images based on EXIF orientation</label>
+                        </div>
 
                         <hr>
                         <h3>Image Optimization</h3>
