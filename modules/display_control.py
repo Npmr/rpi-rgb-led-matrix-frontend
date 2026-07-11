@@ -18,6 +18,18 @@ _current_static_folder = None
 _current_rotation_offset = 0
 
 
+def get_pixel_mapper_config(settings, rotation):
+    """Determine the correct pixel-mapper configuration based on panel layout."""
+    parallel = int(settings.get('parallelChains', 1))
+    chain = int(settings.get('chainLength', 1))
+
+    # U-mapper requires: parallel > 1 AND chain >= 4 AND chain is even
+    if parallel > 1 and chain >= 4 and chain % 2 == 0:
+        return f"U-mapper;Rotate:{rotation}"
+    else:
+        return f"Rotate:{rotation}"
+
+
 def get_matrix_dimensions(settings):
     width = int(settings['widthInPixel']) * int(settings['chainLength'])
     height = int(settings['heightInPixel']) * int(settings['parallelChains'])
@@ -111,7 +123,7 @@ def _start_display_process(image_name, command_line, static_folder, rotation_off
         base_rotation = 0
 
     final_rotation = (base_rotation + rotation_offset) % 360
-    rotation = f";Rotate:{final_rotation}"
+    pixel_mapper = get_pixel_mapper_config(settings, final_rotation)
 
     if static_folder != "static/giphy_cache" and static_folder != "static/immich_cache":
         static_folder = "static/pictures"
@@ -124,12 +136,12 @@ def _start_display_process(image_name, command_line, static_folder, rotation_off
         original_path = f"{static_folder}/{image_name}"
         processed_image_path = process_image_for_display(original_path, settings)
 
-        command = f"sudo .././rpi-rgb-led-matrix/utils/led-image-viewer -C --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness={settings.get('displayBrightness', 100)} --led-pixel-mapper=\"U-mapper{rotation}\" --led-slowdown-gpio={settings['ledSlowdown']} {processed_image_path} &"
+        command = f"sudo .././rpi-rgb-led-matrix/utils/led-image-viewer -C --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness={settings.get('displayBrightness', 100)} --led-pixel-mapper=\"{pixel_mapper}\" --led-slowdown-gpio={settings['ledSlowdown']} {processed_image_path} &"
     elif command_line == "displayDemo":
         if image_name == 12:
-            command = f"sudo .././rpi-rgb-led-matrix/examples-api-use/clock -f ../rpi-rgb-led-matrix/fonts/4x6.bdf -d '%A' -d '%H:%M:%S' --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness={settings.get('displayBrightness', 100)} --led-pixel-mapper=\"U-mapper{rotation}\" --led-slowdown-gpio={settings['ledSlowdown']} &"
+            command = f"sudo .././rpi-rgb-led-matrix/examples-api-use/clock -f ../rpi-rgb-led-matrix/fonts/4x6.bdf -d '%A' -d '%H:%M:%S' --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness={settings.get('displayBrightness', 100)} --led-pixel-mapper=\"{pixel_mapper}\" --led-slowdown-gpio={settings['ledSlowdown']} &"
         elif image_name <= 11:
-            command = f"sudo .././rpi-rgb-led-matrix/examples-api-use/demo -D{image_name} --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness={settings.get('displayBrightness', 100)} --led-pixel-mapper=\"U-mapper{rotation}\" --led-slowdown-gpio={settings['ledSlowdown']} &"
+            command = f"sudo .././rpi-rgb-led-matrix/examples-api-use/demo -D{image_name} --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness={settings.get('displayBrightness', 100)} --led-pixel-mapper=\"{pixel_mapper}\" --led-slowdown-gpio={settings['ledSlowdown']} &"
 
     if command:
         print(f"Executing command: {command}")

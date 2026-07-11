@@ -1,7 +1,24 @@
 {
-  "currentApplicationVersion": "v0.0.40",
-  "whatChanged": "Revert changes that didnt work",
+  "currentApplicationVersion": "v0.0.41",
+  "whatChanged": "Fixed pixel-mapper logic: only use U-mapper when parallelChains > 1 AND chainLength >= 4 AND chainLength is even; otherwise just use rotation",
   "changelog": [
+    {
+      "version": "v0.0.41",
+      "date": "2026-07-11",
+      "changes": [
+        "Fixed pixel-mapper configuration logic in display_control.py",
+        "U-mapper now only used when parallelChains > 1 AND chainLength >= 4 AND chainLength is even (U-shaped/serpentine panel layouts)",
+        "For normal single-chain setups (parallelChains=1) or invalid U-mapper configs, only rotation is applied",
+        "Prevents incorrect display on standard panel chains that aren't arranged in U-shape"
+      ]
+    },
+    {
+      "version": "v0.0.40",
+      "date": "2026-07-10",
+      "changes": [
+        "Revert changes that didnt work"
+      ]
+    },
     {
       "version": "v0.0.34",
       "date": "2026-07-10",
