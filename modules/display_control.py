@@ -139,7 +139,10 @@ def _start_display_process(image_name, command_line, static_folder, rotation_off
         command = f"sudo .././rpi-rgb-led-matrix/utils/led-image-viewer -C --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness={settings.get('displayBrightness', 100)} --led-pixel-mapper=\"{pixel_mapper}\" --led-slowdown-gpio={settings['ledSlowdown']} {processed_image_path} &"
     elif command_line == "displayDemo":
         if image_name == 12:
-            command = f"sudo .././rpi-rgb-led-matrix/examples-api-use/clock -f ../rpi-rgb-led-matrix/fonts/4x6.bdf -d '%A' -d '%H:%M:%S' --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness={settings.get('displayBrightness', 100)} --led-pixel-mapper=\"{pixel_mapper}\" --led-slowdown-gpio={settings['ledSlowdown']} &"
+            tz = settings.get('timezone', 'UTC')
+            date_fmt = settings.get('clockFormatDate', '%A')
+            time_fmt = settings.get('clockFormatTime', '%H:%M:%S')
+            command = f"sudo TZ={tz} .././rpi-rgb-led-matrix/examples-api-use/clock -f ../rpi-rgb-led-matrix/fonts/4x6.bdf -d '{date_fmt}' -d '{time_fmt}' --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness={settings.get('displayBrightness', 100)} --led-pixel-mapper=\"{pixel_mapper}\" --led-slowdown-gpio={settings['ledSlowdown']} &"
         elif image_name <= 11:
             command = f"sudo .././rpi-rgb-led-matrix/examples-api-use/demo -D{image_name} --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness={settings.get('displayBrightness', 100)} --led-pixel-mapper=\"{pixel_mapper}\" --led-slowdown-gpio={settings['ledSlowdown']} &"
 

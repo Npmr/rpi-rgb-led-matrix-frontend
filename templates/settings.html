@@ -242,6 +242,32 @@
                         </div>
                         </br>
                         <hr>
+                        <h3>Time & Date</h3>
+                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                            <select name="timezone" id="timezone" class="mdl-textfield__input">
+                                {% for tz in timezones %}
+                                <option value="{{ tz }}" {% if settings['timezone'] == tz %}selected{% endif %}>{{ tz }}</option>
+                                {% endfor %}
+                            </select>
+                            <label class="mdl-textfield__label" for="timezone">Timezone</label>
+                            <span class="mdl-textfield__error">Invalid selection!</span>
+                        </div>
+                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                            <input class="mdl-textfield__input" type="text" name="clockFormatDate" id="clockFormatDate" value="{{ settings.get('clockFormatDate', '%A') }}">
+                            <label class="mdl-textfield__label" for="clockFormatDate">Date Format (strftime)</label>
+                            <span class="mdl-textfield__error">Invalid strftime format!</span>
+                        </div>
+                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                            <input class="mdl-textfield__input" type="text" name="clockFormatTime" id="clockFormatTime" value="{{ settings.get('clockFormatTime', '%H:%M:%S') }}">
+                            <label class="mdl-textfield__label" for="clockFormatTime">Time Format (strftime)</label>
+                            <span class="mdl-textfield__error">Invalid strftime format!</span>
+                        </div>
+                        <form action="/sync_time" method="POST" style="display:inline-block; margin-left:8px; vertical-align:bottom;">
+                            <button type="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect fw">
+                                Sync Time Now
+                            </button>
+                        </form>
+                        <hr>
                         <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
                             <input class="mdl-textfield__input" type="text" minlength="7" maxlength="15" size="15"
                                    pattern="^(?>(\d|[1-9]\d{2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(?1)$" name="mqttIP"

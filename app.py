@@ -8,7 +8,7 @@ from modules.settings_handler import read_settings, save_settings
 from modules.info_handler import read_infos
 from modules.media_handler import countMediaTypeAndNumber
 from modules.display_control import process_image_async, stopProcess, _current_image_name, _current_command_line, _current_static_folder, trigger_rotation
-from modules.system_handler import getFreeDiskSpace, reboot_system, shutdown_system
+from modules.system_handler import getFreeDiskSpace, reboot_system, shutdown_system, sync_time, has_internet, COMMON_TIMEZONES, sync_time, has_internet, COMMON_TIMEZONES, validate_strftime
 from modules.update_handler import trigger_update, fetch_update_info
 from modules import mqtt_handler, giphy_controller, immich_controller, immich_handler
 
@@ -166,7 +166,7 @@ def settings():
     return render_template('settings.html', settings=settings, numberOfPictues=numberOfPictues,
                            numberOfGifs=numberOfGifs, freeDiskSpaceInPercent=round(freeDiskSpaceInPercent[0]),
                            applicationInfo=infos, updateText=updateText, currentAvailableVersion=updateVersion,
-                           enableUpdateButton=enableUpdateButton)
+                           enableUpdateButton=enableUpdateButton, timezones=COMMON_TIMEZONES)
 
 
 @app.route('/changelog')
@@ -205,6 +205,17 @@ def save_settings_route():
     new_immichDisplayDurationRandom = request.form.get('immichDisplayDurationRandom', '30')
     new_immichDisplayDurationAlbum = request.form.get('immichDisplayDurationAlbum', '30')
     new_immichDisplayDurationSearch = request.form.get('immichDisplayDurationSearch', '30')
+    new_timezone = request.form.get('timezone', 'UTC')
+    new_clockFormatDate = request.form.get('clockFormatDate', '%A')
+    new_clockFormatTime = request.form.get('clockFormatTime', '%H:%M:%S')
+
+    # Validate strftime formats
+    valid, err = validate_strftime(new_clockFormatDate)
+    if not valid:
+        return f"Invalid date format: {err}", 400
+    valid, err = validate_strftime(new_clockFormatTime)
+    if not valid:
+        return f"Invalid time format: {err}", 400
 
     new_settings = {'heightInPixel': new_height, 'widthInPixel': new_width, 'direction': new_direction,
                     'chainLength': new_chainLength, 'parallelChains': new_parallelChains,
@@ -220,9 +231,17 @@ def save_settings_route():
                     'immichAlbumId': new_immichAlbumId, 'immichSearchQuery': new_immichSearchQuery,
                     'immichDisplayDurationRandom': new_immichDisplayDurationRandom,
                     'immichDisplayDurationAlbum': new_immichDisplayDurationAlbum,
-                    'immichDisplayDurationSearch': new_immichDisplayDurationSearch}
+                    'immichDisplayDurationSearch': new_immichDisplayDurationSearch,
+                    'timezone': new_timezone,
+                    'clockFormatDate': new_clockFormatDate,
+                    'clockFormatTime': new_clockFormatTime}
     save_settings(new_settings)
     return redirect(url_for('settings'))
+
+
+@app.route('/sync_time', methods=['POST'])
+def sync_time_route():
+    return sync_time()
 
 
 @app.route('/regenerate_thumbnails', methods=['POST'])
@@ -381,4 +400,12 @@ if __name__ == '__main__':
         print("Warning: MQTT Broker IP not configured. Home Assistant discovery and control will not work.")
 
     upload_image(app)
+
+    # Non-blocking NTP time sync at startup if internet is available
+    if has_internet():
+        print("Internet available - syncing time (non-blocking)...")
+        sync_time()
+    else:
+        print("No internet detected - skipping time sync")
+
     app.run(host='0.0.0.0', port=5000, debug=False)

@@ -1,7 +1,18 @@
 {
-  "currentApplicationVersion": "v0.0.42",
-  "whatChanged": "Fixed Immich album asset fetching: now uses POST /api/search/metadata with albumIds filter instead of broken /api/albums/{id}/assets endpoint",
+  "currentApplicationVersion": "v0.0.43",
+  "whatChanged": "Added timezone support, configurable clock format, NTP sync at startup and manual sync button",
   "changelog": [
+    {
+      "version": "v0.0.43",
+      "date": "2026-07-11",
+      "changes": [
+        "Added timezone configuration (40 common IANA zones)",
+        "Added configurable clock date/time format (strftime patterns)",
+        "Added NTP time sync at startup (non-blocking, ntpdate → systemd fallback)",
+        "Added manual 'Sync Time Now' button in settings",
+        "strftime pattern validation with user feedback"
+      ]
+    },
     {
       "version": "v0.0.42",
       "date": "2026-07-11",

@@ -24,5 +24,8 @@
     "webpQuality": 85,
     "avifQuality": 50,
     "thumbnailQuality": 80,
-    "updateBranch": "main"
+    "updateBranch": "main",
+    "timezone": "UTC",
+    "clockFormatDate": "%A",
+    "clockFormatTime": "%H:%M:%S"
 }
