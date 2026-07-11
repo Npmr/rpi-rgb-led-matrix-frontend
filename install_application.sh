@@ -16,7 +16,6 @@ git clone https://github.com/hzeller/rpi-rgb-led-matrix.git
 cat > /home/pi/rpi-rgb-led-matrix-frontend/.gitignore << 'EOF'
 # Local configuration files (not tracked in git)
 settings.json
-info.json
 
 # Uploaded images and generated thumbnails
 static/pictures/

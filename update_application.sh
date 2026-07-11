@@ -11,12 +11,10 @@ backup_configs() {
     CONFIG_BACKUP_DIR="/tmp/rpi-rgb-matrix-config-backup-$$"
     mkdir -p "$CONFIG_BACKUP_DIR"
     [ -f "/home/pi/rpi-rgb-led-matrix-frontend/settings.json" ] && cp "/home/pi/rpi-rgb-led-matrix-frontend/settings.json" "$CONFIG_BACKUP_DIR/" && log "Backed up settings.json"
-    [ -f "/home/pi/rpi-rgb-led-matrix-frontend/info.json" ] && cp "/home/pi/rpi-rgb-led-matrix-frontend/info.json" "$CONFIG_BACKUP_DIR/" && log "Backed up info.json"
 }
 
 restore_configs() {
     [ -f "$CONFIG_BACKUP_DIR/settings.json" ] && cp "$CONFIG_BACKUP_DIR/settings.json" "/home/pi/rpi-rgb-led-matrix-frontend/" && log "Restored settings.json"
-    [ -f "$CONFIG_BACKUP_DIR/info.json" ] && cp "$CONFIG_BACKUP_DIR/info.json" "/home/pi/rpi-rgb-led-matrix-frontend/" && log "Restored info.json"
 }
 
 cleanup_backup() {
