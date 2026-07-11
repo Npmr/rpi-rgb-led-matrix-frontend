@@ -1,11 +1,24 @@
 {
-  "currentApplicationVersion": "v0.0.46",
-  "whatChanged": "Changed update procidier",
+  "currentApplicationVersion": "v0.0.47",
+  "whatChanged": "Fixed settings form 400 error - removed nested forms and duplicate name attributes",
   "changelog": [
     {
-      "version": "v0.0.45",
+      "version": "v0.0.47",
       "date": "2026-07-11",
       "changes": [
+        "Fixed settings page form submission 400 error",
+        "Removed nested <form> elements inside main settings form (invalid HTML)",
+        "Removed duplicate 'name' attributes on mqttPort, deviceID, deviceName inputs",
+        "Settings save now correctly submits all form fields to /save_settings endpoint"
+      ]
+    },
+    {
+      "version": "v0.0.46",
+      "date": "2026-07-11",
+      "changes": [
+        "Changed update procidier"
+      ]
+    },
         "Added EXIF auto-orientation correction for images from Immich and local uploads",
         "New setting 'immichAutoOrientation' (enabled by default) to automatically rotate images based on EXIF orientation tag",
         "Immich integration now fetches asset EXIF orientation via /api/assets/{id} endpoint",
