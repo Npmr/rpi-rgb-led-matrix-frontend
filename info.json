@@ -1,7 +1,23 @@
 {
-  "currentApplicationVersion": "v0.0.47",
-  "whatChanged": "Fixed settings form 400 error - removed nested forms and duplicate name attributes",
+  "currentApplicationVersion": "v0.0.48",
+  "whatChanged": "Complete UI redesign - self-contained BEM component library with teal theme, base template inheritance, removed MDL dependency",
   "changelog": [
+    {
+      "version": "v0.0.48",
+      "date": "2026-07-28",
+      "changes": [
+        "Complete UI redesign with self-contained CSS/JS (removed external MDL dependency)",
+        "New BEM component library (app.css) with teal (#009688) color theme",
+        "Base template (base.html) with Jinja2 inheritance - eliminates header/nav duplication",
+        "Settings page reorganized into 3-column layout (Stats | Settings | System)",
+        "Settings grouped into logical sections: Hardware, Display, Time/Date, MQTT, GIPHY, Immich, Image Optimization",
+        "Tabs now switch via vanilla JS (no MDL dependency)",
+        "Improved mobile responsive layout with hamburger menu",
+        "Fixed duplicate flash messages in upload page",
+        "Fixed global form width:50px CSS bug that broke non-gallery forms",
+        "Updated test assertions to match new German UI text"
+      ]
+    },
     {
       "version": "v0.0.47",
       "date": "2026-07-11",

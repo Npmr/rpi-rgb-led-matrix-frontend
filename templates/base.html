@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Matrix Steuerung{% endblock %}</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    {% block head_extra %}{% endblock %}
+</head>
+<body>
+<div class="layout">
+    <header class="layout__header">
+        <div class="layout__header-row">
+            <span class="layout__title">
+                <a class="nav__link" href="/" style="padding:0;font-size:1.25rem;font-weight:600;">Matrix Steuerung</a>
+            </span>
+
+            <button class="btn btn--icon mobile-menu-btn tooltip" data-tooltip="Menu" aria-label="Toggle menu">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+            </button>
+
+            <div class="layout__spacer"></div>
+
+            <div class="header-actions">
+                <form method="post" action="/stop_process" class="inline-form">
+                    <button id="stop_process_button" type="submit" class="btn btn--icon tooltip" data-tooltip="Display stoppen & ausschalten" aria-label="Stop display">
+                        <div class="control-icon icon-pause-circle"></div>
+                    </button>
+                </form>
+                <form method="post" action="/rotate_left" class="inline-form" aria-label="Rotate left">
+                    <button type="submit" class="btn btn--icon tooltip" data-tooltip="Links drehen" aria-label="Rotate left">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M7.11 8.53L5.7 7.11C4.8 8.27 4.24 9.61 4.07 11h2.02c.14-.87.49-1.72 1.02-2.47zM6.09 13H4.07c.17 1.39.72 2.73 1.62 3.89l1.41-1.42c-.52-.75-.87-1.59-1.01-2.47zM7.1 18.32c1.16.9 2.51 1.44 3.9 1.61V17.9c-.87-.15-1.71-.49-2.46-1.03L7.1 18.32zM13 4.07V1L8.45 5.55 13 10V6.09c2.84.48 5 2.94 5 5.91s-2.16 5.43-5 5.91v2.02c3.95-.49 7-3.85 7-7.93s-3.05-7.44-7-7.93z"/></svg>
+                    </button>
+                </form>
+                <form method="post" action="/rotate_right" class="inline-form" aria-label="Rotate right">
+                    <button type="submit" class="btn btn--icon tooltip" data-tooltip="Rechts drehen" aria-label="Rotate right">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M15.55 5.55L11 1v3.07C7.06 4.56 4 7.92 4 12s3.05 7.44 7 7.93v-2.02c-2.84-.48-5-2.94-5-5.91s2.16-5.43 5-5.91V10l4.55-4.45zM19.93 11c-.17-1.39-.72-2.73-1.62-3.89l-1.42 1.42c.54.75.88 1.6 1.02 2.47h2.02zM13 17.9v2.02c1.39-.17 2.74-.71 3.9-1.61l-1.44-1.44c-.75.54-1.59.89-2.46 1.03zm3.89-2.42l1.42 1.41c.9-1.16 1.45-2.5 1.62-3.89h-2.02c-.14.87-.48 1.72-1.02 2.48z"/></svg>
+                    </button>
+                </form>
+            </div>
+
+            <nav class="nav" role="navigation">
+                <a class="nav__link" href="{{ url_for('upload') }}">Dateien Hochladen</a>
+                <a class="nav__link" href="{{ url_for('changelog') }}">Changelog</a>
+                <a class="nav__link" href="{{ url_for('settings') }}">Einstellungen</a>
+            </nav>
+        </div>
+    </header>
+
+    {% block tabs %}{% endblock %}
+
+    <main class="layout__content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">
+                        <span>{{ message }}</span>
+                        <button type="button" class="flash-dismiss" aria-label="Close">&times;</button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+</div>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

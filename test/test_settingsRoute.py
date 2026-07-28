@@ -16,8 +16,7 @@ class TestSettingsRoute(unittest.TestCase):
 
         response = self.app.get('/settings')
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Save Settings', response.data)
-        self.assertIn(b'Settings', response.data)
+        self.assertIn(b'Einstellungen', response.data)
 
     @patch('app.read_settings', return_value={'heightInPixel': 480, 'widthInPixel': 640, 'direction': 'vertical', 'updateBranch': 'main'})
     @patch('app.countMediaTypeAndNumber')
@@ -27,8 +26,7 @@ class TestSettingsRoute(unittest.TestCase):
 
         response = self.app.get('/settings')
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Save Settings', response.data)
-        self.assertIn(b'Settings', response.data)
+        self.assertIn(b'Einstellungen', response.data)
 
 if __name__ == '__main__':
     unittest.main()

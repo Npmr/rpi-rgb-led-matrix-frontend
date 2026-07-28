@@ -1,464 +1,398 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Image Selection</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    <link rel="stylesheet" href="https://traycar.npmr.de/static/ledBild/css/material.min.css">
-    <script defer src="https://traycar.npmr.de/static/ledBild/js/material.min.js"></script>
-    <link rel="stylesheet" href="static/css/main.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-</head>
-<body>
-<div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-tabs">
-    <header class="mdl-layout__header">
-        <div class="mdl-layout__header-row">
-            <span class="mdl-layout-title">
-                <a class="mdl-navigation__link" href="/">Matrix Steuerung</a></span>
-            <div class="mdl-layout-spacer">
-                <form method="post" action="/stop_process">
-                    <button id="stop_process_button" type="submit" class="mdl-button mdl-js-button mdl-button--icon" aria-label="Stop display">
-                        <div class="control-icon icon-pause-circle"></div>
-                    </button>
-                </form>
-            </div>
-            <div class="mdl-tooltip" for="stop_process_button">
-                Stop Displaying<br>and turn display off
-            </div>
-            <form method="post" action="/rotate_left" aria-label="Rotate left">
-                <button type="submit" class="mdl-button mdl-js-button mdl-button--icon">
-                    <i class="material-icons">rotate_left</i>
-                </button>
-            </form>
-            <form method="post" action="/rotate_right" aria-label="Rotate right">
-                <button type="submit" class="mdl-button mdl-js-button mdl-button--icon">
-                    <i class="material-icons">rotate_right</i>
-                </button>
-            </form>
-            <nav class="mdl-navigation">
-                <a class="mdl-navigation__link" href="{{ url_for('upload') }}">Dateien Hochladen</a>
-                <a class="mdl-navigation__link" href="{{ url_for('changelog') }}">Changelog</a>
-                <a class="mdl-navigation__link" href="{{ url_for('settings') }}">Einstellungen</a>
-            </nav>
-        </div>
-        <div class="mdl-layout__tab-bar mdl-js-ripple-effect" role="tablist">
-            <a href="#fixed-tab-1" class="mdl-layout__tab is-active" role="tab" aria-controls="fixed-tab-1" aria-selected="true">Bilder</a>
-            <a href="#fixed-tab-2" class="mdl-layout__tab" role="tab" aria-controls="fixed-tab-2" aria-selected="false">GIFs</a>
-            <a href="#fixed-tab-3" class="mdl-layout__tab" role="tab" aria-controls="fixed-tab-3" aria-selected="false">Videos</a>
-            <a href="#fixed-tab-4" class="mdl-layout__tab" role="tab" aria-controls="fixed-tab-4" aria-selected="false">Demos</a>
-        </div>
-    </header>
-    <div class="mdl-grid">
-        <div class="mdl-cell mdl-cell--12-col">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="flash-message flash-{{ category }}">
-                            <span>{{ message }}</span>
-                            <button type="button" class="flash-dismiss" onclick="this.parentElement.remove()">×</button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-        </div>
-    </div>
-    <main class="mdl-layout__content">
-        <div class="mdl-grid filter-bar">
-            <div class="mdl-cell mdl-cell--12-col">
-                <fieldset class="mdl-cell mdl-cell--12-col filter-fieldset">
-                    <legend>Filter by orientation</legend>
-                    <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="checkbox-vertical">
-                        <input type="checkbox" id="checkbox-vertical" class="mdl-checkbox__input" checked onchange="filterFunction()">
-                        <span class="mdl-checkbox__label">Vertical</span>
-                    </label>
-                    <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="checkbox-horizontal">
-                        <input type="checkbox" id="checkbox-horizontal" class="mdl-checkbox__input" checked onchange="filterFunction()">
-                        <span class="mdl-checkbox__label">Horizontal</span>
-                    </label>
-                    <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="checkbox-square">
-                        <input type="checkbox" id="checkbox-square" class="mdl-checkbox__input" checked onchange="filterFunction()">
-                        <span class="mdl-checkbox__label">Square</span>
-                    </label>
-                </fieldset>
-            </div>
-            <div class="mdl-cell mdl-cell--12-col">
-                <form method="post" action="/stop_process">
-                    <button id="stop_process_button_main" type="submit" class="mdl-button mdl-js-button mdl-button--icon" aria-label="Stop display">
-                        <div class="control-icon icon-playlist-play"></div>
-                    </button>
-                </form>
-            </div>
-        </div>
+{% extends "base.html" %}
 
-        <section class="mdl-layout__tab-panel is-active" id="fixed-tab-1" role="tabpanel">
-            <div class="page-content">
-                <div class="media-grid" id="images-grid">
-                    {% for image in images %}
-                        <article class="media-card {{ image['orientation'] }}" data-orientation="{{ image['orientation'] }}">
-                            <div class="media-thumb">
-                                <picture class="responsive-image-wrapper">
-                                    {% if image.avif_url and image.thumbnails %}
-                                        <source type="image/avif" 
-                                                srcset="{{ image.avif_url }} 600w,
-                                                        {{ image.thumbnails.large.url }} 600w,
-                                                        {{ image.thumbnails.medium.url }} 300w,
-                                                        {{ image.thumbnails.small.url }} 150w"
-                                                sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw">
-                                    {% endif %}
-                                    {% if image.webp_url and image.thumbnails %}
-                                        <source type="image/webp" 
-                                                srcset="{{ image.webp_url }} 600w,
-                                                        {{ image.thumbnails.large.url }} 600w,
-                                                        {{ image.thumbnails.medium.url }} 300w,
-                                                        {{ image.thumbnails.small.url }} 150w"
-                                                sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw">
-                                    {% endif %}
-                                    {% if image.thumbnails %}
-                                        <img src="data:image/webp;base64,{{ image.lqip }}" 
-                                             srcset="{{ image.thumbnails.small.url }} 150w, {{ image.thumbnails.medium.url }} 300w, {{ image.thumbnails.large.url }} 600w"
-                                             sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw"
-                                             alt="{{ image['filename'] }}"
-                                             loading="lazy"
-                                             class="lazy-image blur-up"
-                                             width="300" height="300"
-                                             decoding="async"
-                                             style="filter: blur(20px); transition: filter 0.3s ease-out;"
-                                             data-full-avif="{{ image.avif_url }}"
-                                             data-full-webp="{{ image.webp_url }}"
-                                             data-full-original="{{ url_for('static', filename='pictures/' + image['filename']) }}">
-                                    {% else %}
-                                        <img src="{{ url_for('static', filename='pictures/' + image['filename']) }}" 
-                                             alt="{{ image['filename'] }}"
-                                             loading="lazy"
-                                             class="lazy-image"
-                                             width="300" height="300"
-                                             decoding="async">
-                                    {% endif %}
-                                </picture>
-                                <div class="media-overlay">
-                                    <form method="post" action="/process_image" class="media-action play-action" title="Display on matrix">
-                                        <button class="mdl-button mdl-js-button mdl-button--icon" type="submit" name="image_name" value="{{ image['filename'] }}">
-                                            <div class="control-icon icon-play-circle"></div>
-                                        </button>
-                                    </form>
-                                    <form action="/delete_image" method="POST" class="media-action delete-action" title="Delete">
-                                        <button class="mdl-button mdl-js-button mdl-button--icon" type="submit" name="image_name_to_delete" value="{{ image['filename'] }}">
-                                            <div class="control-icon icon-delete"></div>
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                            <div class="media-info">
-                                <span class="media-filename">{{ image['filename'] }}</span>
-                                <span class="media-orientation">
-                                    {% if image['orientation'] == 'vertical' %}<i class="material-icons">portrait</i>{% endif %}
-                                    {% if image['orientation'] == 'horizontal' %}<i class="material-icons">landscape</i>{% endif %}
-                                    {% if image['orientation'] == 'square' %}<i class="material-icons">crop_square</i>{% endif %}
-                                </span>
-                            </div>
-                        </article>
-                    {% endfor %}
-                </div>
-            </div>
-        </section>
-        <section class="mdl-layout__tab-panel" id="fixed-tab-2" role="tabpanel">
-            <div class="page-content">
-                <div class="media-grid" id="gifs-grid">
-                    {% for gif in gifs %}
-                        <article class="media-card {{ gif['orientation'] }}" data-orientation="{{ gif['orientation'] }}">
-                            <div class="media-thumb">
-                                <picture class="responsive-image-wrapper">
-                                    {% if gif.thumbnails %}
-                                        <img src="data:image/webp;base64,{{ gif.lqip }}" 
-                                             srcset="{{ gif.thumbnails.small.url }} 150w, {{ gif.thumbnails.medium.url }} 300w, {{ gif.thumbnails.large.url }} 600w"
-                                             sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw"
-                                             alt="{{ gif['filename'] }}"
-                                             loading="lazy"
-                                             class="lazy-image blur-up"
-                                             width="300" height="300"
-                                             decoding="async"
-                                             style="filter: blur(20px); transition: filter 0.3s ease-out;"
-                                             data-full-original="{{ url_for('static', filename='pictures/' + gif['filename']) }}">
-                                    {% else %}
-                                        <img src="{{ url_for('static', filename='pictures/' + gif['filename']) }}" 
-                                             alt="{{ gif['filename'] }}"
-                                             loading="lazy"
-                                             class="lazy-image"
-                                             width="300" height="300"
-                                             decoding="async">
-                                    {% endif %}
-                                </picture>
-                                <div class="media-overlay">
-                                    <form method="post" action="/process_image" class="media-action play-action" title="Display on matrix">
-                                        <button class="mdl-button mdl-js-button mdl-button--icon" type="submit" name="image_name" value="{{ gif['filename'] }}">
-                                            <div class="control-icon icon-play-circle"></div>
-                                        </button>
-                                    </form>
-                                    <form action="/delete_image" method="POST" class="media-action delete-action" title="Delete">
-                                        <button class="mdl-button mdl-js-button mdl-button--icon" type="submit" name="image_name_to_delete" value="{{ gif['filename'] }}">
-                                            <div class="control-icon icon-delete"></div>
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                            <div class="media-info">
-                                <span class="media-filename">{{ gif['filename'] }}</span>
-                                <span class="media-orientation">
-                                    {% if gif['orientation'] == 'vertical' %}<i class="material-icons">portrait</i>{% endif %}
-                                    {% if gif['orientation'] == 'horizontal' %}<i class="material-icons">landscape</i>{% endif %}
-                                    {% if gif['orientation'] == 'square' %}<i class="material-icons">crop_square</i>{% endif %}
-                                </span>
-                            </div>
-                        </article>
-                    {% endfor %}
-                </div>
-            </div>
-        </section>
-        <section class="mdl-layout__tab-panel" id="fixed-tab-3" role="tabpanel">
-            <div class="page-content">
-                <div class="media-grid" id="videos-grid">
-                    {% for video in videos %}
-                        <article class="media-card {{ video['orientation'] }}" data-orientation="{{ video['orientation'] }}">
-                            <div class="media-thumb">
-                                <video src="{{ url_for('static', filename='pictures/' + video['filename']) }}" 
-                                       class="lazy-video" 
-                                       preload="metadata"
-                                       muted
-                                       loop
-                                       playsinline
-                                       width="300" height="300"
-                                       poster="{{ url_for('static', filename='pictures/thumbnails/' + video['filename'].replace('.webm', '_thumb_medium.webp')) }}">
-                                </video>
-                                <div class="media-overlay">
-                                    <form method="post" action="/process_image" class="media-action play-action" title="Display on matrix">
-                                        <button class="mdl-button mdl-js-button mdl-button--icon" type="submit" name="image_name" value="{{ video['filename'] }}">
-                                            <div class="control-icon icon-play-circle"></div>
-                                        </button>
-                                    </form>
-                                    <form action="/delete_image" method="POST" class="media-action delete-action" title="Delete">
-                                        <button class="mdl-button mdl-js-button mdl-button--icon" type="submit" name="image_name_to_delete" value="{{ video['filename'] }}">
-                                            <div class="control-icon icon-delete"></div>
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                            <div class="media-info">
-                                <span class="media-filename">{{ video['filename'] }}</span>
-                                <span class="media-orientation"><i class="material-icons">videocam</i></span>
-                            </div>
-                        </article>
-                    {% endfor %}
-                </div>
-            </div>
-        </section>
-        <section class="mdl-layout__tab-panel" id="fixed-tab-4" role="tabpanel">
-            <div class="page-content">
-                <div class="mdl-grid">
-                    <h2>Start Giphy</h2>
-                    <form action="/start_giphy_web" method="post">
-                        <button type="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">Start Giphy Loop</button>
-                    </form>
-                </div>
+{% block title %}Bilder - Matrix Steuerung{% endblock %}
 
-                <div class="mdl-grid">
-                    <h2>Start Giphy by Category (Art & Design)</h2>
-                    <div id="art_design_categories">
-                        <p>Loading Art & Design subcategories...</p>
-                    </div>
-                </div>
-
-                <div class="mdl-grid">
-                    <h2>Start Immich Random</h2>
-                    <form action="/start_immich_random" method="post">
-                        <button type="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">Start Immich Random</button>
-                    </form>
-                </div>
-
-                <div class="mdl-grid">
-                    <h2>Start Immich Album</h2>
-                    <div id="immich_albums_container">
-                        <p>Loading albums...</p>
-                    </div>
-                </div>
-
-                <div class="mdl-grid">
-                    <h2>Start Immich Search</h2>
-                    <form action="/start_immich_search" method="post">
-                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <input class="mdl-textfield__input" type="text" name="immich_search_query" id="immich_search_query" placeholder=" ">
-                            <label class="mdl-textfield__label" for="immich_search_query">Search Query</label>
-                        </div>
-                        <button type="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">Start Immich Search</button>
-                    </form>
-                </div>
-
-
-                <script>
-                    document.addEventListener('DOMContentLoaded', function() {
-                        fetch('/get_art_design_subcategories')
-                            .then(response => response.json())
-                            .then(data => {
-                                const categoriesDiv = document.getElementById('art_design_categories');
-                                categoriesDiv.innerHTML = '';
-
-                                if (data && data.length > 0) {
-                                    const selectElement = document.createElement('select');
-                                    selectElement.name = 'giphy_category';
-                                    selectElement.className = 'mdl-textfield__input';
-
-                                    const defaultOption = document.createElement('option');
-                                    defaultOption.value = '';
-                                    defaultOption.textContent = 'Select a Category';
-                                    selectElement.appendChild(defaultOption);
-
-                                    data.forEach(subcategory => {
-                                        const option = document.createElement('option');
-                                        option.value = subcategory.name_encoded;
-                                        option.textContent = subcategory.name;
-                                        selectElement.appendChild(option);
-                                    });
-
-                                    const submitButton = document.createElement('button');
-                                    submitButton.type = 'submit';
-                                    submitButton.textContent = 'Start Giphy with Category';
-                                    submitButton.className = 'mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect';
-
-                                    const categoryForm = document.createElement('form');
-                                    categoryForm.action = '/start_giphy_category';
-                                    categoryForm.method = 'post';
-                                    categoryForm.className = 'category-form';
-                                    categoryForm.appendChild(selectElement);
-                                    categoryForm.appendChild(submitButton);
-
-                                    categoriesDiv.appendChild(categoryForm);
-                                } else {
-                                    categoriesDiv.textContent = 'Could not load Art & Design subcategories.';
-                                }
-                            })
-                            .catch(error => {
-                                const categoriesDiv = document.getElementById('art_design_categories');
-                                categoriesDiv.textContent = 'Error loading Art & Design subcategories.';
-                                console.error('Error fetching subcategories:', error);
-                            });
-                    });
-
-                    // Load Immich Albums inline (similar to Giphy categories)
-                    function loadImmichAlbums() {
-                        fetch('/get_immich_albums')
-                            .then(response => response.json())
-                            .then(data => {
-                                const container = document.getElementById('immich_albums_container');
-                                if (data && data.length > 0) {
-                                    const selectHtml = data.map(album =>
-                                        '<option value="' + album.id + '">' + album.name + ' (' + album.assetCount + ' assets)</option>'
-                                    ).join('');
-                                    container.innerHTML =
-                                        '<form method="post" action="/start_immich_album">' +
-                                        '  <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">' +
-                                        '    <select name="immich_album_id" class="mdl-textfield__input">' +
-                                        '      <option value="">Select an album</option>' +
-                                        selectHtml +
-                                        '    </select>' +
-                                        '    <label class="mdl-textfield__label" for="immich_album_select">Album</label>' +
-                                        '  </div>' +
-                                        '  <button type="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">Start Album</button>' +
-                                        '</form>';
-                                } else {
-                                    container.innerHTML = '<p>No albums found. Check Immich settings.</p>';
-                                }
-                            })
-                            .catch(error => {
-                                document.getElementById('immich_albums_container').innerHTML = '<p>Error loading albums.</p>';
-                                console.error('Error fetching Immich albums:', error);
-                            });
-                    }
-
-                    // Load albums on page load
-                    loadImmichAlbums();
-                </script>
-
-                <div class="mdl-grid">
-                    <h2>Demos</h2>
-                    <div class="mdl-cell mdl-cell--12-col "></div>
-                    <form method="post" action="/process_demo" class="from-normal">
-                        <ul class="demo-list-item mdl-list">
-                            <li class="mdl-list__item">
-                                <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-1">
-                                    <input type="radio" id="option-1" class="mdl-radio__button" name="options" value="0" checked>
-                                    <span class="mdl-radio__label">A rotating Square</span>
-                                </label>
-                            </li>
-                            <li class="mdl-list__item">
-                                <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-2">
-                                    <input type="radio" id="option-2" class="mdl-radio__button" name="options" value="3">
-                                    <span class="mdl-radio__label">Test image, a square</span>
-                                </label>
-                            </li>
-                            <li class="mdl-list__item">
-                                <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-3">
-                                    <input type="radio" id="option-3" class="mdl-radio__button" name="options" value="4">
-                                    <span class="mdl-radio__label">Pulsing color</span>
-                                </label>
-                            </li>
-
-                            <li class="mdl-list__item">
-                                <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-4">
-                                    <input type="radio" id="option-4" class="mdl-radio__button" name="options" value="5">
-                                    <span class="mdl-radio__label">Grayscale Block</span>
-                                </label>
-                            </li>
-                            <li class="mdl-list__item">
-                                <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-5">
-                                    <input type="radio" id="option-5" class="mdl-radio__button" name="options" value="6">
-                                    <span class="mdl-radio__label">Abelian sandpile model</span>
-                                </label>
-                            </li>
-                            <li class="mdl-list__item">
-                                <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-6">
-                                    <input type="radio" id="option-6" class="mdl-radio__button" name="options" value="7">
-                                    <span class="mdl-radio__label">Conway's game of life</span>
-                                </label>
-                            </li>
-                            <li class="mdl-list__item">
-                                <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-7">
-                                    <input type="radio" id="option-7" class="mdl-radio__button" name="options" value="8">
-                                    <span class="mdl-radio__label">Langton's ant</span>
-                                </label>
-                            </li>
-                            <li class="mdl-list__item">
-                                <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-8">
-                                    <input type="radio" id="option-8" class="mdl-radio__button" name="options" value="9">
-                                    <span class="mdl-radio__label">Volume bars</span>
-                                </label>
-                            </li>
-                            <li class="mdl-list__item">
-                                <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-9">
-                                    <input type="radio" id="option-9" class="mdl-radio__button" name="options" value="10">
-                                    <span class="mdl-radio__label">Evolution of color</span>
-                                </label>
-                            </li>
-
-                            <li class="mdl-list__item"><label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-10">
-                                <input type="radio" id="option-10" class="mdl-radio__button" name="options" value="11">
-                                <span class="mdl-radio__label">Brightness pulse generator</span>
-                            </label></li>
-                            <li class="mdl-list__item"><label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-11">
-                                <input type="radio" id="option-11" class="mdl-radio__button" name="options" value="12">
-                                <span class="mdl-radio__label">Current Day and  Time</span>
-                            </label></li>
-                        </ul>
-
-                        <button class="mdl-button mdl-js-button" type="submit">Submit</button>
-                    </form>
-
-                    <p> TODO add the text option as well as the option to show multiple at once, like the clock together with a image or so</p>
-                </div>
-            </div>
-        </section>
-    </main>
+{% block tabs %}
+<div class="tabs" role="tablist">
+    <button class="tabs__tab tabs__tab--active" data-tab="#panel-bilder" role="tab" aria-selected="true">Bilder</button>
+    <button class="tabs__tab" data-tab="#panel-gifs" role="tab" aria-selected="false">GIFs</button>
+    <button class="tabs__tab" data-tab="#panel-videos" role="tab" aria-selected="false">Videos</button>
+    <button class="tabs__tab" data-tab="#panel-demos" role="tab" aria-selected="false">Demos</button>
 </div>
+<div class="tabs__panels">
 
-<script src="static/js/progressiveLoad.js"></script>
-</body>
-</html>
+    {# === BILDER TAB === #}
+    <section class="tabs__panel tabs__panel--active" id="panel-bilder" role="tabpanel">
+        <div class="filter-bar">
+            <fieldset class="filter-bar__fieldset">
+                <legend class="filter-bar__legend">Filter by orientation</legend>
+                <div class="filter-bar__options">
+                    <label class="checkbox">
+                        <input type="checkbox" class="checkbox__input" id="checkbox-vertical" checked onchange="filterFunction()">
+                        <span class="checkbox__label">Vertical</span>
+                    </label>
+                    <label class="checkbox">
+                        <input type="checkbox" class="checkbox__input" id="checkbox-horizontal" checked onchange="filterFunction()">
+                        <span class="checkbox__label">Horizontal</span>
+                    </label>
+                    <label class="checkbox">
+                        <input type="checkbox" class="checkbox__input" id="checkbox-square" checked onchange="filterFunction()">
+                        <span class="checkbox__label">Square</span>
+                    </label>
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="media-grid" id="images-grid">
+            {% for image in images %}
+                <article class="media-card {{ image['orientation'] }}" data-orientation="{{ image['orientation'] }}">
+                    <div class="media-thumb">
+                        <picture class="responsive-image-wrapper">
+                            {% if image.avif_url and image.thumbnails %}
+                                <source type="image/avif" 
+                                        srcset="{{ image.avif_url }} 600w,
+                                                {{ image.thumbnails.large.url }} 600w,
+                                                {{ image.thumbnails.medium.url }} 300w,
+                                                {{ image.thumbnails.small.url }} 150w"
+                                        sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw">
+                            {% endif %}
+                            {% if image.webp_url and image.thumbnails %}
+                                <source type="image/webp" 
+                                        srcset="{{ image.webp_url }} 600w,
+                                                {{ image.thumbnails.large.url }} 600w,
+                                                {{ image.thumbnails.medium.url }} 300w,
+                                                {{ image.thumbnails.small.url }} 150w"
+                                        sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw">
+                            {% endif %}
+                            {% if image.thumbnails %}
+                                <img src="data:image/webp;base64,{{ image.lqip }}" 
+                                     srcset="{{ image.thumbnails.small.url }} 150w, {{ image.thumbnails.medium.url }} 300w, {{ image.thumbnails.large.url }} 600w"
+                                     sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw"
+                                     alt="{{ image['filename'] }}"
+                                     loading="lazy"
+                                     class="lazy-image blur-up"
+                                     width="300" height="300"
+                                     decoding="async"
+                                     style="filter: blur(20px); transition: filter 0.3s ease-out;"
+                                     data-full-avif="{{ image.avif_url }}"
+                                     data-full-webp="{{ image.webp_url }}"
+                                     data-full-original="{{ url_for('static', filename='pictures/' + image['filename']) }}">
+                            {% else %}
+                                <img src="{{ url_for('static', filename='pictures/' + image['filename']) }}" 
+                                     alt="{{ image['filename'] }}"
+                                     loading="lazy"
+                                     class="lazy-image"
+                                     width="300" height="300"
+                                     decoding="async">
+                            {% endif %}
+                        </picture>
+                        <div class="media-overlay">
+                            <form method="post" action="/process_image" class="media-action play-action" title="Display on matrix">
+                                <button class="btn--icon" type="submit" name="image_name" value="{{ image['filename'] }}">
+                                    <div class="control-icon icon-play-circle"></div>
+                                </button>
+                            </form>
+                            <form action="/delete_image" method="POST" class="media-action delete-action" title="Delete">
+                                <button class="btn--icon" type="submit" name="image_name_to_delete" value="{{ image['filename'] }}">
+                                    <div class="control-icon icon-delete"></div>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="media-info">
+                        <span class="media-filename">{{ image['filename'] }}</span>
+                        <span class="media-orientation">
+                            {% if image['orientation'] == 'vertical' %}<i class="material-icons">portrait</i>{% endif %}
+                            {% if image['orientation'] == 'horizontal' %}<i class="material-icons">landscape</i>{% endif %}
+                            {% if image['orientation'] == 'square' %}<i class="material-icons">crop_square</i>{% endif %}
+                        </span>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+
+    {# === GIFS TAB === #}
+    <section class="tabs__panel" id="panel-gifs" role="tabpanel">
+        <div class="filter-bar">
+            <fieldset class="filter-bar__fieldset">
+                <legend class="filter-bar__legend">Filter by orientation</legend>
+                <div class="filter-bar__options">
+                    <label class="checkbox">
+                        <input type="checkbox" class="checkbox__input" id="checkbox-vertical-gifs" checked onchange="filterFunction()">
+                        <span class="checkbox__label">Vertical</span>
+                    </label>
+                    <label class="checkbox">
+                        <input type="checkbox" class="checkbox__input" id="checkbox-horizontal-gifs" checked onchange="filterFunction()">
+                        <span class="checkbox__label">Horizontal</span>
+                    </label>
+                    <label class="checkbox">
+                        <input type="checkbox" class="checkbox__input" id="checkbox-square-gifs" checked onchange="filterFunction()">
+                        <span class="checkbox__label">Square</span>
+                    </label>
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="media-grid" id="gifs-grid">
+            {% for gif in gifs %}
+                <article class="media-card {{ gif['orientation'] }}" data-orientation="{{ gif['orientation'] }}">
+                    <div class="media-thumb">
+                        <picture class="responsive-image-wrapper">
+                            {% if gif.thumbnails %}
+                                <img src="data:image/webp;base64,{{ gif.lqip }}" 
+                                     srcset="{{ gif.thumbnails.small.url }} 150w, {{ gif.thumbnails.medium.url }} 300w, {{ gif.thumbnails.large.url }} 600w"
+                                     sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw"
+                                     alt="{{ gif['filename'] }}"
+                                     loading="lazy"
+                                     class="lazy-image blur-up"
+                                     width="300" height="300"
+                                     decoding="async"
+                                     style="filter: blur(20px); transition: filter 0.3s ease-out;"
+                                     data-full-original="{{ url_for('static', filename='pictures/' + gif['filename']) }}">
+                            {% else %}
+                                <img src="{{ url_for('static', filename='pictures/' + gif['filename']) }}" 
+                                     alt="{{ gif['filename'] }}"
+                                     loading="lazy"
+                                     class="lazy-image"
+                                     width="300" height="300"
+                                     decoding="async">
+                            {% endif %}
+                        </picture>
+                        <div class="media-overlay">
+                            <form method="post" action="/process_image" class="media-action play-action" title="Display on matrix">
+                                <button class="btn--icon" type="submit" name="image_name" value="{{ gif['filename'] }}">
+                                    <div class="control-icon icon-play-circle"></div>
+                                </button>
+                            </form>
+                            <form action="/delete_image" method="POST" class="media-action delete-action" title="Delete">
+                                <button class="btn--icon" type="submit" name="image_name_to_delete" value="{{ gif['filename'] }}">
+                                    <div class="control-icon icon-delete"></div>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="media-info">
+                        <span class="media-filename">{{ gif['filename'] }}</span>
+                        <span class="media-orientation">
+                            {% if gif['orientation'] == 'vertical' %}<i class="material-icons">portrait</i>{% endif %}
+                            {% if gif['orientation'] == 'horizontal' %}<i class="material-icons">landscape</i>{% endif %}
+                            {% if gif['orientation'] == 'square' %}<i class="material-icons">crop_square</i>{% endif %}
+                        </span>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+
+    {# === VIDEOS TAB === #}
+    <section class="tabs__panel" id="panel-videos" role="tabpanel">
+        <div class="media-grid" id="videos-grid">
+            {% for video in videos %}
+                <article class="media-card {{ video['orientation'] }}" data-orientation="{{ video['orientation'] }}">
+                    <div class="media-thumb">
+                        <video src="{{ url_for('static', filename='pictures/' + video['filename']) }}" 
+                               class="lazy-video" 
+                               preload="metadata"
+                               muted
+                               loop
+                               playsinline
+                               width="300" height="300"
+                               poster="{{ url_for('static', filename='pictures/thumbnails/' + video['filename'].replace('.webm', '_thumb_medium.webp')) }}">
+                        </video>
+                        <div class="media-overlay">
+                            <form method="post" action="/process_image" class="media-action play-action" title="Display on matrix">
+                                <button class="btn--icon" type="submit" name="image_name" value="{{ video['filename'] }}">
+                                    <div class="control-icon icon-play-circle"></div>
+                                </button>
+                            </form>
+                            <form action="/delete_image" method="POST" class="media-action delete-action" title="Delete">
+                                <button class="btn--icon" type="submit" name="image_name_to_delete" value="{{ video['filename'] }}">
+                                    <div class="control-icon icon-delete"></div>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="media-info">
+                        <span class="media-filename">{{ video['filename'] }}</span>
+                        <span class="media-orientation"><i class="material-icons">videocam</i></span>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+
+    {# === DEMOS TAB === #}
+    <section class="tabs__panel" id="panel-demos" role="tabpanel">
+
+        <div class="demos-section">
+            <h3 class="demos-section__title">GIPHY</h3>
+            <div class="demos-section__form">
+                <form action="/start_giphy_web" method="post">
+                    <button type="submit" class="btn btn--primary">Start GIPHY Loop</button>
+                </form>
+
+                <div class="mt-md">
+                    <h4>GIPHY by Category (Art &amp; Design)</h4>
+                    <div id="art_design_categories" class="mt-sm">
+                        <p class="text-center" style="color:var(--color-text-secondary);">Lade Kategorien...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="demos-section">
+            <h3 class="demos-section__title">Immich</h3>
+            <div class="demos-section__form">
+                <form action="/start_immich_random" method="post">
+                    <button type="submit" class="btn btn--primary">Zufällige Immich Bilder</button>
+                </form>
+
+                <div class="field mt-md">
+                    <label class="field__label">Immich Album</label>
+                    <div id="immich_albums_container">
+                        <p style="color:var(--color-text-secondary);">Lade Alben...</p>
+                    </div>
+                </div>
+
+                <div class="field mt-md">
+                    <label class="field__label" for="immich_search_query">Immich Suche</label>
+                    <form action="/start_immich_search" method="post" style="width:100%;">
+                        <input class="field__input" type="text" name="immich_search_query" id="immich_search_query" placeholder="Suchbegriff eingeben...">
+                        <button type="submit" class="btn btn--primary mt-sm">Suche starten</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="demos-section">
+            <h3 class="demos-section__title">Demos</h3>
+            <form method="post" action="/process_demo">
+                <ul class="radio-group">
+                    <li class="radio-group__item">
+                        <label class="radio">
+                            <input type="radio" class="radio__input" name="options" value="0" checked>
+                            <span class="radio__label">A rotating Square</span>
+                        </label>
+                    </li>
+                    <li class="radio-group__item">
+                        <label class="radio">
+                            <input type="radio" class="radio__input" name="options" value="3">
+                            <span class="radio__label">Test image, a square</span>
+                        </label>
+                    </li>
+                    <li class="radio-group__item">
+                        <label class="radio">
+                            <input type="radio" class="radio__input" name="options" value="4">
+                            <span class="radio__label">Pulsing color</span>
+                        </label>
+                    </li>
+                    <li class="radio-group__item">
+                        <label class="radio">
+                            <input type="radio" class="radio__input" name="options" value="5">
+                            <span class="radio__label">Grayscale Block</span>
+                        </label>
+                    </li>
+                    <li class="radio-group__item">
+                        <label class="radio">
+                            <input type="radio" class="radio__input" name="options" value="6">
+                            <span class="radio__label">Abelian sandpile model</span>
+                        </label>
+                    </li>
+                    <li class="radio-group__item">
+                        <label class="radio">
+                            <input type="radio" class="radio__input" name="options" value="7">
+                            <span class="radio__label">Conway's game of life</span>
+                        </label>
+                    </li>
+                    <li class="radio-group__item">
+                        <label class="radio">
+                            <input type="radio" class="radio__input" name="options" value="8">
+                            <span class="radio__label">Langton's ant</span>
+                        </label>
+                    </li>
+                    <li class="radio-group__item">
+                        <label class="radio">
+                            <input type="radio" class="radio__input" name="options" value="9">
+                            <span class="radio__label">Volume bars</span>
+                        </label>
+                    </li>
+                    <li class="radio-group__item">
+                        <label class="radio">
+                            <input type="radio" class="radio__input" name="options" value="10">
+                            <span class="radio__label">Evolution of color</span>
+                        </label>
+                    </li>
+                    <li class="radio-group__item">
+                        <label class="radio">
+                            <input type="radio" class="radio__input" name="options" value="11">
+                            <span class="radio__label">Brightness pulse generator</span>
+                        </label>
+                    </li>
+                    <li class="radio-group__item">
+                        <label class="radio">
+                            <input type="radio" class="radio__input" name="options" value="12">
+                            <span class="radio__label">Current Day and Time</span>
+                        </label>
+                    </li>
+                </ul>
+                <button class="btn btn--primary mt-md" type="submit">Demo starten</button>
+            </form>
+        </div>
+
+    </section>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/progressiveLoad.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        fetch('/get_art_design_subcategories')
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                var container = document.getElementById('art_design_categories');
+                if (data && data.length > 0) {
+                    var selectHtml = '<select name="giphy_category" class="field__input">' +
+                        '<option value="">Kategorie wählen</option>';
+                    data.forEach(function(subcategory) {
+                        selectHtml += '<option value="' + subcategory.name_encoded + '">' + subcategory.name + '</option>';
+                    });
+                    selectHtml += '</select>';
+                    container.innerHTML =
+                        '<form action="/start_giphy_category" method="post" class="category-form">' +
+                        '<div class="field">' + selectHtml + '</div>' +
+                        '<button type="submit" class="btn btn--primary">Kategorie starten</button>' +
+                        '</form>';
+                } else {
+                    container.innerHTML = '<p style="color:var(--color-text-secondary);">Konnte Art &amp; Design Kategorien nicht laden.</p>';
+                }
+            })
+            .catch(function(error) {
+                document.getElementById('art_design_categories').innerHTML =
+                    '<p style="color:var(--color-error);">Fehler beim Laden der Kategorien.</p>';
+                console.error('Error fetching subcategories:', error);
+            });
+    });
+
+    function loadImmichAlbums() {
+        fetch('/get_immich_albums')
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                var container = document.getElementById('immich_albums_container');
+                if (data && data.length > 0) {
+                    var selectHtml = '<select name="immich_album_id" class="field__input">' +
+                        '<option value="">Album wählen</option>';
+                    data.forEach(function(album) {
+                        selectHtml += '<option value="' + album.id + '">' + album.name + ' (' + album.assetCount + ' assets)</option>';
+                    });
+                    selectHtml += '</select>';
+                    container.innerHTML =
+                        '<form method="post" action="/start_immich_album" style="width:100%;">' +
+                        '<div class="field">' + selectHtml + '</div>' +
+                        '<button type="submit" class="btn btn--primary">Album starten</button>' +
+                        '</form>';
+                } else {
+                    container.innerHTML = '<p style="color:var(--color-text-secondary);">Keine Alben gefunden. Überprüfe die Immich-Einstellungen.</p>';
+                }
+            })
+            .catch(function(error) {
+                document.getElementById('immich_albums_container').innerHTML =
+                    '<p style="color:var(--color-error);">Fehler beim Laden der Alben.</p>';
+                console.error('Error fetching Immich albums:', error);
+            });
+    }
+    loadImmichAlbums();
+</script>
+{% endblock %}

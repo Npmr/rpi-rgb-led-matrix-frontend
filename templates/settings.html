@@ -1,390 +1,300 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Settings</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    <link rel="stylesheet" href="https://traycar.npmr.de/static/ledBild/css/material.min.css">
-    <script defer src="https://traycar.npmr.de/static/ledBild/js/material.min.js"></script>
-    <link rel="stylesheet" href="static/css/settings.css">
-</head>
-<body>
-<div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-tabs">
-    <header class="mdl-layout__header">
-        <div class="mdl-layout__header-row">
-            <!-- Title -->
-            <span class="mdl-layout-title">
-                <a class="mdl-navigation__link" href="/">Matrix Steuerung</a></span>
-            <!-- Add spacer, to align navigation to the right -->
-            <div class="mdl-layout-spacer">
-                <form method="post" action="/stop_process">
-                    <button id="stop_process_button" type="submit" class="mdl-button mdl-js-button mdl-button--icon">
-                        <div class="control-icon icon-pause-circle"></div>
-                    </button>
-                </form>
-            </div>
-            <nav class="mdl-navigation">
-                <a class="mdl-navigation__link" href="{{ url_for('upload') }}">Dateien Hochladen</a>
-                <a class="mdl-navigation__link" href="{{ url_for('changelog') }}">Changelog</a>
-                <a class="mdl-navigation__link" href="/">Zurück</a>
-            </nav>
+{% extends "base.html" %}
+
+{% block title %}Einstellungen - Matrix Steuerung{% endblock %}
+
+{% block content %}
+<h1 class="mb-lg">Einstellungen</h1>
+
+<div class="settings-grid">
+
+    {# === COLUMN 1: Stats === #}
+    <div>
+        <div class="settings-section">
+            <h2 class="settings-section__title">Statistiken</h2>
+            <ul class="stats-list">
+                <li class="stats-list__item">
+                    <i class="material-icons stats-list__icon">photo</i>
+                    Hochgeladene Bilder: {{ numberOfPictues }}
+                </li>
+                <li class="stats-list__item">
+                    <i class="material-icons stats-list__icon">gif_box</i>
+                    Hochgeladene GIFs: {{ numberOfGifs }}
+                </li>
+                <li class="stats-list__item">
+                    <i class="material-icons stats-list__icon">hard_disk</i>
+                    Festplattenbelegung: {{ freeDiskSpaceInPercent }}%
+                </li>
+            </ul>
         </div>
-    </header>
-    <main class="mdl-layout__content">
-        <div class="mdl-grid">
+    </div>
 
-            <div class="mdl-cell mdl-cell--4-col-desktop mdl-cell--8-col-tablet mdl-cell--4-col-phone mdl-cell--order-3-tablet mdl-cell--order-3-phone">
-                <h2>Stats</h2>
+    {# === COLUMN 2: Settings Form === #}
+    <div>
+        <form method="POST" action="/save_settings">
 
-                <ul class="demo-list-icon mdl-list">
-                    <li class="mdl-list__item">
-    <span class="mdl-list__item-primary-content">
-    <i class="material-icons mdl-list__item-icon">photo</i>Uploaded Images: {{ numberOfPictues }}
-</span>
-                    </li>
-                    <li class="mdl-list__item">
-    <span class="mdl-list__item-primary-content">
-    <i class="material-icons mdl-list__item-icon">gif_box</i>Uploaded GIFs: {{ numberOfGifs }}
-  </span>
-                    </li>
-                    <li class="mdl-list__item">
-    <span class="mdl-list__item-primary-content">
-    <i class="material-icons mdl-list__item-icon">hard_disk</i>Disk Space in use: {{ freeDiskSpaceInPercent }}%
-  </span>
-                    </li>
-                </ul>
+            {# --- Hardware Config --- #}
+            <div class="settings-section">
+                <h3 class="settings-section__title">Hardware-Konfiguration</h3>
 
-            </div>
+                <div class="field">
+                    <label class="field__label" for="height">Pixel pro Modul - Höhe (Standard: 32)</label>
+                    <input class="field__input" type="number" name="height" pattern="-?[0-9]*(\.[0-9]+)?" id="height" value="{{ settings['heightInPixel'] }}">
+                </div>
 
+                <div class="field">
+                    <label class="field__label" for="width">Pixel pro Modul - Breite (Standard: 32)</label>
+                    <input class="field__input" type="number" name="width" pattern="-?[0-9]*(\.[0-9]+)?" id="width" value="{{ settings['widthInPixel'] }}">
+                </div>
 
-            <div class="mdl-cell mdl-cell--4-col-desktop mdl-cell--8-col-tablet mdl-cell--4-col-phone mdl-cell--order-1-tablet mdl-cell--order-1-phone">
+                <div class="field">
+                    <label class="field__label" for="chainLength">Modul-Kette (Standard: 1)</label>
+                    <input class="field__input" type="number" min="1" name="chainLength" pattern="-?[0-9]*(\.[0-9]+)?" id="chainLength" value="{{ settings['chainLength'] }}">
+                </div>
 
-                <div class="mdl-cell mdl-cell--12-col">
-                    <h2>Settings </h2>
-                    <form method="POST" action="/save_settings">
-                        <button type="submit"
-                                class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect fw">
-                            Save Settings
-                        </button>
-                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <input class="mdl-textfield__input" type="number" name="height"
-                                   pattern="-?[0-9]*(\.[0-9]+)?"
-                                   id="height" value="{{ settings['heightInPixel'] }}">
-                            <label class="mdl-textfield__label" for="height">Pixels per Module - Height - Default
-                                32</label>
-                            <span class="mdl-textfield__error">Input is not a number!</span>
-                        </div>
-                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <input class="mdl-textfield__input" type="number" name="width" pattern="-?[0-9]*(\.[0-9]+)?"
-                                   id="width" value="{{ settings['widthInPixel'] }}">
-                            <label class="mdl-textfield__label" for="width">Pixels per Module - Width - Default
-                                32</label>
-                            <span class="mdl-textfield__error">Input is not a number!</span>
-                        </div>
+                <div class="field">
+                    <label class="field__label" for="parallelChains">Parallele Ketten (Standard: 1)</label>
+                    <input class="field__input" type="number" min="1" name="parallelChains" pattern="-?[0-9]*(\.[0-9]+)?" id="parallelChains" value="{{ settings['parallelChains'] }}">
+                </div>
 
-                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <input class="mdl-textfield__input" type="number" min="1" name="chainLength"
-                                   pattern="-?[0-9]*(\.[0-9]+)?"
-                                   id="chainLength" value="{{ settings['chainLength'] }}">
-                            <label class="mdl-textfield__label" for="chainLength">Chain of Modules - Default 1</label>
-                            <span class="mdl-textfield__error">Input is not a number!</span>
-                        </div>
-                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <input class="mdl-textfield__input" type="number" min="1" name="parallelChains"
-                                   pattern="-?[0-9]*(\.[0-9]+)?"
-                                   id="parallelChains" value="{{ settings['parallelChains'] }}">
-                            <label class="mdl-textfield__label" for="parallelChains">How many parallel chains - Default
-                                1</label>
-                            <span class="mdl-textfield__error">Input is not a number!</span>
-                        </div>
-                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <input class="mdl-textfield__input" type="number" min="0" name="ledSlowdown"
-                                   pattern="-?[0-9]*(\.[0-9]+)?"
-                                   id="ledSlowdown" value="{{ settings['ledSlowdown'] }}">
-                            <label class="mdl-textfield__label" for="ledSlowdown">Should the display slowed down -
-                                Default
-                                2</label>
-                            <span class="mdl-textfield__error">Input is not a number!</span>
-                        </div>
-                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <input class="mdl-textfield__input" type="number" min="30" name="playlistTime"
-                                   pattern="-?[0-9]*(\.[0-9]+)?"
-                                   id="playlistTime" value="{{ settings['playlistTime'] }}">
-                            <label class="mdl-textfield__label" for="playlistTime">Length of displaying a image in Sec -
-                                min
-                                30</label>
-                            <span class="mdl-textfield__error">Input is not a number!</span>
-                        </div>
-                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <input class="mdl-textfield__input" type="number" min="1" name="displayBrightness"
-                                   pattern="-?[0-9]*(\.[0-9]+)?"
-                                   id="displayBrightness" value="{{ settings['displayBrightness'] }}">
-                            <label class="mdl-textfield__label" for="displayBrightness">Brightness of Display in % -
-                                min
-                                30</label>
-                            <span class="mdl-textfield__error">Input is not a number!</span>
-                        </div>
-                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <input class="mdl-textfield__input" type="number" min="1" max="100" name="webpQuality"
-                                   pattern="-?[0-9]*(\.[0-9]+)?"
-                                   id="webpQuality" value="{{ settings.get('webpQuality', 85) }}">
-                            <label class="mdl-textfield__label" for="webpQuality">WebP Quality (1-100) - Default 85</label>
-                            <span class="mdl-textfield__error">Input is not a number!</span>
-                        </div>
-                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <input class="mdl-textfield__input" type="number" min="1" max="100" name="avifQuality"
-                                   pattern="-?[0-9]*(\.[0-9]+)?"
-                                   id="avifQuality" value="{{ settings.get('avifQuality', 50) }}">
-                            <label class="mdl-textfield__label" for="avifQuality">AVIF Quality (1-100) - Default 50</label>
-                            <span class="mdl-textfield__error">Input is not a number!</span>
-                        </div>
-                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <input class="mdl-textfield__input" type="number" min="1" max="100" name="thumbnailQuality"
-                                   pattern="-?[0-9]*(\.[0-9]+)?"
-                                   id="thumbnailQuality" value="{{ settings.get('thumbnailQuality', 80) }}">
-                            <label class="mdl-textfield__label" for="thumbnailQuality">Thumbnail Quality (1-100) - Default 80</label>
-                            <span class="mdl-textfield__error">Input is not a number!</span>
-                        </div>
-                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <select name="direction" id="direction" class="mdl-textfield__input">
-                                <option value="vertical"
-                                        {% if settings[
-                                'direction'] == 'vertical' %}selected{% endif %}>
-                                Vertical
-                                </option>
-                                <option value="verticalTurned"
-                                        {% if settings[
-                                'direction'] == 'verticalTurned' %}selected{% endif %}>
-                                Vertical Gedreht
-                                </option>
-                                <option value="horizontal"
-                                        {% if settings[
-                                'direction'] == 'horizontal' %}selected{% endif %}>
-                                Horizontal
-                                </option>
-                                <option value="horizontalTurned"
-                                        {% if settings[
-                                'direction'] == 'horizontalTurned' %}selected{% endif %}>
-                                Horizontal Gedreht
-                                </option>
-                            </select>
-
-                            <label class="mdl-textfield__label" for="direction">Display direction. Where is the up part
-                                -
-                                Default vertical</label>
-                            <span class="mdl-textfield__error">Input is not a number!</span>
-                        </div>
-<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <select name="language" id="language" class="mdl-textfield__input">
-                                <option value="de"
-                                        {% if settings[
-                                    'language'] == 'de' %}selected{% endif %}>
-                                    Deutsch
-                                    </option>
-                                <option value="en"
-                                        {% if settings[
-                                    'language'] == 'en' %}selected{% endif %}>
-                                    English
-                                    </option>
-                                <option value="it"
-                                        {% if settings[
-                                    'language'] == 'it' %}selected{% endif %}>
-                                    Italiano
-                                    </option>
-                                <option value="ch"
-                                        {% if settings[
-                                    'language'] == 'ch' %}selected{% endif %}>
-                                    中国人
-                                    </option>
-                            </select>
-
-                            <label class="mdl-textfield__label" for="language">Language</label>
-                            <span class="mdl-textfield__error">Input is not a number!</span>
-                        </div>
-                        <div>
-                            <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="showClockAndPicture">
-                                <input type="checkbox" id="showClockAndPicture" name="showClockAndPicture"
-                                       class="mdl-checkbox__input" {{ settings['displayTimeAndDate'] }}>
-                                <span class="mdl-checkbox__label">Show Time & Date even when choosing another content</span>
-                            </label>
-                        </div>
-                        </br>
-                        <hr>
-                        <h3>Time & Date</h3>
-                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <select name="timezone" id="timezone" class="mdl-textfield__input">
-                                {% for tz in timezones %}
-                                <option value="{{ tz }}" {% if settings['timezone'] == tz %}selected{% endif %}>{{ tz }}</option>
-                                {% endfor %}
-                            </select>
-                            <label class="mdl-textfield__label" for="timezone">Timezone</label>
-                            <span class="mdl-textfield__error">Invalid selection!</span>
-                        </div>
-                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <input class="mdl-textfield__input" type="text" name="clockFormatDate" id="clockFormatDate" value="{{ settings.get('clockFormatDate', '%A') }}">
-                            <label class="mdl-textfield__label" for="clockFormatDate">Date Format (strftime)</label>
-                            <span class="mdl-textfield__error">Invalid strftime format!</span>
-                        </div>
-                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <input class="mdl-textfield__input" type="text" name="clockFormatTime" id="clockFormatTime" value="{{ settings.get('clockFormatTime', '%H:%M:%S') }}">
-                            <label class="mdl-textfield__label" for="clockFormatTime">Time Format (strftime)</label>
-                            <span class="mdl-textfield__error">Invalid strftime format!</span>
-                        </div>
-                        <button type="button" formaction="/sync_time" formmethod="POST"
-                                class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect fw"
-                                style="display:inline-block; margin-left:8px; vertical-align:bottom;"
-                                onclick="this.form.action=this.formAction; this.form.method=this.formMethod; this.form.submit();">
-                            Sync Time Now
-                        </button>
-                        <hr>
-                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <input class="mdl-textfield__input" type="text" minlength="7" maxlength="15" size="15"
-                                   pattern="^(?>(\d|[1-9]\d{2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(?1)$" name="mqttIP"
-                                   id="mqttIP" value="{{ settings['mqttIP'] }}">
-                            <label class="mdl-textfield__label" for="mqttIP">IP of your MQTT-Server</label>
-                            <span class="mdl-textfield__error">Input is not a number!</span>
-                        </div>
-                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <input class="mdl-textfield__input" minlength="3" maxlength="5" type="number"
-                                   name="mqttPort"
-                                   pattern="-?[0-9]*(\.[0-9]+)?" 
-                                   id="mqttPort" value="{{ settings['mqttPort'] }}">
-                            <label class="mdl-textfield__label" for="mqttPort">PORT of your MQTT-Server</label>
-                            <span class="mdl-textfield__error">Input is not a number!</span>
-                        </div>
-
-                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <input class="mdl-textfield__input" minlength="5" type="text" name="deviceID"
-                                   id="deviceID" value="{{ settings['deviceID'] }}">
-                            <label class="mdl-textfield__label" for="deviceID">Device ID for Home Assistant</label>
-                            <span class="mdl-textfield__error">Input is not a text!</span>
-                        </div>
-                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <input class="mdl-textfield__input" minlength="5" type="text" name="deviceName"
-                                   id="deviceName" value="{{ settings['deviceName'] }}">
-                            <label class="mdl-textfield__label" for="deviceName">Device Name for Home Assistant</label>
-                            <span class="mdl-textfield__error">Input is not a text!</span>
-                        </div>
-                        <div class="field field--floating">
-                            <input class="field__input" minlength="5" type="text" name="giphyApiKey"
-                                   id="giphyApiKey" value="{{ settings['giphyApiKey'] }}">
-                            <label class="field__label" for="giphyApiKey">Your Giphy API Key</label>
-                            <span class="field__error">Input is not a text!</span>
-                        </div>
-
-                        <hr>
-                        <h3>Immich Integration</h3>
-                        <div class="field field--floating">
-                            <input class="field__input" type="text" name="immichUrl"
-                                   id="immichUrl" value="{{ settings.get('immichUrl', '') }}">
-                            <label class="field__label" for="immichUrl">Immich Server URL (e.g., http://immich:2283)</label>
-                            <span class="field__error">Invalid URL!</span>
-                        </div>
-                        <div class="field field--floating">
-                            <input class="field__input" type="text" name="immichApiKey"
-                                   id="immichApiKey" value="{{ settings.get('immichApiKey', '') }}">
-                            <label class="field__label" for="immichApiKey">Immich API Key</label>
-                            <span class="field__error">Input is not a text!</span>
-                        </div>
-                        <div class="field field--floating">
-                            <input class="field__input" type="text" name="immichAlbumId"
-                                   id="immichAlbumId" value="{{ settings.get('immichAlbumId', '') }}">
-                            <label class="field__label" for="immichAlbumId">Immich Album ID (optional, for album mode)</label>
-                            <span class="field__error">Input is not a text!</span>
-                        </div>
-                        <div class="field field--floating">
-                            <input class="field__input" type="text" name="immichSearchQuery"
-                                   id="immichSearchQuery" value="{{ settings.get('immichSearchQuery', '') }}">
-                            <label class="field__label" for="immichSearchQuery">Immich Search Query (optional, for search mode)</label>
-                            <span class="field__error">Input is not a text!</span>
-                        </div>
-                        <div class="field field--floating">
-                            <input class="field__input" type="number" min="1" name="immichDisplayDurationRandom"
-                                   id="immichDisplayDurationRandom" value="{{ settings.get('immichDisplayDurationRandom', 30) }}">
-                            <label class="field__label" for="immichDisplayDurationRandom">Display Duration Random (seconds)</label>
-                            <span class="field__error">Input is not a number!</span>
-                        </div>
-                        <div class="field field--floating">
-                            <input class="field__input" type="number" min="1" name="immichDisplayDurationAlbum"
-                                   id="immichDisplayDurationAlbum" value="{{ settings.get('immichDisplayDurationAlbum', 30) }}">
-                            <label class="field__label" for="immichDisplayDurationAlbum">Display Duration Album (seconds)</label>
-                            <span class="field__error">Input is not a number!</span>
-                        </div>
-                        <div class="field field--floating">
-                            <input class="field__input" type="number" min="1" name="immichDisplayDurationSearch"
-                                   id="immichDisplayDurationSearch" value="{{ settings.get('immichDisplayDurationSearch', 30) }}">
-                            <label class="field__label" for="immichDisplayDurationSearch">Display Duration Search (seconds)</label>
-                            <span class="field__error">Input is not a number!</span>
-                        </div>
-                        <div class="field field--floating">
-                            <input class="field__input" type="checkbox" name="immichAutoOrientation" id="immichAutoOrientation" {% if settings.get('immichAutoOrientation', 'true') == 'true' %}checked{% endif %}>
-                            <label class="field__label" for="immichAutoOrientation">Auto-rotate images based on EXIF orientation</label>
-                        </div>
-
-                        <hr>
-                        <h3>Image Optimization</h3>
-                        <button type="button" formaction="/regenerate_thumbnails" formmethod="POST"
-                                class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect fw"
-                                onclick="this.form.action=this.formAction; this.form.method=this.formMethod; this.form.submit();">
-                            Regenerate All Thumbnails & Optimized Formats
-                        </button>
-
-                        <button type="submit"
-                                class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect fw">
-                            Save Settings
-                        </button>
-                    </form>
+                <div class="field">
+                    <label class="field__label" for="ledSlowdown">Display-Verlangsamung (Standard: 2)</label>
+                    <input class="field__input" type="number" min="0" name="ledSlowdown" pattern="-?[0-9]*(\.[0-9]+)?" id="ledSlowdown" value="{{ settings['ledSlowdown'] }}">
                 </div>
             </div>
 
-            <div class="mdl-cell mdl-cell--4-col-desktop mdl-cell--8-col-tablet mdl-cell--4-col-phone  mdl-cell--order-2-tablet mdl-cell--order-2-phone">
-                <div class="mdl-cell mdl-cell--12-col">
-                    <h2>Reboot / Shutdown</h2>
-                    <form action="/reboot" method="POST">
-                        <button type="submit"
-                                class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect fw">
-                            Reboot
-                        </button>
-                    </form>
-                    <form action="/shutdown" method="POST">
-                        <button type="submit"
-                                class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect fw">
-                            Safe System Shutdown
-                        </button>
-                    </form>
+            {# --- Display Settings --- #}
+            <div class="settings-section">
+                <h3 class="settings-section__title">Anzeige-Einstellungen</h3>
+
+                <div class="field">
+                    <label class="field__label" for="playlistTime">Bildanzeige-Dauer in Sek. (min. 30)</label>
+                    <input class="field__input" type="number" min="30" name="playlistTime" pattern="-?[0-9]*(\.[0-9]+)?" id="playlistTime" value="{{ settings['playlistTime'] }}">
                 </div>
 
+                <div class="field">
+                    <label class="field__label" for="displayBrightness">Helligkeit in % (min. 30)</label>
+                    <input class="field__input" type="number" min="1" name="displayBrightness" pattern="-?[0-9]*(\.[0-9]+)?" id="displayBrightness" value="{{ settings['displayBrightness'] }}">
+                </div>
 
-                <div class="mdl-cell mdl-cell--12-col">
-                    <h2>Update</h2>
-                    <div>Current Used Version: {{ applicationInfo['currentApplicationVersion'] }}</div>
-                    <div>Last changes in current Version: {{ applicationInfo['whatChanged'] }}</div>
-                    <br>
-                    <div>Current GIT Version: {{ currentAvailableVersion }}</div>
-                    <div>Changes in the new Version: {{ updateText }}</div>
-                    <br>
-                    <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                        <select name="updateBranch" id="updateBranch" class="mdl-textfield__input">
-                            <option value="main" {% if settings['updateBranch'] == 'main' %}selected{% endif %}>Main (Stable)</option>
-                            <option value="dev" {% if settings['updateBranch'] == 'dev' %}selected{% endif %}>Dev (Development)</option>
-                        </select>
-                        <label class="mdl-textfield__label" for="updateBranch">Update Branch</label>
-                    </div>
-                    <br>
-                    <form action="/update_process" method="POST">
-                        <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent"
-                                {{ enableUpdateButton }}>
-                            Update Application
-                        </button>
-                    </form>
-                    <br>
-                    <p>This updates the rpi-rgb-led-matrix repository as well as the rpi-rgb-led-matrix-frontend
-                        repository<br>
-                        At the End of the Update, the raspberry will be rebooted!</p>
+                <div class="field">
+                    <label class="field__label" for="direction">Anzeigerichtung (Wo ist oben, Standard: vertikal)</label>
+                    <select name="direction" id="direction" class="field__input">
+                        <option value="vertical" {% if settings['direction'] == 'vertical' %}selected{% endif %}>Vertikal</option>
+                        <option value="verticalTurned" {% if settings['direction'] == 'verticalTurned' %}selected{% endif %}>Vertikal Gedreht</option>
+                        <option value="horizontal" {% if settings['direction'] == 'horizontal' %}selected{% endif %}>Horizontal</option>
+                        <option value="horizontalTurned" {% if settings['direction'] == 'horizontalTurned' %}selected{% endif %}>Horizontal Gedreht</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label class="field__label" for="language">Sprache</label>
+                    <select name="language" id="language" class="field__input">
+                        <option value="de" {% if settings['language'] == 'de' %}selected{% endif %}>Deutsch</option>
+                        <option value="en" {% if settings['language'] == 'en' %}selected{% endif %}>English</option>
+                        <option value="it" {% if settings['language'] == 'it' %}selected{% endif %}>Italiano</option>
+                        <option value="ch" {% if settings['language'] == 'ch' %}selected{% endif %}>中国人</option>
+                    </select>
+                </div>
+
+                <div class="mt-md">
+                    <label class="checkbox">
+                        <input type="checkbox" class="checkbox__input" id="showClockAndPicture" name="showClockAndPicture" {{ settings['displayTimeAndDate'] }}>
+                        <span class="checkbox__label">Uhrzeit &amp; Datum auch bei anderem Inhalt anzeigen</span>
+                    </label>
                 </div>
             </div>
+
+            {# --- Time & Date --- #}
+            <div class="settings-section">
+                <h3 class="settings-section__title">Uhrzeit &amp; Datum</h3>
+
+                <div class="field">
+                    <label class="field__label" for="timezone">Zeitzone</label>
+                    <select name="timezone" id="timezone" class="field__input">
+                        {% for tz in timezones %}
+                        <option value="{{ tz }}" {% if settings['timezone'] == tz %}selected{% endif %}>{{ tz }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label class="field__label" for="clockFormatDate">Datumsformat (strftime)</label>
+                    <input class="field__input" type="text" name="clockFormatDate" id="clockFormatDate" value="{{ settings.get('clockFormatDate', '%A') }}">
+                </div>
+
+                <div class="field">
+                    <label class="field__label" for="clockFormatTime">Zeitformat (strftime)</label>
+                    <input class="field__input" type="text" name="clockFormatTime" id="clockFormatTime" value="{{ settings.get('clockFormatTime', '%H:%M:%S') }}">
+                </div>
+
+                <button type="button" formaction="/sync_time" formmethod="POST" class="btn btn--outline mt-sm"
+                        onclick="this.form.action=this.formAction; this.form.method=this.formMethod; this.form.submit();">
+                    Zeit synchronisieren
+                </button>
+            </div>
+
+            {# --- MQTT / Home Assistant --- #}
+            <div class="settings-section">
+                <h3 class="settings-section__title">MQTT / Home Assistant</h3>
+
+                <div class="field">
+                    <label class="field__label" for="mqttIP">IP des MQTT-Servers</label>
+                    <input class="field__input" type="text" minlength="7" maxlength="15" pattern="^(?>(\d|[1-9]\d{2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(?1)$" name="mqttIP" id="mqttIP" value="{{ settings['mqttIP'] }}">
+                </div>
+
+                <div class="field">
+                    <label class="field__label" for="mqttPort">Port des MQTT-Servers</label>
+                    <input class="field__input" type="number" minlength="3" maxlength="5" name="mqttPort" pattern="-?[0-9]*(\.[0-9]+)?" id="mqttPort" value="{{ settings['mqttPort'] }}">
+                </div>
+
+                <div class="field">
+                    <label class="field__label" for="deviceID">Geräte-ID für Home Assistant</label>
+                    <input class="field__input" type="text" minlength="5" name="deviceID" id="deviceID" value="{{ settings['deviceID'] }}">
+                </div>
+
+                <div class="field">
+                    <label class="field__label" for="deviceName">Gerätename für Home Assistant</label>
+                    <input class="field__input" type="text" minlength="5" name="deviceName" id="deviceName" value="{{ settings['deviceName'] }}">
+                </div>
+            </div>
+
+            {# --- GIPHY --- #}
+            <div class="settings-section">
+                <h3 class="settings-section__title">GIPHY</h3>
+
+                <div class="field">
+                    <label class="field__label" for="giphyApiKey">GIPHY API Key</label>
+                    <input class="field__input" type="text" minlength="5" name="giphyApiKey" id="giphyApiKey" value="{{ settings['giphyApiKey'] }}">
+                </div>
+            </div>
+
+            {# --- Immich Integration --- #}
+            <div class="settings-section">
+                <h3 class="settings-section__title">Immich Integration</h3>
+
+                <div class="field">
+                    <label class="field__label" for="immichUrl">Immich Server URL (z.B. http://immich:2283)</label>
+                    <input class="field__input" type="text" name="immichUrl" id="immichUrl" value="{{ settings.get('immichUrl', '') }}">
+                </div>
+
+                <div class="field">
+                    <label class="field__label" for="immichApiKey">Immich API Key</label>
+                    <input class="field__input" type="text" name="immichApiKey" id="immichApiKey" value="{{ settings.get('immichApiKey', '') }}">
+                </div>
+
+                <div class="field">
+                    <label class="field__label" for="immichAlbumId">Immich Album ID (optional, für Album-Modus)</label>
+                    <input class="field__input" type="text" name="immichAlbumId" id="immichAlbumId" value="{{ settings.get('immichAlbumId', '') }}">
+                </div>
+
+                <div class="field">
+                    <label class="field__label" for="immichSearchQuery">Immich Suchanfrage (optional, für Suchmodus)</label>
+                    <input class="field__input" type="text" name="immichSearchQuery" id="immichSearchQuery" value="{{ settings.get('immichSearchQuery', '') }}">
+                </div>
+
+                <div class="field">
+                    <label class="field__label" for="immichDisplayDurationRandom">Anzeigedauer Zufällig (Sekunden)</label>
+                    <input class="field__input" type="number" min="1" name="immichDisplayDurationRandom" id="immichDisplayDurationRandom" value="{{ settings.get('immichDisplayDurationRandom', 30) }}">
+                </div>
+
+                <div class="field">
+                    <label class="field__label" for="immichDisplayDurationAlbum">Anzeigedauer Album (Sekunden)</label>
+                    <input class="field__input" type="number" min="1" name="immichDisplayDurationAlbum" id="immichDisplayDurationAlbum" value="{{ settings.get('immichDisplayDurationAlbum', 30) }}">
+                </div>
+
+                <div class="field">
+                    <label class="field__label" for="immichDisplayDurationSearch">Anzeigedauer Suche (Sekunden)</label>
+                    <input class="field__input" type="number" min="1" name="immichDisplayDurationSearch" id="immichDisplayDurationSearch" value="{{ settings.get('immichDisplayDurationSearch', 30) }}">
+                </div>
+
+                <div class="mt-md">
+                    <label class="checkbox">
+                        <input type="checkbox" class="checkbox__input" name="immichAutoOrientation" id="immichAutoOrientation" {% if settings.get('immichAutoOrientation', 'true') == 'true' %}checked{% endif %}>
+                        <span class="checkbox__label">Bilder basierend auf EXIF-Orientierung automatisch drehen</span>
+                    </label>
+                </div>
+            </div>
+
+            {# --- Image Optimization --- #}
+            <div class="settings-section">
+                <h3 class="settings-section__title">Bildoptimierung</h3>
+
+                <div class="field">
+                    <label class="field__label" for="webpQuality">WebP Qualität (1-100, Standard: 85)</label>
+                    <input class="field__input" type="number" min="1" max="100" name="webpQuality" id="webpQuality" value="{{ settings.get('webpQuality', 85) }}">
+                </div>
+
+                <div class="field">
+                    <label class="field__label" for="avifQuality">AVIF Qualität (1-100, Standard: 50)</label>
+                    <input class="field__input" type="number" min="1" max="100" name="avifQuality" id="avifQuality" value="{{ settings.get('avifQuality', 50) }}">
+                </div>
+
+                <div class="field">
+                    <label class="field__label" for="thumbnailQuality">Thumbnail Qualität (1-100, Standard: 80)</label>
+                    <input class="field__input" type="number" min="1" max="100" name="thumbnailQuality" id="thumbnailQuality" value="{{ settings.get('thumbnailQuality', 80) }}">
+                </div>
+
+                <button type="button" formaction="/regenerate_thumbnails" formmethod="POST" class="btn btn--outline mt-md"
+                        onclick="this.form.action=this.formAction; this.form.method=this.formMethod; this.form.submit();">
+                    Alle Thumbnails &amp; Formate neu generieren
+                </button>
+            </div>
+
+            <button type="submit" class="btn btn--primary btn--full mt-lg">Einstellungen speichern</button>
+        </form>
+    </div>
+
+    {# === COLUMN 3: System === #}
+    <div>
+        {# --- Reboot / Shutdown --- #}
+        <div class="settings-section">
+            <h2 class="settings-section__title">Neustart / Herunterfahren</h2>
+            <form action="/reboot" method="POST">
+                <button type="submit" class="btn btn--outline btn--full mb-sm" data-confirm="Möchtest du den Raspberry Pi neu starten?">Neustart</button>
+            </form>
+            <form action="/shutdown" method="POST" data-confirm="Möchtest du das System sicher herunterfahren?">
+                <button type="submit" class="btn btn--danger btn--full">Sicher herunterfahren</button>
+            </form>
         </div>
-    </main>
+
+        {# --- Update --- #}
+        <div class="settings-section">
+            <h2 class="settings-section__title">Update</h2>
+            <div class="mb-sm">
+                <span style="color:var(--color-text-secondary);font-size:var(--font-size-sm);">Installierte Version:</span><br>
+                <strong>{{ applicationInfo['currentApplicationVersion'] }}</strong>
+            </div>
+            <div class="mb-sm">
+                <span style="color:var(--color-text-secondary);font-size:var(--font-size-sm);">Letzte Änderungen:</span><br>
+                {{ applicationInfo['whatChanged'] }}
+            </div>
+            <hr>
+            <div class="mb-sm">
+                <span style="color:var(--color-text-secondary);font-size:var(--font-size-sm);">Verfügbare Version:</span><br>
+                <strong>{{ currentAvailableVersion }}</strong>
+            </div>
+            <div class="mb-sm">
+                <span style="color:var(--color-text-secondary);font-size:var(--font-size-sm);">Änderungen:</span><br>
+                {{ updateText }}
+            </div>
+            <div class="field mt-md">
+                <label class="field__label" for="updateBranch">Update Branch</label>
+                <select name="updateBranch" id="updateBranch" class="field__input">
+                    <option value="main" {% if settings['updateBranch'] == 'main' %}selected{% endif %}>Main (Stabil)</option>
+                    <option value="dev" {% if settings['updateBranch'] == 'dev' %}selected{% endif %}>Dev (Entwicklung)</option>
+                </select>
+            </div>
+            <form action="/update_process" method="POST">
+                <button class="btn btn--accent btn--full mt-sm" {{ enableUpdateButton }}>
+                    Application updaten
+                </button>
+            </form>
+            <p class="mt-sm" style="color:var(--color-text-secondary);font-size:var(--font-size-sm);">
+                Aktualisiert das rpi-rgb-led-matrix und rpi-rgb-led-matrix-frontend Repository.<br>
+                Am Ende des Updates wird der Raspberry Pi neu gestartet!
+            </p>
+        </div>
+    </div>
+
 </div>
-</body>
-</html>
+{% endblock %}

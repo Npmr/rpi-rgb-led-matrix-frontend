@@ -1,107 +1,27 @@
-<!DOCTYPE html>
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Content Upload</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    <link rel="stylesheet" href="https://traycar.npmr.de/static/ledBild/css/material.min.css">
-    <script defer src="https://traycar.npmr.de/static/ledBild/js/material.min.js"></script>
-    <link rel="stylesheet" href="static/css/main.css">
-</head>
-<body>
-<div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-tabs">
-    <header class="mdl-layout__header">
-        <div class="mdl-layout__header-row">
-            <!-- Title -->
-            <span class="mdl-layout-title">
-                <a class="mdl-navigation__link" href="/">Matrix Steuerung</a></span>
-            <!-- Add spacer, to align navigation to the right -->
-            <div class="mdl-layout-spacer">
-                <form method="post" action="/stop_process">
-                    <button id="stop_process_button" type="submit" class="mdl-button mdl-js-button mdl-button--icon">
-                        <div class="control-icon icon-pause-circle"></div>
-                    </button>
-                </form>
-            </div>
-            <div class="mdl-tooltip" for="stop_process_button">
-                Stop Displaying<br>and shut down the display
-            </div>
-            <nav class="mdl-navigation">
-                <a class="mdl-navigation__link" href="{{ url_for('upload') }}">Dateien Hochladen</a>
-                <a class="mdl-navigation__link" href="{{ url_for('changelog') }}">Changelog</a>
-                <a class="mdl-navigation__link" href="{{ url_for('settings') }}">Einstellungen</a>
-            </nav>
-        </div>
-    </header>
-    <div class="mdl-grid">
-        <div class="mdl-cell mdl-cell--12-col">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="flash-message flash-{{ category }}">
-                            <span>{{ message }}</span>
-                            <button type="button" class="flash-dismiss" onclick="this.parentElement.remove()">×</button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
+{% extends "base.html" %}
+
+{% block title %}Dateien Hochladen - Matrix Steuerung{% endblock %}
+
+{% block content %}
+<div class="upload-area">
+    <h1 class="upload-area__title">Dateien Hochladen</h1>
+    <p class="upload-area__description">
+        Lade Bilder im .png, .jpg, .gif oder .webm Format hoch.
+    </p>
+
+    <div class="mb-lg">
+        <span style="color:var(--color-text-secondary);">Festplattenbelegung: <strong>{{ freeDiskSpaceInPercent }}%</strong></span>
+        <div class="progress mt-sm" style="max-width:300px;margin:0 auto;">
+            <div class="progress__bar {% if freeDiskSpaceInPercent > 90 %}progress__bar--danger{% elif freeDiskSpaceInPercent > 75 %}progress__bar--warning{% endif %}" 
+                 style="width: {{ freeDiskSpaceInPercent }}%"></div>
         </div>
     </div>
-    <main class="mdl-layout__content">
 
-        <div class="mdl-grid">
-            <div class="mdl-cell mdl-cell--12-col">
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        {% for category, message in messages %}
-                            <div class="flash-message flash-{{ category }}">
-                                <span>{{ message }}</span>
-                                <button type="button" class="flash-dismiss" onclick="this.parentElement.remove()">×</button>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
-            </div>
-
-            <div class="mdl-cell mdl-cell--4-col  mdl-cell--hide-tablet mdl-cell--hide-phone">
-            </div>
-
-
-            <div class="mdl-cell mdl-cell--4-col mdl-cell--12-col-tablet mdl-cell--12-col-phone mdl-cell--middle">
-                <h1>Image Uplaod!</h1>
-                <div class="mdl-cell mdl-cell--12-col">
-                <span>Upload all kinds of images, as long as they are in the .png, .jpg, .gif or .webm format!</span>
-            </div>
-
-            <div class="mdl-cell mdl-cell--12-col">
-                <span>Currently {{ freeDiskSpaceInPercent }} % of your space is occupied on this system</span>
-                <div id="p1" class="mdl-progress mdl-js-progress"></div>
-            </div>
-
-            <div class="mdl-cell mdl-cell--12-col"></div>
-            <form method="POST" enctype="multipart/form-data"
-                  action="/upload_image">
-                <input class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" type="file" name="image_file" multiple accept=".jpg, .jpeg, .png, .gif, .webm">
-                <br><br>
-                <button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" type="submit">Upload
-                </button>
-            </form>
-
-            </div>
-            <div class="mdl-cell mdl-cell--4-col  mdl-cell--hide-tablet mdl-cell--hide-phone">
-            </div>
-
+    <form method="POST" enctype="multipart/form-data" action="/upload_image">
+        <div class="field">
+            <input class="field__input" type="file" name="image_file" multiple accept=".jpg, .jpeg, .png, .gif, .webm" style="padding:8px;">
         </div>
-    </main>
+        <button class="btn btn--primary" type="submit">Hochladen</button>
+    </form>
 </div>
-</body>
-
-
-<script>
-    document.querySelector('#p1').addEventListener('mdl-componentupgraded', function () {
-        this.MaterialProgress.setProgress({{freeDiskSpaceInPercent}});
-    });
-</script>
-</body>
-</html>
+{% endblock %}

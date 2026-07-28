@@ -1,9 +1,9 @@
 document.addEventListener('DOMContentLoaded', function() {
-    const lazyImages = document.querySelectorAll('.lazy-image');
-    const lazyVideos = document.querySelectorAll('.lazy-video');
+    var lazyImages = document.querySelectorAll('.lazy-image');
+    var lazyVideos = document.querySelectorAll('.lazy-video');
     
     function supportsFormat(format) {
-        const canvas = document.createElement('canvas');
+        var canvas = document.createElement('canvas');
         if (format === 'avif') {
             return canvas.toDataURL('image/avif').indexOf('data:image/avif') === 0;
         }
@@ -13,15 +13,15 @@ document.addEventListener('DOMContentLoaded', function() {
         return true;
     }
     
-    const supportsAVIF = supportsFormat('avif');
-    const supportsWebP = supportsFormat('webp');
+    var supportsAVIF = supportsFormat('avif');
+    var supportsWebP = supportsFormat('webp');
     
     function loadImage(img) {
-        const fullAvif = img.dataset.fullAvif;
-        const fullWebp = img.dataset.fullWebp;
-        const fullOriginal = img.dataset.fullOriginal;
-        const srcset = img.dataset.srcset;
-        const sizes = img.dataset.sizes;
+        var fullAvif = img.dataset.fullAvif;
+        var fullWebp = img.dataset.fullWebp;
+        var fullOriginal = img.dataset.fullOriginal;
+        var srcset = img.dataset.srcset;
+        var sizes = img.dataset.sizes;
         
         if (srcset && sizes) {
             img.srcset = srcset;
@@ -52,11 +52,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function preloadFullImage(img) {
-        const fullAvif = img.dataset.fullAvif;
-        const fullWebp = img.dataset.fullWebp;
-        const fullOriginal = img.dataset.fullOriginal;
+        var fullAvif = img.dataset.fullAvif;
+        var fullWebp = img.dataset.fullWebp;
+        var fullOriginal = img.dataset.fullOriginal;
         
-        const link = document.createElement('link');
+        var link = document.createElement('link');
         link.rel = 'preload';
         link.as = 'image';
         
@@ -74,14 +74,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     if ('IntersectionObserver' in window) {
-        const imageObserver = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
+        var imageObserver = new IntersectionObserver(function(entries, observer) {
+            entries.forEach(function(entry) {
                 if (entry.isIntersecting) {
-                    const target = entry.target;
+                    var target = entry.target;
                     if (target.tagName === 'IMG') {
                         loadImage(target);
                         if (target.dataset.fullAvif || target.dataset.fullWebp || target.dataset.fullOriginal) {
-                            setTimeout(() => preloadFullImage(target), 1000);
+                            setTimeout(function() { preloadFullImage(target); }, 1000);
                         }
                     } else if (target.tagName === 'VIDEO') {
                         handleVideo(target);
@@ -94,45 +94,44 @@ document.addEventListener('DOMContentLoaded', function() {
             threshold: 0.01
         });
         
-        lazyImages.forEach(img => imageObserver.observe(img));
-        lazyVideos.forEach(video => imageObserver.observe(video));
+        lazyImages.forEach(function(img) { imageObserver.observe(img); });
+        lazyVideos.forEach(function(video) { imageObserver.observe(video); });
     } else {
         lazyImages.forEach(loadImage);
         lazyVideos.forEach(handleVideo);
     }
     
     document.addEventListener('click', function(e) {
-        const img = e.target.closest('.lazy-image');
+        var img = e.target.closest('.lazy-image');
         if (img && !img.classList.contains('loaded')) {
             loadImage(img);
         }
     }, true);
-    
-    const filterCheckboxes = document.querySelectorAll('.filter-fieldset input[type="checkbox"]');
-    filterCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', filterFunction);
-    });
 });
 
 function filterFunction() {
-    const checkBoxVertical = document.getElementById("checkbox-vertical");
-    const checkBoxHorizontal = document.getElementById("checkbox-horizontal");
-    const checkBoxSquare = document.getElementById("checkbox-square");
+    var activePanel = document.querySelector('.tabs__panel--active');
+    if (!activePanel) return;
     
-    const grids = document.querySelectorAll('.media-grid');
+    var checkboxes = activePanel.querySelectorAll('.filter-bar input[type="checkbox"]');
+    var grid = activePanel.querySelector('.media-grid');
+    if (!grid) return;
     
-    grids.forEach(grid => {
-        const cards = grid.querySelectorAll('.media-card');
+    var cards = grid.querySelectorAll('.media-card');
+    
+    cards.forEach(function(card) {
+        var orientation = card.dataset.orientation;
+        var show = false;
         
-        cards.forEach(card => {
-            const orientation = card.dataset.orientation;
-            let show = false;
-            
-            if (orientation === 'vertical' && checkBoxVertical.checked) show = true;
-            if (orientation === 'horizontal' && checkBoxHorizontal.checked) show = true;
-            if (orientation === 'square' && checkBoxSquare.checked) show = true;
-            
-            card.style.display = show ? 'block' : 'none';
+        checkboxes.forEach(function(cb) {
+            var label = cb.closest('label');
+            if (!label) return;
+            var text = label.textContent.trim().toLowerCase();
+            if (cb.checked && text === orientation) {
+                show = true;
+            }
         });
+        
+        card.style.display = show ? '' : 'none';
     });
 }
