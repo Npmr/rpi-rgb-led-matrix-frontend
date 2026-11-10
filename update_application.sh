@@ -10,11 +10,21 @@ log() {
 backup_configs() {
     CONFIG_BACKUP_DIR="/tmp/rpi-rgb-matrix-config-backup-$$"
     mkdir -p "$CONFIG_BACKUP_DIR"
-    [ -f "/home/pi/rpi-rgb-led-matrix-frontend/settings.json" ] && cp "/home/pi/rpi-rgb-led-matrix-frontend/settings.json" "$CONFIG_BACKUP_DIR/" && log "Backed up settings.json"
+    for CONFIG_FILE in settings.json layout.json; do
+        if [ -f "/home/pi/rpi-rgb-led-matrix-frontend/$CONFIG_FILE" ]; then
+            cp "/home/pi/rpi-rgb-led-matrix-frontend/$CONFIG_FILE" "$CONFIG_BACKUP_DIR/"
+            log "Backed up $CONFIG_FILE"
+        fi
+    done
 }
 
 restore_configs() {
-    [ -f "$CONFIG_BACKUP_DIR/settings.json" ] && cp "$CONFIG_BACKUP_DIR/settings.json" "/home/pi/rpi-rgb-led-matrix-frontend/" && log "Restored settings.json"
+    for CONFIG_FILE in settings.json layout.json; do
+        if [ -f "$CONFIG_BACKUP_DIR/$CONFIG_FILE" ]; then
+            cp "$CONFIG_BACKUP_DIR/$CONFIG_FILE" "/home/pi/rpi-rgb-led-matrix-frontend/"
+            log "Restored $CONFIG_FILE"
+        fi
+    done
 }
 
 cleanup_backup() {
@@ -38,6 +48,16 @@ log "Building rpi-rgb-led-matrix..."
 make -C examples-api-use >> "$LOG_FILE" 2>&1
 cd utils && make led-image-viewer >> "$LOG_FILE" 2>&1
 cd /home/pi/rpi-rgb-led-matrix || exit 1
+
+# Ensure the Python bindings used by the grid renderer are available
+log "Ensuring rgbmatrix Python bindings..."
+if ! python3 -c "import rgbmatrix" > /dev/null 2>&1; then
+    command -v cython3 > /dev/null 2>&1 || sudo apt-get install -y python3-dev python3-pip cython3 >> "$LOG_FILE" 2>&1
+    cd /home/pi/rpi-rgb-led-matrix/bindings/python || exit 1
+    (sudo pip3 install --break-system-packages . || sudo pip3 install .) >> "$LOG_FILE" 2>&1 \
+        || log "WARNING: could not install rgbmatrix Python bindings (grid display unavailable)"
+    cd /home/pi/rpi-rgb-led-matrix || exit 1
+fi
 
 # Update rpi-rgb-led-matrix-frontend
 log "Updating rpi-rgb-led-matrix-frontend..."

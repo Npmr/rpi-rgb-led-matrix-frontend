@@ -1,0 +1,65 @@
+{
+    "enabled": false,
+    "grid": {
+        "showBorders": false,
+        "borderColor": [
+            40,
+            40,
+            40
+        ],
+        "backgroundColor": [
+            0,
+            0,
+            0
+        ]
+    },
+    "widgets": [
+        {
+            "id": "clock1",
+            "type": "clock",
+            "col": 0,
+            "row": 0,
+            "w": 3,
+            "h": 1,
+            "style": {
+                "color": [
+                    255,
+                    255,
+                    255
+                ],
+                "align": "center",
+                "fit": "cover"
+            },
+            "config": {
+                "dateFormat": "",
+                "timeFormat": ""
+            }
+        },
+        {
+            "id": "xmas1",
+            "type": "days_until",
+            "col": 3,
+            "row": 0,
+            "w": 3,
+            "h": 1,
+            "style": {
+                "color": [
+                    255,
+                    60,
+                    60
+                ],
+                "align": "center",
+                "fit": "cover"
+            },
+            "config": {
+                "day": 25,
+                "finishedText": "MERRY XMAS",
+                "label": "XMAS",
+                "month": 12,
+                "recurring": true,
+                "template": "{days}d {label}",
+                "year": null
+            }
+        }
+    ]
+}

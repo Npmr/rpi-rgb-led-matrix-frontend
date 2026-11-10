@@ -11,7 +11,7 @@ def trigger_update(branch="main"):
 def fetch_update_info(branch="main"):
     uri = f"https://raw.githubusercontent.com/Npmr/rpi-rgb-led-matrix-frontend/refs/heads/{branch}/info.json"
     try:
-        uResponse = requests.get(uri)
+        uResponse = requests.get(uri, timeout=10)
         uResponse.raise_for_status()  # Raise an exception for bad status codes
         return uResponse.json()
     except requests.exceptions.RequestException as e:

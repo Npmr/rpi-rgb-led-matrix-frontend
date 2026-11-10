@@ -2,8 +2,8 @@
 import time
 import threading
 import random
-import requests
 import os
+import requests
 from . import giphy_handler
 from . import display_control
 from .settings_handler import read_settings
@@ -13,10 +13,16 @@ GIPHY_DISPLAY_DURATION = 300  # 5 minutes in seconds
 DEVICE_ID = read_settings().get("deviceID", "pixel_display_rpi")
 mqtt_publish_callback = None  # Placeholder for the callback function
 
-GIPHY_API_KEY = read_settings().get("giphyApiKey")
-TRENDING_URL = f"https://api.giphy.com/v1/gifs/trending?api_key={GIPHY_API_KEY}&limit=25"
-SEARCH_URL = f"https://api.giphy.com/v1/gifs/search?api_key={GIPHY_API_KEY}&limit=25&q="
-CATEGORIES_URL = f"https://api.giphy.com/v1/gifs/categories?api_key={GIPHY_API_KEY}"
+# API key takes precedence from the environment, then falls back to settings.json.
+def _giphy_api_key():
+    return os.environ.get("GIPHY_API_KEY") or read_settings().get("giphyApiKey", "")
+
+
+def _giphy_categories_url():
+    """Build the categories URL at request time so env-var key changes are honored."""
+    params = {"api_key": _giphy_api_key()}
+    query = "&".join(f"{k}={v}" for k, v in params.items())
+    return f"https://api.giphy.com/v1/gifs/categories?{query}"
 
 _current_search_term = None
 
@@ -31,7 +37,7 @@ def set_mqtt_publish_callback(callback):
 
 def _fetch_giphy_data(url):
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=15)
         response.raise_for_status()
         return response.json().get('data', [])
     except requests.exceptions.RequestException as e:
@@ -40,7 +46,7 @@ def _fetch_giphy_data(url):
 
 def get_art_design_subcategories():
     try:
-        response = requests.get(CATEGORIES_URL)
+        response = requests.get(_giphy_categories_url(), timeout=15)
         response.raise_for_status()
         categories_data = response.json().get('data', [])
         for category in categories_data:

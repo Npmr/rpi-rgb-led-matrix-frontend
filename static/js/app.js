@@ -1,22 +1,46 @@
 /* ============================================================
    App JS - Interactive Components
-   Tab switching, mobile menu, form helpers
+   Sidebar toggle, tab switching, form helpers
    ============================================================ */
 
 document.addEventListener('DOMContentLoaded', function () {
 
+    // --- Sidebar Toggle (Mobile) ---
+    var menuBtn = document.getElementById('mobile-menu-btn');
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.getElementById('sidebar-overlay');
+    if (menuBtn && sidebar && overlay) {
+        menuBtn.addEventListener('click', function () {
+            sidebar.classList.toggle('layout__sidebar--open');
+            overlay.classList.toggle('sidebar-overlay--active');
+        });
+        overlay.addEventListener('click', function () {
+            sidebar.classList.remove('layout__sidebar--open');
+            overlay.classList.remove('sidebar-overlay--active');
+        });
+        // Close sidebar on nav link click (mobile)
+        sidebar.querySelectorAll('.nav__link').forEach(function (link) {
+            link.addEventListener('click', function () {
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.remove('layout__sidebar--open');
+                    overlay.classList.remove('sidebar-overlay--active');
+                }
+            });
+        });
+    }
+
     // --- Tab Switching ---
-    const tabContainers = document.querySelectorAll('.tabs');
+    var tabContainers = document.querySelectorAll('.tabs');
     tabContainers.forEach(function (container) {
-        const tabs = container.querySelectorAll('.tabs__tab');
-        const panelContainer = container.nextElementSibling;
+        var tabs = container.querySelectorAll('.tabs__tab');
+        var panelContainer = container.nextElementSibling;
         if (!panelContainer) return;
-        const panels = panelContainer.querySelectorAll('.tabs__panel');
+        var panels = panelContainer.querySelectorAll('.tabs__panel');
 
         tabs.forEach(function (tab) {
             tab.addEventListener('click', function (e) {
                 e.preventDefault();
-                const targetId = tab.getAttribute('data-tab') || tab.getAttribute('href');
+                var targetId = tab.getAttribute('data-tab') || tab.getAttribute('href');
                 if (!targetId) return;
 
                 // Deactivate all
@@ -32,21 +56,6 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
     });
-
-    // --- Mobile Menu Toggle ---
-    var menuBtn = document.querySelector('.mobile-menu-btn');
-    var nav = document.querySelector('.nav');
-    if (menuBtn && nav) {
-        menuBtn.addEventListener('click', function () {
-            nav.classList.toggle('nav--open');
-        });
-        // Close on link click
-        nav.querySelectorAll('.nav__link').forEach(function (link) {
-            link.addEventListener('click', function () {
-                nav.classList.remove('nav--open');
-            });
-        });
-    }
 
     // --- Auto-dismiss flash messages ---
     var flashMessages = document.querySelectorAll('.flash-message');

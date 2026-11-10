@@ -50,6 +50,9 @@ def get_lqip(static_folder, base_name):
 
 
 def countMediaTypeAndNumber(static_folder='static/pictures'):
+    if not os.path.isdir(static_folder):
+        return [], [], []
+
     image_files = os.listdir(static_folder)
     images = []
     gifs = []

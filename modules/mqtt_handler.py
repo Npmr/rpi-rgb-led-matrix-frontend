@@ -18,10 +18,14 @@ MQTT_BROKER_PORT = int(settings.get("mqttPort", 1883))
 def publish_mqtt(topic, payload, retain=False):
     client = mqtt.Client()
     try:
-        client.connect(MQTT_BROKER_IP, MQTT_BROKER_PORT)
+        client.connect(MQTT_BROKER_IP, MQTT_BROKER_PORT, keepalive=60)
+        # process the network traffic so the CONNACK is received before publishing
+        client.loop(timeout=2.0)
         if payload is not None and not isinstance(payload, (str, bytes, bytearray, int, float)):
-            payload = json.dumps(payload) # Convert dictionary payloads to JSON string
+            payload = json.dumps(payload)  # Convert dictionary payloads to JSON string
         client.publish(topic, payload, retain=retain)
+        # give the publish a moment to be handed to the network thread
+        client.loop(timeout=1.0)
         client.disconnect()
         print(f"Published to topic '{topic}': {payload} (retained: {retain})")
     except Exception as e:

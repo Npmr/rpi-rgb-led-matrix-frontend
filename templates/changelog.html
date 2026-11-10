@@ -1,29 +1,123 @@
 {% extends "base.html" %}
 
-{% block title %}Changelog - Matrix Steuerung{% endblock %}
+{% block title %}Changelog - Pixel Matrix{% endblock %}
+
+{% block page_header %}
+<div class="layout__page-header">
+    <h1 class="layout__page-title">System Updates & Changelog</h1>
+    <p class="layout__page-subtitle">Review recent modifications to the Pixel Matrix Controller environment and manage system software versions.</p>
+</div>
+{% endblock %}
 
 {% block content %}
-<h1 class="mb-lg">Changelog</h1>
-<p class="mb-lg">Aktuelle Version: <strong>{{ applicationInfo.currentApplicationVersion }}</strong></p>
+<div class="page-layout--wide" style="display:grid;grid-template-columns:360px 1fr;gap:var(--space-lg);align-items:start;">
 
-{% if applicationInfo.changelog %}
-    {% for entry in applicationInfo.changelog %}
-    <div class="changelog-entry">
-        <div class="changelog-header">
-            <span class="changelog-version">{{ entry.version }}</span>
-            <span class="changelog-date">{{ entry.date }}</span>
-            {% if entry.version == applicationInfo.currentApplicationVersion %}
-            <span class="changelog-current-badge">Aktuell</span>
-            {% endif %}
+    {# === Left Column: Status + Update === #}
+    <div>
+        {# System Status #}
+        <div class="settings-section mb-lg">
+            <div class="settings-section__header">
+                <div class="settings-section__icon">
+                    <i class="material-icons">check_circle</i>
+                </div>
+                <h3 class="settings-section__title">System Status</h3>
+            </div>
+
+            <div class="info-row">
+                <span class="info-row__label">Current Version</span>
+                <span class="info-row__value">{{ applicationInfo.currentApplicationVersion }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-row__label">Latest Available</span>
+                <span class="info-row__value">{{ currentAvailableVersion }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-row__label">Branch</span>
+                <span class="branch-badge">{{ settings.updateBranch|capitalize }}</span>
+            </div>
+
+            <div class="status-card mt-md">
+                <i class="material-icons">check_circle</i>
+                <div class="status-card__text">
+                    System is up to date. No pending installations found in the current branch.
+                </div>
+            </div>
         </div>
-        <ul class="changelog-changes">
-            {% for change in entry.changes %}
-            <li>{{ change }}</li>
-            {% endfor %}
-        </ul>
+
+        {# Update Controller #}
+        <div class="settings-section">
+            <div class="settings-section__header">
+                <div class="settings-section__icon">
+                    <i class="material-icons">system_update</i>
+                </div>
+                <h3 class="settings-section__title">Update Controller</h3>
+            </div>
+
+            <div class="field">
+                <label class="field__label" for="updateBranch">Update Channel</label>
+                <select name="updateBranch" id="updateBranch" class="field__input">
+                    <option value="main" {% if settings['updateBranch'] == 'main' %}selected{% endif %}>Main (Stable Releases)</option>
+                    <option value="dev" {% if settings['updateBranch'] == 'dev' %}selected{% endif %}>Dev (Development)</option>
+                </select>
+            </div>
+
+            <form action="/update_process" method="POST" class="mt-md">
+                <button class="btn btn--primary btn--full" {{ enableUpdateButton }}>
+                    <i class="material-icons" style="font-size:18px;">system_update</i>
+                    Check for Updates
+                </button>
+            </form>
+
+            <button type="button" class="btn btn--outline btn--full mt-md"
+                    onclick="if(confirm('Force re-install current version?')){document.getElementById('force-reinstall-form').submit();}">
+                <i class="material-icons" style="font-size:18px;">refresh</i>
+                Force Re-install Current
+            </button>
+            <form id="force-reinstall-form" action="/update_process" method="POST" style="display:none;">
+                <input type="hidden" name="force" value="true">
+            </form>
+        </div>
     </div>
-    {% endfor %}
-{% else %}
-    <p class="empty-state">Keine Changelog-Einträge verfügbar.</p>
-{% endif %}
+
+    {# === Right Column: Release Notes === #}
+    <div class="settings-section">
+        <div class="settings-section__header">
+            <div class="settings-section__icon">
+                <i class="material-icons">history</i>
+            </div>
+            <h3 class="settings-section__title">Release Notes</h3>
+            <span style="margin-left:auto;font-size:var(--font-size-xs);color:var(--color-text-secondary);background:var(--color-divider);padding:4px 10px;border-radius:var(--radius-lg);">Showing latest {{ applicationInfo.changelog|length }} releases</span>
+        </div>
+
+        {% if applicationInfo.changelog %}
+            <div class="changelog-timeline">
+                {% for entry in applicationInfo.changelog %}
+                <div class="changelog-entry {% if entry.version == applicationInfo.currentApplicationVersion %}changelog-entry--current{% endif %}">
+                    <div class="changelog-entry__dot"></div>
+                    <div class="changelog-entry__card">
+                        <div class="changelog-header">
+                            <span class="changelog-version">{{ entry.version }}</span>
+                            {% if entry.version == applicationInfo.currentApplicationVersion %}
+                            <span class="changelog-current-badge">LATEST STABLE</span>
+                            {% endif %}
+                            <span class="changelog-date">Released {{ entry.date }}</span>
+                        </div>
+                        {% if entry.changes %}
+                        <p class="changelog-description">{{ entry.changes[0] }}</p>
+                        <ul class="changelog-changes">
+                            {% for change in entry.changes %}
+                            <li>{{ change }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="empty-state">No changelog entries available.</p>
+        {% endif %}
+    </div>
+
+</div>
 {% endblock %}

@@ -1,18 +1,26 @@
 {% extends "base.html" %}
 
-{% block title %}Bilder - Matrix Steuerung{% endblock %}
+{% block title %}Dashboard - Pixel Matrix{% endblock %}
+
+{% block page_header %}
+<div class="layout__page-header">
+    <h1 class="layout__page-title">System Dashboard</h1>
+    <p class="layout__page-subtitle">Manage displays, integrations, and matrix hardware.</p>
+</div>
+{% endblock %}
 
 {% block tabs %}
 <div class="tabs" role="tablist">
-    <button class="tabs__tab tabs__tab--active" data-tab="#panel-bilder" role="tab" aria-selected="true">Bilder</button>
+    <button class="tabs__tab tabs__tab--active" data-tab="#panel-images" role="tab" aria-selected="true">Images</button>
     <button class="tabs__tab" data-tab="#panel-gifs" role="tab" aria-selected="false">GIFs</button>
     <button class="tabs__tab" data-tab="#panel-videos" role="tab" aria-selected="false">Videos</button>
     <button class="tabs__tab" data-tab="#panel-demos" role="tab" aria-selected="false">Demos</button>
 </div>
+
 <div class="tabs__panels">
 
-    {# === BILDER TAB === #}
-    <section class="tabs__panel tabs__panel--active" id="panel-bilder" role="tabpanel">
+    {# === IMAGES TAB === #}
+    <section class="tabs__panel tabs__panel--active" id="panel-images" role="tabpanel">
         <div class="filter-bar">
             <fieldset class="filter-bar__fieldset">
                 <legend class="filter-bar__legend">Filter by orientation</legend>
@@ -78,11 +86,13 @@
                         </picture>
                         <div class="media-overlay">
                             <form method="post" action="/process_image" class="media-action play-action" title="Display on matrix">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button class="btn--icon" type="submit" name="image_name" value="{{ image['filename'] }}">
                                     <div class="control-icon icon-play-circle"></div>
                                 </button>
                             </form>
                             <form action="/delete_image" method="POST" class="media-action delete-action" title="Delete">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button class="btn--icon" type="submit" name="image_name_to_delete" value="{{ image['filename'] }}">
                                     <div class="control-icon icon-delete"></div>
                                 </button>
@@ -151,11 +161,13 @@
                         </picture>
                         <div class="media-overlay">
                             <form method="post" action="/process_image" class="media-action play-action" title="Display on matrix">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button class="btn--icon" type="submit" name="image_name" value="{{ gif['filename'] }}">
                                     <div class="control-icon icon-play-circle"></div>
                                 </button>
                             </form>
                             <form action="/delete_image" method="POST" class="media-action delete-action" title="Delete">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button class="btn--icon" type="submit" name="image_name_to_delete" value="{{ gif['filename'] }}">
                                     <div class="control-icon icon-delete"></div>
                                 </button>
@@ -192,11 +204,13 @@
                         </video>
                         <div class="media-overlay">
                             <form method="post" action="/process_image" class="media-action play-action" title="Display on matrix">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button class="btn--icon" type="submit" name="image_name" value="{{ video['filename'] }}">
                                     <div class="control-icon icon-play-circle"></div>
                                 </button>
                             </form>
                             <form action="/delete_image" method="POST" class="media-action delete-action" title="Delete">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button class="btn--icon" type="submit" name="image_name_to_delete" value="{{ video['filename'] }}">
                                     <div class="control-icon icon-delete"></div>
                                 </button>
@@ -216,16 +230,37 @@
     <section class="tabs__panel" id="panel-demos" role="tabpanel">
 
         <div class="demos-section">
+            <h3 class="demos-section__title">Grid Display</h3>
+            <div class="demos-section__form">
+                <p style="color:var(--color-text-secondary);margin-bottom:var(--space-md);">
+                    Show multiple information blocks (clock, countdowns, API values, pictures) arranged on a grid.
+                </p>
+                <div class="layout-editor__actions">
+                    <form action="/start_grid" method="post" class="inline-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn--primary">Start Grid</button>
+                    </form>
+                    <form action="/stop_grid" method="post" class="inline-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn--outline">Stop Grid</button>
+                    </form>
+                    <a href="{{ url_for('layout') }}" class="btn btn--ghost">Edit Layout</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="demos-section">
             <h3 class="demos-section__title">GIPHY</h3>
             <div class="demos-section__form">
                 <form action="/start_giphy_web" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn--primary">Start GIPHY Loop</button>
                 </form>
 
                 <div class="mt-md">
                     <h4>GIPHY by Category (Art &amp; Design)</h4>
                     <div id="art_design_categories" class="mt-sm">
-                        <p class="text-center" style="color:var(--color-text-secondary);">Lade Kategorien...</p>
+                        <p class="text-center" style="color:var(--color-text-secondary);">Loading categories...</p>
                     </div>
                 </div>
             </div>
@@ -235,21 +270,23 @@
             <h3 class="demos-section__title">Immich</h3>
             <div class="demos-section__form">
                 <form action="/start_immich_random" method="post">
-                    <button type="submit" class="btn btn--primary">Zufällige Immich Bilder</button>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn--primary">Random Immich Photos</button>
                 </form>
 
                 <div class="field mt-md">
                     <label class="field__label">Immich Album</label>
                     <div id="immich_albums_container">
-                        <p style="color:var(--color-text-secondary);">Lade Alben...</p>
+                        <p style="color:var(--color-text-secondary);">Loading albums...</p>
                     </div>
                 </div>
 
                 <div class="field mt-md">
-                    <label class="field__label" for="immich_search_query">Immich Suche</label>
+                    <label class="field__label" for="immich_search_query">Immich Search</label>
                     <form action="/start_immich_search" method="post" style="width:100%;">
-                        <input class="field__input" type="text" name="immich_search_query" id="immich_search_query" placeholder="Suchbegriff eingeben...">
-                        <button type="submit" class="btn btn--primary mt-sm">Suche starten</button>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input class="field__input" type="text" name="immich_search_query" id="immich_search_query" placeholder="Enter search term...">
+                        <button type="submit" class="btn btn--primary mt-sm">Start Search</button>
                     </form>
                 </div>
             </div>
@@ -258,6 +295,7 @@
         <div class="demos-section">
             <h3 class="demos-section__title">Demos</h3>
             <form method="post" action="/process_demo">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <ul class="radio-group">
                     <li class="radio-group__item">
                         <label class="radio">
@@ -326,7 +364,7 @@
                         </label>
                     </li>
                 </ul>
-                <button class="btn btn--primary mt-md" type="submit">Demo starten</button>
+                <button class="btn btn--primary mt-md" type="submit">Start Demo</button>
             </form>
         </div>
 
@@ -345,23 +383,24 @@
                 var container = document.getElementById('art_design_categories');
                 if (data && data.length > 0) {
                     var selectHtml = '<select name="giphy_category" class="field__input">' +
-                        '<option value="">Kategorie wählen</option>';
+                        '<option value="">Select category</option>';
                     data.forEach(function(subcategory) {
                         selectHtml += '<option value="' + subcategory.name_encoded + '">' + subcategory.name + '</option>';
                     });
                     selectHtml += '</select>';
                     container.innerHTML =
                         '<form action="/start_giphy_category" method="post" class="category-form">' +
+                        '<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">' +
                         '<div class="field">' + selectHtml + '</div>' +
-                        '<button type="submit" class="btn btn--primary">Kategorie starten</button>' +
+                        '<button type="submit" class="btn btn--primary">Start Category</button>' +
                         '</form>';
                 } else {
-                    container.innerHTML = '<p style="color:var(--color-text-secondary);">Konnte Art &amp; Design Kategorien nicht laden.</p>';
+                    container.innerHTML = '<p style="color:var(--color-text-secondary);">Could not load Art &amp; Design categories.</p>';
                 }
             })
             .catch(function(error) {
                 document.getElementById('art_design_categories').innerHTML =
-                    '<p style="color:var(--color-error);">Fehler beim Laden der Kategorien.</p>';
+                    '<p style="color:var(--color-error);">Error loading categories.</p>';
                 console.error('Error fetching subcategories:', error);
             });
     });
@@ -373,23 +412,24 @@
                 var container = document.getElementById('immich_albums_container');
                 if (data && data.length > 0) {
                     var selectHtml = '<select name="immich_album_id" class="field__input">' +
-                        '<option value="">Album wählen</option>';
+                        '<option value="">Select album</option>';
                     data.forEach(function(album) {
                         selectHtml += '<option value="' + album.id + '">' + album.name + ' (' + album.assetCount + ' assets)</option>';
                     });
                     selectHtml += '</select>';
                     container.innerHTML =
                         '<form method="post" action="/start_immich_album" style="width:100%;">' +
+                        '<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">' +
                         '<div class="field">' + selectHtml + '</div>' +
-                        '<button type="submit" class="btn btn--primary">Album starten</button>' +
+                        '<button type="submit" class="btn btn--primary">Start Album</button>' +
                         '</form>';
                 } else {
-                    container.innerHTML = '<p style="color:var(--color-text-secondary);">Keine Alben gefunden. Überprüfe die Immich-Einstellungen.</p>';
+                    container.innerHTML = '<p style="color:var(--color-text-secondary);">No albums found. Check Immich settings.</p>';
                 }
             })
             .catch(function(error) {
                 document.getElementById('immich_albums_container').innerHTML =
-                    '<p style="color:var(--color-error);">Fehler beim Laden der Alben.</p>';
+                    '<p style="color:var(--color-error);">Error loading albums.</p>';
                 console.error('Error fetching Immich albums:', error);
             });
     }

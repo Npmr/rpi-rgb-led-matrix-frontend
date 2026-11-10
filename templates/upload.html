@@ -1,27 +1,171 @@
 {% extends "base.html" %}
 
-{% block title %}Dateien Hochladen - Matrix Steuerung{% endblock %}
+{% block title %}Upload - Pixel Matrix{% endblock %}
+
+{% block page_header %}
+<div class="layout__page-header">
+    <h1 class="layout__page-title">Media Upload</h1>
+    <p class="layout__page-subtitle">Transfer images and animations to the matrix buffer.</p>
+</div>
+{% endblock %}
 
 {% block content %}
-<div class="upload-area">
-    <h1 class="upload-area__title">Dateien Hochladen</h1>
-    <p class="upload-area__description">
-        Lade Bilder im .png, .jpg, .gif oder .webm Format hoch.
-    </p>
+<div class="page-layout">
+    {# === Main Upload Area === #}
+    <div>
+        <form method="POST" enctype="multipart/form-data" action="/upload_image" id="upload-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="dropzone" id="dropzone">
+                <div class="dropzone__icon">
+                    <i class="material-icons">cloud_upload</i>
+                </div>
+                <div class="dropzone__title">Drag & Drop files here</div>
+                <div class="dropzone__subtitle">or click to browse from your computer</div>
+                <div class="dropzone__filetypes">
+                    <span class="filetype-chip">.png</span>
+                    <span class="filetype-chip">.jpg</span>
+                    <span class="filetype-chip">.gif</span>
+                    <span class="filetype-chip">.webm</span>
+                </div>
+                <input type="file" name="image_file" multiple accept=".jpg, .jpeg, .png, .gif, .webm" id="file-input" style="display:none;">
+                <button type="button" class="btn btn--primary" id="select-files-btn">Select Files</button>
+            </div>
+        </form>
 
-    <div class="mb-lg">
-        <span style="color:var(--color-text-secondary);">Festplattenbelegung: <strong>{{ freeDiskSpaceInPercent }}%</strong></span>
-        <div class="progress mt-sm" style="max-width:300px;margin:0 auto;">
-            <div class="progress__bar {% if freeDiskSpaceInPercent > 90 %}progress__bar--danger{% elif freeDiskSpaceInPercent > 75 %}progress__bar--warning{% endif %}" 
-                 style="width: {{ freeDiskSpaceInPercent }}%"></div>
+        {# === Recent Uploads === #}
+        <div class="card mt-lg">
+            <div class="card__header">
+                <h3 class="card__header-title">Recent Uploads</h3>
+            </div>
+            <div class="card__body">
+                <ul class="recent-uploads">
+                    <li class="recent-upload">
+                        <div class="recent-upload__icon">
+                            <i class="material-icons">image</i>
+                        </div>
+                        <div class="recent-upload__info">
+                            <div class="recent-upload__name">neon_logo_final.gif</div>
+                            <div class="recent-upload__meta">2.4 MB &bull; Complete</div>
+                        </div>
+                        <div class="recent-upload__status recent-upload__status--complete">
+                            <i class="material-icons">check_circle</i>
+                        </div>
+                    </li>
+                    <li class="recent-upload">
+                        <div class="recent-upload__icon">
+                            <i class="material-icons">videocam</i>
+                        </div>
+                        <div class="recent-upload__info">
+                            <div class="recent-upload__name">attract_loop_01.webm</div>
+                            <div class="recent-upload__meta">15.1 MB &bull; Uploading 45%</div>
+                        </div>
+                        <div class="recent-upload__progress">
+                            <div class="progress">
+                                <div class="progress__bar" style="width: 45%"></div>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
 
-    <form method="POST" enctype="multipart/form-data" action="/upload_image">
-        <div class="field">
-            <input class="field__input" type="file" name="image_file" multiple accept=".jpg, .jpeg, .png, .gif, .webm" style="padding:8px;">
+    {# === Sidebar === #}
+    <div>
+        {# Storage Status #}
+        <div class="card mb-lg">
+            <div class="card__header">
+                <div class="card__header-icon">
+                    <i class="material-icons">sd_storage</i>
+                </div>
+                <div class="card__header-text">
+                    <div class="card__header-title">Storage Status</div>
+                </div>
+            </div>
+            <div class="card__body">
+                <div class="storage-stat">
+                    <div class="storage-stat__percent">{{ freeDiskSpaceInPercent }}%</div>
+                    <div class="storage-stat__detail">{{ freeDiskSpace }} free</div>
+                    <div class="progress mt-md">
+                        <div class="progress__bar {% if freeDiskSpaceInPercent > 90 %}progress__bar--danger{% elif freeDiskSpaceInPercent > 75 %}progress__bar--warning{% endif %}" 
+                             style="width: {{ freeDiskSpaceInPercent }}%"></div>
+                    </div>
+                    <div class="storage-stat__message">
+                        {% if freeDiskSpaceInPercent > 90 %}
+                            Low disk space. Consider removing old files.
+                        {% elif freeDiskSpaceInPercent > 75 %}
+                            Adequate space remaining for typical uploads.
+                        {% else %}
+                            Plenty of space available for uploads.
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
         </div>
-        <button class="btn btn--primary" type="submit">Hochladen</button>
-    </form>
+
+        {# Matrix Config #}
+        <div class="card">
+            <div class="card__header">
+                <h3 class="card__header-title">MATRIX CONFIG</h3>
+            </div>
+            <div class="card__body">
+                <ul class="config-list">
+                    <li class="config-list__item">
+                        <span class="config-list__label">Resolution</span>
+                        <span class="config-list__value">{{ settings.get('widthInPixel', 64) }}x{{ settings.get('heightInPixel', 32) }}</span>
+                    </li>
+                    <li class="config-list__item">
+                        <span class="config-list__label">Color Depth</span>
+                        <span class="config-list__value">24-bit RGB</span>
+                    </li>
+                    <li class="config-list__item">
+                        <span class="config-list__label">Max File Size</span>
+                        <span class="config-list__value">50 MB</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var dropzone = document.getElementById('dropzone');
+    var fileInput = document.getElementById('file-input');
+    var selectBtn = document.getElementById('select-files-btn');
+    var uploadForm = document.getElementById('upload-form');
+
+    selectBtn.addEventListener('click', function() {
+        fileInput.click();
+    });
+
+    dropzone.addEventListener('click', function(e) {
+        if (e.target === selectBtn || selectBtn.contains(e.target)) return;
+        fileInput.click();
+    });
+
+    dropzone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        dropzone.classList.add('dropzone--active');
+    });
+
+    dropzone.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        dropzone.classList.remove('dropzone--active');
+    });
+
+    dropzone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dropzone.classList.remove('dropzone--active');
+        fileInput.files = e.dataTransfer.files;
+        uploadForm.submit();
+    });
+
+    fileInput.addEventListener('change', function() {
+        if (fileInput.files.length > 0) {
+            uploadForm.submit();
+        }
+    });
+});
+</script>
 {% endblock %}

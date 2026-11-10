@@ -1,69 +1,118 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Matrix Steuerung{% endblock %}</title>
+    <title>{% block title %}Pixel Matrix{% endblock %}</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
     {% block head_extra %}{% endblock %}
 </head>
 <body>
 <div class="layout">
-    <header class="layout__header">
-        <div class="layout__header-row">
-            <span class="layout__title">
-                <a class="nav__link" href="/" style="padding:0;font-size:1.25rem;font-weight:600;">Matrix Steuerung</a>
-            </span>
+    {# --- Sidebar Overlay (mobile) --- #}
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
-            <button class="btn btn--icon mobile-menu-btn tooltip" data-tooltip="Menu" aria-label="Toggle menu">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+    {# --- Sidebar --- #}
+    <aside class="layout__sidebar" id="sidebar">
+        <div class="layout__sidebar-header">
+            <div class="layout__brand">
+                <div class="layout__brand-icon">
+                    <i class="material-icons">grid_view</i>
+                </div>
+                <div class="layout__brand-text">
+                    <span class="layout__brand-name">Pixel Matrix</span>
+                    <span class="layout__brand-version">v2.4.0-Stable</span>
+                </div>
+            </div>
+        </div>
+
+        <nav class="layout__sidebar-nav" role="navigation">
+            <a class="nav__link {% if request.path == '/' %}nav__link--active{% endif %}" href="{{ url_for('index') }}">
+                <i class="material-icons">dashboard</i>
+                Dashboard
+            </a>
+            <a class="nav__link {% if request.path == '/upload' %}nav__link--active{% endif %}" href="{{ url_for('upload') }}">
+                <i class="material-icons">cloud_upload</i>
+                Upload
+            </a>
+            <a class="nav__link {% if request.path == '/settings' %}nav__link--active{% endif %}" href="{{ url_for('settings') }}">
+                <i class="material-icons">settings</i>
+                Settings
+            </a>
+            <a class="nav__link {% if request.path == '/layout' %}nav__link--active{% endif %}" href="{{ url_for('layout') }}">
+                <i class="material-icons">dashboard_customize</i>
+                Layout
+            </a>
+            <a class="nav__link {% if request.path == '/changelog' %}nav__link--active{% endif %}" href="{{ url_for('changelog') }}">
+                <i class="material-icons">history</i>
+                Changelog
+            </a>
+        </nav>
+
+        <div class="layout__sidebar-footer">
+            <a class="nav__link" href="#">
+                <i class="material-icons">info</i>
+                System Status
+            </a>
+            <a class="nav__link" href="#">
+                <i class="material-icons">sd_storage</i>
+                Disk Space
+            </a>
+        </div>
+    </aside>
+
+    {# --- Main Content --- #}
+    <div class="layout__main">
+        {# --- Top Bar --- #}
+        <div class="layout__topbar">
+            <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle menu">
+                <i class="material-icons">menu</i>
             </button>
-
-            <div class="layout__spacer"></div>
-
             <div class="header-actions">
                 <form method="post" action="/stop_process" class="inline-form">
-                    <button id="stop_process_button" type="submit" class="btn btn--icon tooltip" data-tooltip="Display stoppen & ausschalten" aria-label="Stop display">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button id="stop_process_button" type="submit" class="btn btn--icon tooltip" data-tooltip="Stop display" aria-label="Stop display">
                         <div class="control-icon icon-pause-circle"></div>
                     </button>
                 </form>
                 <form method="post" action="/rotate_left" class="inline-form" aria-label="Rotate left">
-                    <button type="submit" class="btn btn--icon tooltip" data-tooltip="Links drehen" aria-label="Rotate left">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M7.11 8.53L5.7 7.11C4.8 8.27 4.24 9.61 4.07 11h2.02c.14-.87.49-1.72 1.02-2.47zM6.09 13H4.07c.17 1.39.72 2.73 1.62 3.89l1.41-1.42c-.52-.75-.87-1.59-1.01-2.47zM7.1 18.32c1.16.9 2.51 1.44 3.9 1.61V17.9c-.87-.15-1.71-.49-2.46-1.03L7.1 18.32zM13 4.07V1L8.45 5.55 13 10V6.09c2.84.48 5 2.94 5 5.91s-2.16 5.43-5 5.91v2.02c3.95-.49 7-3.85 7-7.93s-3.05-7.44-7-7.93z"/></svg>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn--icon tooltip" data-tooltip="Rotate left" aria-label="Rotate left">
+                        <i class="material-icons" style="font-size:20px;">rotate_left</i>
                     </button>
                 </form>
                 <form method="post" action="/rotate_right" class="inline-form" aria-label="Rotate right">
-                    <button type="submit" class="btn btn--icon tooltip" data-tooltip="Rechts drehen" aria-label="Rotate right">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M15.55 5.55L11 1v3.07C7.06 4.56 4 7.92 4 12s3.05 7.44 7 7.93v-2.02c-2.84-.48-5-2.94-5-5.91s2.16-5.43 5-5.91V10l4.55-4.45zM19.93 11c-.17-1.39-.72-2.73-1.62-3.89l-1.42 1.42c.54.75.88 1.6 1.02 2.47h2.02zM13 17.9v2.02c1.39-.17 2.74-.71 3.9-1.61l-1.44-1.44c-.75.54-1.59.89-2.46 1.03zm3.89-2.42l1.42 1.41c.9-1.16 1.45-2.5 1.62-3.89h-2.02c-.14.87-.48 1.72-1.02 2.48z"/></svg>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn--icon tooltip" data-tooltip="Rotate right" aria-label="Rotate right">
+                        <i class="material-icons" style="font-size:20px;">rotate_right</i>
                     </button>
                 </form>
             </div>
-
-            <nav class="nav" role="navigation">
-                <a class="nav__link" href="{{ url_for('upload') }}">Dateien Hochladen</a>
-                <a class="nav__link" href="{{ url_for('changelog') }}">Changelog</a>
-                <a class="nav__link" href="{{ url_for('settings') }}">Einstellungen</a>
-            </nav>
         </div>
-    </header>
 
-    {% block tabs %}{% endblock %}
+        {# --- Page Header --- #}
+        {% block page_header %}{% endblock %}
 
-    <main class="layout__content">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="flash-message flash-{{ category }}">
-                        <span>{{ message }}</span>
-                        <button type="button" class="flash-dismiss" aria-label="Close">&times;</button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+        {# --- Tabs (optional) --- #}
+        {% block tabs %}{% endblock %}
 
-        {% block content %}{% endblock %}
-    </main>
+        {# --- Main Content --- #}
+        <main class="layout__content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-message flash-{{ category }}">
+                            <span>{{ message }}</span>
+                            <button type="button" class="flash-dismiss" aria-label="Close">&times;</button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
 </div>
 
 <script src="{{ url_for('static', filename='js/app.js') }}"></script>

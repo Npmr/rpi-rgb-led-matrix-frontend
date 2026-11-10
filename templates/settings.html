@@ -1,300 +1,320 @@
 {% extends "base.html" %}
 
-{% block title %}Einstellungen - Matrix Steuerung{% endblock %}
+{% block title %}Settings - Pixel Matrix{% endblock %}
+
+{% block page_header %}
+<div class="layout__page-header">
+    <h1 class="layout__page-title">Device Settings</h1>
+    <p class="layout__page-subtitle">Configure matrix hardware parameters, integrations, and core system preferences. Changes may require a device reboot to take effect.</p>
+</div>
+{% endblock %}
 
 {% block content %}
-<h1 class="mb-lg">Einstellungen</h1>
+<form method="POST" action="/save_settings">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-<div class="settings-grid">
+    {# === Top Row: Matrix Hardware + Time & Date === #}
+    <div class="settings-grid mb-lg">
 
-    {# === COLUMN 1: Stats === #}
-    <div>
+        {# Matrix Hardware #}
         <div class="settings-section">
-            <h2 class="settings-section__title">Statistiken</h2>
-            <ul class="stats-list">
-                <li class="stats-list__item">
-                    <i class="material-icons stats-list__icon">photo</i>
-                    Hochgeladene Bilder: {{ numberOfPictues }}
-                </li>
-                <li class="stats-list__item">
-                    <i class="material-icons stats-list__icon">gif_box</i>
-                    Hochgeladene GIFs: {{ numberOfGifs }}
-                </li>
-                <li class="stats-list__item">
-                    <i class="material-icons stats-list__icon">hard_disk</i>
-                    Festplattenbelegung: {{ freeDiskSpaceInPercent }}%
-                </li>
-            </ul>
-        </div>
-    </div>
-
-    {# === COLUMN 2: Settings Form === #}
-    <div>
-        <form method="POST" action="/save_settings">
-
-            {# --- Hardware Config --- #}
-            <div class="settings-section">
-                <h3 class="settings-section__title">Hardware-Konfiguration</h3>
-
-                <div class="field">
-                    <label class="field__label" for="height">Pixel pro Modul - Höhe (Standard: 32)</label>
-                    <input class="field__input" type="number" name="height" pattern="-?[0-9]*(\.[0-9]+)?" id="height" value="{{ settings['heightInPixel'] }}">
+            <div class="settings-section__header">
+                <div class="settings-section__icon">
+                    <i class="material-icons">memory</i>
                 </div>
+                <h3 class="settings-section__title">Matrix Hardware</h3>
+            </div>
 
+            <div class="settings-section__fields">
                 <div class="field">
-                    <label class="field__label" for="width">Pixel pro Modul - Breite (Standard: 32)</label>
+                    <label class="field__label" for="width">Pixels per Module - Width</label>
                     <input class="field__input" type="number" name="width" pattern="-?[0-9]*(\.[0-9]+)?" id="width" value="{{ settings['widthInPixel'] }}">
                 </div>
 
                 <div class="field">
-                    <label class="field__label" for="chainLength">Modul-Kette (Standard: 1)</label>
+                    <label class="field__label" for="height">Pixels per Module - Height</label>
+                    <input class="field__input" type="number" name="height" pattern="-?[0-9]*(\.[0-9]+)?" id="height" value="{{ settings['heightInPixel'] }}">
+                </div>
+
+                <div class="field">
+                    <label class="field__label" for="chainLength">Chain Length (Panels)</label>
                     <input class="field__input" type="number" min="1" name="chainLength" pattern="-?[0-9]*(\.[0-9]+)?" id="chainLength" value="{{ settings['chainLength'] }}">
                 </div>
 
                 <div class="field">
-                    <label class="field__label" for="parallelChains">Parallele Ketten (Standard: 1)</label>
+                    <label class="field__label" for="parallelChains">Parallel Chains</label>
                     <input class="field__input" type="number" min="1" name="parallelChains" pattern="-?[0-9]*(\.[0-9]+)?" id="parallelChains" value="{{ settings['parallelChains'] }}">
                 </div>
-
-                <div class="field">
-                    <label class="field__label" for="ledSlowdown">Display-Verlangsamung (Standard: 2)</label>
-                    <input class="field__input" type="number" min="0" name="ledSlowdown" pattern="-?[0-9]*(\.[0-9]+)?" id="ledSlowdown" value="{{ settings['ledSlowdown'] }}">
-                </div>
             </div>
 
-            {# --- Display Settings --- #}
-            <div class="settings-section">
-                <h3 class="settings-section__title">Anzeige-Einstellungen</h3>
-
-                <div class="field">
-                    <label class="field__label" for="playlistTime">Bildanzeige-Dauer in Sek. (min. 30)</label>
-                    <input class="field__input" type="number" min="30" name="playlistTime" pattern="-?[0-9]*(\.[0-9]+)?" id="playlistTime" value="{{ settings['playlistTime'] }}">
-                </div>
-
-                <div class="field">
-                    <label class="field__label" for="displayBrightness">Helligkeit in % (min. 30)</label>
-                    <input class="field__input" type="number" min="1" name="displayBrightness" pattern="-?[0-9]*(\.[0-9]+)?" id="displayBrightness" value="{{ settings['displayBrightness'] }}">
-                </div>
-
-                <div class="field">
-                    <label class="field__label" for="direction">Anzeigerichtung (Wo ist oben, Standard: vertikal)</label>
-                    <select name="direction" id="direction" class="field__input">
-                        <option value="vertical" {% if settings['direction'] == 'vertical' %}selected{% endif %}>Vertikal</option>
-                        <option value="verticalTurned" {% if settings['direction'] == 'verticalTurned' %}selected{% endif %}>Vertikal Gedreht</option>
-                        <option value="horizontal" {% if settings['direction'] == 'horizontal' %}selected{% endif %}>Horizontal</option>
-                        <option value="horizontalTurned" {% if settings['direction'] == 'horizontalTurned' %}selected{% endif %}>Horizontal Gedreht</option>
-                    </select>
-                </div>
-
-                <div class="field">
-                    <label class="field__label" for="language">Sprache</label>
-                    <select name="language" id="language" class="field__input">
-                        <option value="de" {% if settings['language'] == 'de' %}selected{% endif %}>Deutsch</option>
-                        <option value="en" {% if settings['language'] == 'en' %}selected{% endif %}>English</option>
-                        <option value="it" {% if settings['language'] == 'it' %}selected{% endif %}>Italiano</option>
-                        <option value="ch" {% if settings['language'] == 'ch' %}selected{% endif %}>中国人</option>
-                    </select>
-                </div>
-
-                <div class="mt-md">
-                    <label class="checkbox">
-                        <input type="checkbox" class="checkbox__input" id="showClockAndPicture" name="showClockAndPicture" {{ settings['displayTimeAndDate'] }}>
-                        <span class="checkbox__label">Uhrzeit &amp; Datum auch bei anderem Inhalt anzeigen</span>
-                    </label>
-                </div>
+            <div class="mt-md">
+                <label class="field__label" for="ledSlowdown">Display Slowdown (Standard: 2)</label>
+                <input class="field__input" type="number" min="0" name="ledSlowdown" pattern="-?[0-9]*(\.[0-9]+)?" id="ledSlowdown" value="{{ settings['ledSlowdown'] }}" style="max-width:200px;">
             </div>
 
-            {# --- Time & Date --- #}
-            <div class="settings-section">
-                <h3 class="settings-section__title">Uhrzeit &amp; Datum</h3>
+            <div class="mt-md">
+                <label class="toggle">
+                    <input type="checkbox" class="toggle__input" id="showClockAndPicture" name="showClockAndPicture" {{ settings['displayTimeAndDate'] }}>
+                    <div>
+                        <span class="toggle__label">Show Clock & Date</span>
+                        <span class="toggle__description">Display time overlay on other content</span>
+                    </div>
+                </label>
+            </div>
+        </div>
 
-                <div class="field">
-                    <label class="field__label" for="timezone">Zeitzone</label>
-                    <select name="timezone" id="timezone" class="field__input">
-                        {% for tz in timezones %}
-                        <option value="{{ tz }}" {% if settings['timezone'] == tz %}selected{% endif %}>{{ tz }}</option>
-                        {% endfor %}
-                    </select>
+        {# Time & Date #}
+        <div class="settings-section">
+            <div class="settings-section__header">
+                <div class="settings-section__icon">
+                    <i class="material-icons">schedule</i>
                 </div>
+                <h3 class="settings-section__title">Time & Date</h3>
+            </div>
 
+            <div class="field">
+                <label class="field__label" for="timezone">Timezone</label>
+                <select name="timezone" id="timezone" class="field__input">
+                    {% for tz in timezones %}
+                    <option value="{{ tz }}" {% if settings['timezone'] == tz %}selected{% endif %}>{{ tz }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="settings-section__fields mt-md">
                 <div class="field">
-                    <label class="field__label" for="clockFormatDate">Datumsformat (strftime)</label>
+                    <label class="field__label" for="clockFormatDate">Date Format (strftime)</label>
                     <input class="field__input" type="text" name="clockFormatDate" id="clockFormatDate" value="{{ settings.get('clockFormatDate', '%A') }}">
                 </div>
 
                 <div class="field">
-                    <label class="field__label" for="clockFormatTime">Zeitformat (strftime)</label>
+                    <label class="field__label" for="clockFormatTime">Time Format (strftime)</label>
                     <input class="field__input" type="text" name="clockFormatTime" id="clockFormatTime" value="{{ settings.get('clockFormatTime', '%H:%M:%S') }}">
                 </div>
-
-                <button type="button" formaction="/sync_time" formmethod="POST" class="btn btn--outline mt-sm"
-                        onclick="this.form.action=this.formAction; this.form.method=this.formMethod; this.form.submit();">
-                    Zeit synchronisieren
-                </button>
             </div>
 
-            {# --- MQTT / Home Assistant --- #}
-            <div class="settings-section">
-                <h3 class="settings-section__title">MQTT / Home Assistant</h3>
+            <div class="mt-md">
+                <label class="toggle">
+                    <input type="checkbox" class="toggle__input" checked>
+                    <div>
+                        <span class="toggle__label">NTP Sync</span>
+                        <span class="toggle__description">Automatically sync time via NTP</span>
+                    </div>
+                </label>
+            </div>
+        </div>
+    </div>
 
-                <div class="field">
-                    <label class="field__label" for="mqttIP">IP des MQTT-Servers</label>
-                    <input class="field__input" type="text" minlength="7" maxlength="15" pattern="^(?>(\d|[1-9]\d{2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(?1)$" name="mqttIP" id="mqttIP" value="{{ settings['mqttIP'] }}">
+    {# === Second Row: MQTT + Home Assistant + Immich === #}
+    <div class="settings-grid--three mb-lg">
+
+        {# MQTT Server #}
+        <div class="settings-section">
+            <div class="settings-section__header">
+                <div class="settings-section__icon">
+                    <i class="material-icons">settings_input_antenna</i>
                 </div>
+                <h3 class="settings-section__title">MQTT Server</h3>
+            </div>
 
+            <div class="field">
+                <label class="field__label" for="mqttIP">Broker IP / Hostname</label>
+                <input class="field__input" type="text" minlength="7" maxlength="15" pattern="^(?>(\d|[1-9]\d{2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(?1)$" name="mqttIP" id="mqttIP" value="{{ settings['mqttIP'] }}">
+            </div>
+
+            <div class="settings-section__fields">
                 <div class="field">
-                    <label class="field__label" for="mqttPort">Port des MQTT-Servers</label>
+                    <label class="field__label" for="mqttPort">Port</label>
                     <input class="field__input" type="number" minlength="3" maxlength="5" name="mqttPort" pattern="-?[0-9]*(\.[0-9]+)?" id="mqttPort" value="{{ settings['mqttPort'] }}">
                 </div>
 
                 <div class="field">
-                    <label class="field__label" for="deviceID">Geräte-ID für Home Assistant</label>
-                    <input class="field__input" type="text" minlength="5" name="deviceID" id="deviceID" value="{{ settings['deviceID'] }}">
-                </div>
-
-                <div class="field">
-                    <label class="field__label" for="deviceName">Gerätename für Home Assistant</label>
-                    <input class="field__input" type="text" minlength="5" name="deviceName" id="deviceName" value="{{ settings['deviceName'] }}">
+                    <label class="field__label">Auth</label>
+                    <label class="toggle" style="margin-top:4px;">
+                        <input type="checkbox" class="toggle__input">
+                        <span class="toggle__label"></span>
+                    </label>
                 </div>
             </div>
+        </div>
 
-            {# --- GIPHY --- #}
-            <div class="settings-section">
-                <h3 class="settings-section__title">GIPHY</h3>
-
-                <div class="field">
-                    <label class="field__label" for="giphyApiKey">GIPHY API Key</label>
-                    <input class="field__input" type="text" minlength="5" name="giphyApiKey" id="giphyApiKey" value="{{ settings['giphyApiKey'] }}">
+        {# Home Assistant #}
+        <div class="settings-section">
+            <div class="settings-section__header">
+                <div class="settings-section__icon">
+                    <i class="material-icons">home</i>
                 </div>
+                <h3 class="settings-section__title">Home Assistant</h3>
             </div>
 
-            {# --- Immich Integration --- #}
-            <div class="settings-section">
+            <div class="field">
+                <label class="field__label" for="deviceName">Device Name</label>
+                <input class="field__input" type="text" minlength="5" name="deviceName" id="deviceName" value="{{ settings['deviceName'] }}">
+            </div>
+
+            <div class="field">
+                <label class="field__label" for="deviceID">Device ID (Read-only)</label>
+                <input class="field__input" type="text" minlength="5" name="deviceID" id="deviceID" value="{{ settings['deviceID'] }}" readonly style="background:var(--color-divider);">
+            </div>
+
+            <div class="mt-sm">
+                <span style="color:var(--color-success);font-size:var(--font-size-sm);font-weight:500;">
+                    <i class="material-icons" style="font-size:14px;vertical-align:middle;">circle</i>
+                    Auto-Discovery Active
+                </span>
+            </div>
+        </div>
+
+        {# Immich Integration #}
+        <div class="settings-section">
+            <div class="settings-section__header">
+                <div class="settings-section__icon">
+                    <i class="material-icons">photo_library</i>
+                </div>
                 <h3 class="settings-section__title">Immich Integration</h3>
+            </div>
 
-                <div class="field">
-                    <label class="field__label" for="immichUrl">Immich Server URL (z.B. http://immich:2283)</label>
-                    <input class="field__input" type="text" name="immichUrl" id="immichUrl" value="{{ settings.get('immichUrl', '') }}">
-                </div>
+            <div class="field">
+                <label class="field__label" for="immichUrl">Server URL</label>
+                <input class="field__input" type="text" name="immichUrl" id="immichUrl" value="{{ settings.get('immichUrl', '') }}" placeholder="https://photos.example.com">
+            </div>
 
-                <div class="field">
-                    <label class="field__label" for="immichApiKey">Immich API Key</label>
-                    <input class="field__input" type="text" name="immichApiKey" id="immichApiKey" value="{{ settings.get('immichApiKey', '') }}">
-                </div>
+            <div class="field">
+                <label class="field__label" for="immichApiKey">API Key</label>
+                <input class="field__input" type="password" name="immichApiKey" id="immichApiKey" value="{{ settings.get('immichApiKey', '') }}">
+            </div>
 
-                <div class="field">
-                    <label class="field__label" for="immichAlbumId">Immich Album ID (optional, für Album-Modus)</label>
-                    <input class="field__input" type="text" name="immichAlbumId" id="immichAlbumId" value="{{ settings.get('immichAlbumId', '') }}">
-                </div>
+            <div class="field">
+                <label class="field__label" for="immichAlbumId">Album ID (optional)</label>
+                <input class="field__input" type="text" name="immichAlbumId" id="immichAlbumId" value="{{ settings.get('immichAlbumId', '') }}">
+            </div>
 
-                <div class="field">
-                    <label class="field__label" for="immichSearchQuery">Immich Suchanfrage (optional, für Suchmodus)</label>
-                    <input class="field__input" type="text" name="immichSearchQuery" id="immichSearchQuery" value="{{ settings.get('immichSearchQuery', '') }}">
-                </div>
+            <div class="field">
+                <label class="field__label" for="immichSearchQuery">Search Query (optional)</label>
+                <input class="field__input" type="text" name="immichSearchQuery" id="immichSearchQuery" value="{{ settings.get('immichSearchQuery', '') }}">
+            </div>
 
+            <div class="settings-section__fields mt-md">
                 <div class="field">
-                    <label class="field__label" for="immichDisplayDurationRandom">Anzeigedauer Zufällig (Sekunden)</label>
+                    <label class="field__label" for="immichDisplayDurationRandom">Random Duration (sec)</label>
                     <input class="field__input" type="number" min="1" name="immichDisplayDurationRandom" id="immichDisplayDurationRandom" value="{{ settings.get('immichDisplayDurationRandom', 30) }}">
                 </div>
 
                 <div class="field">
-                    <label class="field__label" for="immichDisplayDurationAlbum">Anzeigedauer Album (Sekunden)</label>
+                    <label class="field__label" for="immichDisplayDurationAlbum">Album Duration (sec)</label>
                     <input class="field__input" type="number" min="1" name="immichDisplayDurationAlbum" id="immichDisplayDurationAlbum" value="{{ settings.get('immichDisplayDurationAlbum', 30) }}">
                 </div>
-
-                <div class="field">
-                    <label class="field__label" for="immichDisplayDurationSearch">Anzeigedauer Suche (Sekunden)</label>
-                    <input class="field__input" type="number" min="1" name="immichDisplayDurationSearch" id="immichDisplayDurationSearch" value="{{ settings.get('immichDisplayDurationSearch', 30) }}">
-                </div>
-
-                <div class="mt-md">
-                    <label class="checkbox">
-                        <input type="checkbox" class="checkbox__input" name="immichAutoOrientation" id="immichAutoOrientation" {% if settings.get('immichAutoOrientation', 'true') == 'true' %}checked{% endif %}>
-                        <span class="checkbox__label">Bilder basierend auf EXIF-Orientierung automatisch drehen</span>
-                    </label>
-                </div>
             </div>
 
-            {# --- Image Optimization --- #}
-            <div class="settings-section">
-                <h3 class="settings-section__title">Bildoptimierung</h3>
-
-                <div class="field">
-                    <label class="field__label" for="webpQuality">WebP Qualität (1-100, Standard: 85)</label>
-                    <input class="field__input" type="number" min="1" max="100" name="webpQuality" id="webpQuality" value="{{ settings.get('webpQuality', 85) }}">
-                </div>
-
-                <div class="field">
-                    <label class="field__label" for="avifQuality">AVIF Qualität (1-100, Standard: 50)</label>
-                    <input class="field__input" type="number" min="1" max="100" name="avifQuality" id="avifQuality" value="{{ settings.get('avifQuality', 50) }}">
-                </div>
-
-                <div class="field">
-                    <label class="field__label" for="thumbnailQuality">Thumbnail Qualität (1-100, Standard: 80)</label>
-                    <input class="field__input" type="number" min="1" max="100" name="thumbnailQuality" id="thumbnailQuality" value="{{ settings.get('thumbnailQuality', 80) }}">
-                </div>
-
-                <button type="button" formaction="/regenerate_thumbnails" formmethod="POST" class="btn btn--outline mt-md"
-                        onclick="this.form.action=this.formAction; this.form.method=this.formMethod; this.form.submit();">
-                    Alle Thumbnails &amp; Formate neu generieren
-                </button>
-            </div>
-
-            <button type="submit" class="btn btn--primary btn--full mt-lg">Einstellungen speichern</button>
-        </form>
-    </div>
-
-    {# === COLUMN 3: System === #}
-    <div>
-        {# --- Reboot / Shutdown --- #}
-        <div class="settings-section">
-            <h2 class="settings-section__title">Neustart / Herunterfahren</h2>
-            <form action="/reboot" method="POST">
-                <button type="submit" class="btn btn--outline btn--full mb-sm" data-confirm="Möchtest du den Raspberry Pi neu starten?">Neustart</button>
-            </form>
-            <form action="/shutdown" method="POST" data-confirm="Möchtest du das System sicher herunterfahren?">
-                <button type="submit" class="btn btn--danger btn--full">Sicher herunterfahren</button>
-            </form>
-        </div>
-
-        {# --- Update --- #}
-        <div class="settings-section">
-            <h2 class="settings-section__title">Update</h2>
-            <div class="mb-sm">
-                <span style="color:var(--color-text-secondary);font-size:var(--font-size-sm);">Installierte Version:</span><br>
-                <strong>{{ applicationInfo['currentApplicationVersion'] }}</strong>
-            </div>
-            <div class="mb-sm">
-                <span style="color:var(--color-text-secondary);font-size:var(--font-size-sm);">Letzte Änderungen:</span><br>
-                {{ applicationInfo['whatChanged'] }}
-            </div>
-            <hr>
-            <div class="mb-sm">
-                <span style="color:var(--color-text-secondary);font-size:var(--font-size-sm);">Verfügbare Version:</span><br>
-                <strong>{{ currentAvailableVersion }}</strong>
-            </div>
-            <div class="mb-sm">
-                <span style="color:var(--color-text-secondary);font-size:var(--font-size-sm);">Änderungen:</span><br>
-                {{ updateText }}
-            </div>
             <div class="field mt-md">
-                <label class="field__label" for="updateBranch">Update Branch</label>
-                <select name="updateBranch" id="updateBranch" class="field__input">
-                    <option value="main" {% if settings['updateBranch'] == 'main' %}selected{% endif %}>Main (Stabil)</option>
-                    <option value="dev" {% if settings['updateBranch'] == 'dev' %}selected{% endif %}>Dev (Entwicklung)</option>
-                </select>
+                <label class="field__label" for="immichDisplayDurationSearch">Search Duration (sec)</label>
+                <input class="field__input" type="number" min="1" name="immichDisplayDurationSearch" id="immichDisplayDurationSearch" value="{{ settings.get('immichDisplayDurationSearch', 30) }}">
             </div>
-            <form action="/update_process" method="POST">
-                <button class="btn btn--accent btn--full mt-sm" {{ enableUpdateButton }}>
-                    Application updaten
-                </button>
-            </form>
-            <p class="mt-sm" style="color:var(--color-text-secondary);font-size:var(--font-size-sm);">
-                Aktualisiert das rpi-rgb-led-matrix und rpi-rgb-led-matrix-frontend Repository.<br>
-                Am Ende des Updates wird der Raspberry Pi neu gestartet!
-            </p>
+
+            <div class="mt-md">
+                <label class="toggle">
+                    <input type="checkbox" class="toggle__input" name="immichAutoOrientation" id="immichAutoOrientation" {% if settings.get('immichAutoOrientation', 'true') == 'true' %}checked{% endif %}>
+                    <div>
+                        <span class="toggle__label">Auto-rotate by EXIF</span>
+                        <span class="toggle__description">Rotate images based on EXIF orientation</span>
+                    </div>
+                </label>
+            </div>
         </div>
     </div>
 
-</div>
+    {# === GIPHY Settings === #}
+    <div class="settings-section mb-lg">
+        <div class="settings-section__header">
+            <div class="settings-section__icon">
+                <i class="material-icons">gif</i>
+            </div>
+            <h3 class="settings-section__title">GIPHY</h3>
+        </div>
+
+        <div class="field" style="max-width:400px;">
+            <label class="field__label" for="giphyApiKey">GIPHY API Key</label>
+            <input class="field__input" type="text" minlength="5" name="giphyApiKey" id="giphyApiKey" value="{{ settings['giphyApiKey'] }}">
+        </div>
+    </div>
+
+    {# === Image Optimization === #}
+    <div class="settings-section mb-lg">
+        <div class="settings-section__header">
+            <div class="settings-section__icon">
+                <i class="material-icons">tune</i>
+            </div>
+            <h3 class="settings-section__title">Image Optimization</h3>
+        </div>
+
+        <div class="settings-section__fields">
+            <div class="field">
+                <label class="field__label" for="webpQuality">WebP Quality (1-100)</label>
+                <input class="field__input" type="number" min="1" max="100" name="webpQuality" id="webpQuality" value="{{ settings.get('webpQuality', 85) }}">
+            </div>
+
+            <div class="field">
+                <label class="field__label" for="avifQuality">AVIF Quality (1-100)</label>
+                <input class="field__input" type="number" min="1" max="100" name="avifQuality" id="avifQuality" value="{{ settings.get('avifQuality', 50) }}">
+            </div>
+
+            <div class="field">
+                <label class="field__label" for="thumbnailQuality">Thumbnail Quality (1-100)</label>
+                <input class="field__input" type="number" min="1" max="100" name="thumbnailQuality" id="thumbnailQuality" value="{{ settings.get('thumbnailQuality', 80) }}">
+            </div>
+        </div>
+
+        <button type="button" formaction="/regenerate_thumbnails" formmethod="POST" class="btn btn--outline mt-md"
+                onclick="this.form.action=this.formAction; this.form.method=this.formMethod; this.form.submit();">
+            <i class="material-icons" style="font-size:18px;">refresh</i>
+            Regenerate Thumbnails
+        </button>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    </div>
+
+    {# === System Maintenance === #}
+    <div class="settings-section mb-lg" style="border-color: var(--color-warning);">
+        <div class="settings-section__header">
+            <div class="settings-section__icon" style="background:#fff3e0;">
+                <i class="material-icons" style="color:var(--color-warning);">warning</i>
+            </div>
+            <div>
+                <h3 class="settings-section__title" style="margin-bottom:0;">System Maintenance</h3>
+                <p style="font-size:var(--font-size-sm);color:var(--color-text-secondary);">Perform low-level power operations. Rebooting will interrupt current displays.</p>
+            </div>
+        </div>
+
+        <div class="maintenance-actions">
+            <form action="/shutdown" method="POST" data-confirm="Are you sure you want to shut down the system?" style="flex:1;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn--outline btn--full">
+                    <i class="material-icons" style="font-size:18px;">power_settings_new</i>
+                    Shutdown
+                </button>
+            </form>
+            <form action="/reboot" method="POST" data-confirm="Reboot the Raspberry Pi?" style="flex:1;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn--danger btn--full">
+                    <i class="material-icons" style="font-size:18px;">restart_alt</i>
+                    Reboot Device
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {# === Bottom Bar === #}
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:var(--space-md) 0;border-top:1px solid var(--color-border);position:sticky;bottom:0;background:var(--color-bg);z-index:10;">
+        <button type="button" formaction="/regenerate_thumbnails" formmethod="POST" class="btn btn--ghost"
+                onclick="this.form.action=this.formAction; this.form.method=this.formMethod; this.form.submit();">
+            <i class="material-icons" style="font-size:18px;">refresh</i>
+            Regenerate Thumbnails
+        </button>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn--primary">
+            <i class="material-icons" style="font-size:18px;">save</i>
+            Save Settings
+        </button>
+    </div>
+
+</form>
 {% endblock %}

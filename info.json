@@ -1,7 +1,68 @@
 {
-  "currentApplicationVersion": "v0.0.48",
-  "whatChanged": "Complete UI redesign - self-contained BEM component library with teal theme, base template inheritance, removed MDL dependency",
+  "currentApplicationVersion": "v0.0.52",
+  "whatChanged": "Grid layout now derives its size from settings.json (mapper-aware visible canvas) instead of duplicating cell size in layout.json",
   "changelog": [
+    {
+      "version": "v0.0.52",
+      "date": "2026-11-10",
+      "changes": [
+        "Display geometry now has a single source of truth (modules/geometry.py) derived from the panel settings in settings.json",
+        "Removed duplicate cellW/cellH values from layout.json; grid columns, rows and cell size are computed from the visible canvas",
+        "Grid correctly accounts for the U-mapper and 90/270 rotations, so the editor and renderer always agree (default setup is 192x128 -> 6x4 cells)",
+        "Layout editor shows read-only grid information instead of editable cell-size fields",
+        "Old layout.json files with cellW/cellH still load; the legacy keys are ignored and dropped on the next save",
+        "Added geometry tests and updated layout, widget and route tests"
+      ]
+    },
+    {
+      "version": "v0.0.51",
+      "date": "2026-11-10",
+      "changes": [
+        "Added a configurable grid layout system for composing multiple information blocks on the matrix",
+        "New widgets: clock, days-until countdown (e.g. days until Christmas), API text, static text and picture blocks",
+        "New /layout editor page: add, drag, resize and delete blocks with grid snapping; save writes layout.json",
+        "New grid_display.py renderer using the rgbmatrix Python bindings; hot-reloads layout.json on change",
+        "New modules: layout_handler (config + validation), surface (Pillow frame composition), widgets package",
+        "Dashboard now has Grid Display start/stop controls and a link to the layout editor",
+        "Grid renderer is stopped automatically before starting any image, Giphy or Immich display",
+        "Installer now installs python3-dev, cython3 and pip and builds/installs the rgbmatrix Python bindings",
+        "Update script backs up/restores layout.json and installs the rgbmatrix Python bindings when missing",
+        "Added tests for layout validation, grid dimensions and all built-in widgets"
+      ]
+    },
+    {
+      "version": "v0.0.50",
+      "date": "2026-07-29",
+      "changes": [
+        "Added comprehensive test suite - 147 tests covering all major modules and routes",
+        "New test files: test_display_control.py, test_media_handler.py, test_upload_handler.py, test_routes.py, test_system_handler_extended.py",
+        "Fixed missing template variables in /changelog route (currentAvailableVersion, settings, enableUpdateButton)",
+        "Fixed missing template variables in /upload route (freeDiskSpace, settings)",
+        "Tests cover: Flask routes, image processing, display control, media handler, system utilities, settings management"
+      ]
+    },
+    {
+      "version": "v0.0.49",
+      "date": "2026-07-28",
+      "changes": [
+        "Major UI redesign with sidebar navigation layout",
+        "New green (#4CAF50) color theme replacing teal",
+        "Sidebar with icon navigation (Dashboard, Upload, Settings, Changelog)",
+        "Card-based component design with subtle borders and rounded corners",
+        "Upload page: drag-and-drop zone with file type chips and recent uploads list",
+        "Upload page: storage status card and matrix config sidebar",
+        "Settings page: grouped sections with icons (Hardware, Time/Date, MQTT, Home Assistant, Immich, GIPHY, Image Optimization)",
+        "Settings page: toggle switches for boolean options",
+        "Settings page: system maintenance section with shutdown/reboot buttons",
+        "Changelog page: timeline-style release notes with version badges",
+        "Changelog page: system status card and update controller section",
+        "Dashboard page: status badges for MQTT/Matrix connection",
+        "New components: status-badge, dropzone, filetype-chip, toggle switch, config-list, integration-card",
+        "Mobile responsive: sidebar slides in as overlay on small screens",
+        "Mobile responsive: stacked card layouts, adjusted grid columns",
+        "Updated all templates to use new layout structure"
+      ]
+    },
     {
       "version": "v0.0.48",
       "date": "2026-07-28",
@@ -32,9 +93,7 @@
       "version": "v0.0.46",
       "date": "2026-07-11",
       "changes": [
-        "Changed update procidier"
-      ]
-    },
+        "Changed update procedure",
         "Added EXIF auto-orientation correction for images from Immich and local uploads",
         "New setting 'immichAutoOrientation' (enabled by default) to automatically rotate images based on EXIF orientation tag",
         "Immich integration now fetches asset EXIF orientation via /api/assets/{id} endpoint",

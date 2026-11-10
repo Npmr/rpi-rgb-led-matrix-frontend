@@ -57,7 +57,10 @@ _ntpdate_available = None
 
 def getFreeDiskSpace():
     total, used, free = shutil.disk_usage("/")
-    return (100 / (total // (2 ** 30))) * (used // (2 ** 30)), (free // (2 ** 30))
+    total_gb = total // (2 ** 30)
+    free_gb = free // (2 ** 30)
+    percent_free = (100 * free_gb) / total_gb if total_gb else 0
+    return percent_free, free_gb
 
 
 def reboot_system():

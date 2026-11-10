@@ -251,6 +251,8 @@ def upload_image(app):
     def get_images_metadata():
         static_folder = app.config['STATIC_FOLDER']
         thumb_dir = os.path.join(static_folder, 'thumbnails')
+        if not os.path.isdir(static_folder):
+            return jsonify([])
         image_files = os.listdir(static_folder)
         images = []
         

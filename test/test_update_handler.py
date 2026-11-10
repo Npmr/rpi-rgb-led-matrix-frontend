@@ -35,7 +35,8 @@ class TestUpdateHandler(unittest.TestCase):
         self.assertEqual(result["currentApplicationVersion"], "v1.0.0")
         self.assertEqual(result["whatChanged"], "Test changes")
         mock_get.assert_called_once_with(
-            "https://raw.githubusercontent.com/Npmr/rpi-rgb-led-matrix-frontend/refs/heads/main/info.json"
+            "https://raw.githubusercontent.com/Npmr/rpi-rgb-led-matrix-frontend/refs/heads/main/info.json",
+            timeout=10,
         )
 
     @patch('modules.update_handler.requests.get')
@@ -50,7 +51,8 @@ class TestUpdateHandler(unittest.TestCase):
         self.assertIsNotNone(result)
         self.assertEqual(result["currentApplicationVersion"], "v2.0.0")
         mock_get.assert_called_once_with(
-            "https://raw.githubusercontent.com/Npmr/rpi-rgb-led-matrix-frontend/refs/heads/develop/info.json"
+            "https://raw.githubusercontent.com/Npmr/rpi-rgb-led-matrix-frontend/refs/heads/develop/info.json",
+            timeout=10,
         )
 
     @patch('modules.update_handler.requests.get')

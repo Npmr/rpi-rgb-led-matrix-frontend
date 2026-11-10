@@ -13,10 +13,14 @@ if not os.path.exists(DOWNLOAD_PATH):
 
 
 def _get_config():
-    """Get current Immich configuration from settings."""
+    """Get current Immich configuration.
+
+    The API key and URL take precedence from environment variables
+    (IMMICH_API_KEY, IMMICH_URL) and fall back to settings.json.
+    """
     settings = read_settings()
-    api_key = settings.get("immichApiKey", "")
-    url = settings.get("immichUrl", "").rstrip("/")
+    api_key = os.environ.get("IMMICH_API_KEY") or settings.get("immichApiKey", "")
+    url = (os.environ.get("IMMICH_URL") or settings.get("immichUrl", "")).rstrip("/")
     return api_key, url
 
 

@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Layout - Pixel Matrix{% endblock %}
+
+{% block page_header %}
+<div class="layout__page-header">
+    <h1 class="layout__page-title">Grid Layout</h1>
+    <p class="layout__page-subtitle">Arrange information blocks on the matrix. Drag a block to move it, drag its bottom-right handle to resize it across cells.</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="layout-editor" id="layout-editor">
+    <div class="layout-editor__toolbar">
+        <div class="layout-editor__actions">
+            <button type="button" class="btn btn--primary" id="save-layout-btn">
+                <i class="material-icons" style="font-size:18px;">save</i>
+                Save Layout
+            </button>
+            <form action="/start_grid" method="post" class="inline-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn--outline" {% if gridRunning %}disabled{% endif %}>
+                    <i class="material-icons" style="font-size:18px;">play_arrow</i>
+                    Start Grid
+                </button>
+            </form>
+            <form action="/stop_grid" method="post" class="inline-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn--ghost">
+                    <i class="material-icons" style="font-size:18px;">stop</i>
+                    Stop
+                </button>
+            </form>
+            <span class="layout-editor__status {% if gridRunning %}layout-editor__status--on{% endif %}">
+                {% if gridRunning %}Grid running{% else %}Grid stopped{% endif %}
+            </span>
+        </div>
+
+        <div class="layout-editor__grid-settings">
+            <span class="layout-editor__geometry">
+                Grid: {{ cols }} × {{ rows }} cells &middot; {{ cellW }}×{{ cellH }} px
+            </span>
+            <label class="checkbox">
+                <input type="checkbox" class="checkbox__input" id="showBorders" {% if layout.grid.showBorders %}checked{% endif %}>
+                <span class="checkbox__label">Borders</span>
+            </label>
+        </div>
+    </div>
+
+    <div class="layout-editor__body">
+        <div class="layout-editor__canvas-wrap">
+            <div class="matrix-frame" id="matrix-board">
+                <div class="matrix-widgets" id="matrix-widgets"></div>
+            </div>
+            <p class="layout-editor__hint">
+                Matrix: {{ matrixWidth }} × {{ matrixHeight }} px &middot;
+                Grid: <span id="grid-dims-label">{{ cols }} × {{ rows }}</span> cells
+            </p>
+        </div>
+
+        <aside class="layout-editor__panel">
+            <h3 class="layout-editor__panel-title">Add block</h3>
+            <div class="palette" id="widget-palette"></div>
+
+            <h3 class="layout-editor__panel-title mt-lg">Block settings</h3>
+            <div class="inspector" id="widget-inspector">
+                <p class="layout-editor__hint">Select a block to edit it.</p>
+            </div>
+        </aside>
+    </div>
+
+    <div class="layout-status" id="layout-status" role="status"></div>
+</div>
+
+<script id="layout-data" type="application/json">{{ {
+    'layout': layout,
+    'matrixWidth': matrixWidth,
+    'matrixHeight': matrixHeight,
+    'cols': cols,
+    'rows': rows,
+    'cellW': cellW,
+    'cellH': cellH,
+    'pictures': pictures,
+    'widgetDefaults': widgetDefaults,
+    'widgetTypes': widgetTypes,
+    'csrfToken': csrf_token()
+}|tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/layout.js') }}"></script>
+{% endblock %}

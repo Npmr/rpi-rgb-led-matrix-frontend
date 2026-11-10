@@ -1,5 +1,6 @@
 # modules/display_control.py
 import subprocess
+import sys
 import psutil
 from threading import Thread, Timer
 import time
@@ -7,6 +8,11 @@ import os
 import uuid
 from PIL import Image
 from .settings_handler import read_settings
+from .geometry import (
+    get_base_rotation,
+    get_matrix_dimensions,
+    get_pixel_mapper_config,
+)
 
 from . import immich_controller
 _last_process_call_time = 0.0
@@ -18,25 +24,8 @@ _current_command_line = None
 _current_static_folder = None
 _current_rotation_offset = 0
 _current_exif_orientation = None
-_current_exif_orientation = None
-
-
-def get_pixel_mapper_config(settings, rotation):
-    """Determine the correct pixel-mapper configuration based on panel layout."""
-    parallel = int(settings.get('parallelChains', 1))
-    chain = int(settings.get('chainLength', 1))
-
-    # U-mapper requires: parallel > 1 AND chain >= 4 AND chain is even
-    if parallel > 1 and chain >= 4 and chain % 2 == 0:
-        return f"U-mapper;Rotate:{rotation}"
-    else:
-        return f"Rotate:{rotation}"
-
-
-def get_matrix_dimensions(settings):
-    width = int(settings['widthInPixel']) * int(settings['chainLength'])
-    height = int(settings['heightInPixel']) * int(settings['parallelChains'])
-    return width, height
+_is_process_running = False
+_grid_process = None
 
 
 def apply_exif_orientation(img, orientation):
@@ -160,45 +149,114 @@ def process_image_for_display(image_path, settings, exif_orientation=None):
         return image_path
 
 
+def _get_int_setting(settings, key, default):
+    """Safely parse an integer setting, returning the default on any failure.
+
+    This prevents non-numeric (or malicious) settings values from being
+    interpolated into subprocess arguments.
+    """
+    try:
+        return int(settings.get(key, default))
+    except (ValueError, TypeError):
+        return default
+
+
+def _is_safe_basename(filename):
+    """Return True only if filename is a plain basename (no traversal/separators)."""
+    if not filename:
+        return False
+    if '/' in filename or '\\' in filename or '..' in filename:
+        return False
+    return os.path.basename(filename) == filename
+
+
 def _start_display_process(image_name, command_line, static_folder, rotation_offset=0, exif_orientation=None):
     stopProcess()
     settings = read_settings()
 
-    base_rotation = 270
-    if settings["direction"] == "horizontal":
-        base_rotation = 180
-    elif settings["direction"] == "verticalTurned":
-        base_rotation = 90
-    elif settings["direction"] == "horizontalTurned":
-        base_rotation = 0
-
+    base_rotation = get_base_rotation(settings)
     final_rotation = (base_rotation + rotation_offset) % 360
     pixel_mapper = get_pixel_mapper_config(settings, final_rotation)
 
-    if static_folder != "static/giphy_cache" and static_folder != "static/immich_cache":
+    if static_folder not in ("static/giphy_cache", "static/immich_cache"):
         static_folder = "static/pictures"
 
-    command = ""
+    # Validate and sanitize all numeric settings before they reach subprocess args.
+    rows = _get_int_setting(settings, 'heightInPixel', 32)
+    cols = _get_int_setting(settings, 'widthInPixel', 32)
+    chain = _get_int_setting(settings, 'chainLength', 1)
+    parallel = _get_int_setting(settings, 'parallelChains', 1)
+    brightness = _get_int_setting(settings.get('displayBrightness', 100), 100)
+    slowdown = _get_int_setting(settings.get('ledSlowdown', 2), 2)
+
+    base_matrix_dir = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), '..', '..', 'rpi-rgb-led-matrix')
+    )
+
+    cmd = []
     processed_image_path = None
     original_path = None
+    env = None
 
     if command_line == "displayImage":
-        original_path = f"{static_folder}/{image_name}"
+        if not _is_safe_basename(image_name):
+            print(f"Refusing to display image with unsafe name: {image_name!r}")
+            _is_process_running = False
+            return
+        original_path = os.path.join(static_folder, image_name)
         processed_image_path = process_image_for_display(original_path, settings, exif_orientation)
 
-        command = f"sudo .././rpi-rgb-led-matrix/utils/led-image-viewer -C --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness={settings.get('displayBrightness', 100)} --led-pixel-mapper=\"{pixel_mapper}\" --led-slowdown-gpio={settings['ledSlowdown']} {processed_image_path} &"
+        cmd = [
+            "sudo",
+            os.path.join(base_matrix_dir, "utils", "led-image-viewer"),
+            "-C",
+            f"--led-rows={rows}",
+            f"--led-cols={cols}",
+            f"--led-chain={chain}",
+            f"--led-parallel={parallel}",
+            f"--led-brightness={brightness}",
+            f"--led-pixel-mapper={pixel_mapper}",
+            f"--led-slowdown-gpio={slowdown}",
+            processed_image_path,
+        ]
     elif command_line == "displayDemo":
         if image_name == 12:
             tz = settings.get('timezone', 'UTC')
             date_fmt = settings.get('clockFormatDate', '%A')
             time_fmt = settings.get('clockFormatTime', '%H:%M:%S')
-            command = f"sudo TZ={tz} .././rpi-rgb-led-matrix/examples-api-use/clock -f ../rpi-rgb-led-matrix/fonts/4x6.bdf -d '{date_fmt}' -d '{time_fmt}' --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness={settings.get('displayBrightness', 100)} --led-pixel-mapper=\"{pixel_mapper}\" --led-slowdown-gpio={settings['ledSlowdown']} &"
-        elif image_name <= 11:
-            command = f"sudo .././rpi-rgb-led-matrix/examples-api-use/demo -D{image_name} --led-rows={settings['heightInPixel']} --led-cols={settings['widthInPixel']} --led-chain={settings['chainLength']} --led-parallel={settings['parallelChains']} --led-brightness={settings.get('displayBrightness', 100)} --led-pixel-mapper=\"{pixel_mapper}\" --led-slowdown-gpio={settings['ledSlowdown']} &"
+            env = os.environ.copy()
+            env["TZ"] = tz
+            cmd = [
+                "sudo",
+                os.path.join(base_matrix_dir, "examples-api-use", "clock"),
+                "-f", os.path.join(base_matrix_dir, "fonts", "4x6.bdf"),
+                "-d", date_fmt,
+                "-d", time_fmt,
+                f"--led-rows={rows}",
+                f"--led-cols={cols}",
+                f"--led-chain={chain}",
+                f"--led-parallel={parallel}",
+                f"--led-brightness={brightness}",
+                f"--led-pixel-mapper={pixel_mapper}",
+                f"--led-slowdown-gpio={slowdown}",
+            ]
+        elif isinstance(image_name, int) and 1 <= image_name <= 11:
+            cmd = [
+                "sudo",
+                os.path.join(base_matrix_dir, "examples-api-use", "demo"),
+                f"-D{image_name}",
+                f"--led-rows={rows}",
+                f"--led-cols={cols}",
+                f"--led-chain={chain}",
+                f"--led-parallel={parallel}",
+                f"--led-brightness={brightness}",
+                f"--led-pixel-mapper={pixel_mapper}",
+                f"--led-slowdown-gpio={slowdown}",
+            ]
 
-    if command:
-        print(f"Executing command: {command}")
-        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if cmd:
+        print(f"Executing: {' '.join(cmd)}")
+        process = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         def capture_output():
             stdout, stderr = process.communicate()
@@ -264,7 +322,72 @@ def _process_pending_call():
         _throttle_timer = None
 
 
+def stop_grid_display():
+    """Stop the grid renderer process (including orphans after a restart)."""
+    global _grid_process
+    process = _grid_process
+    _grid_process = None
+    if process is not None and process.poll() is None:
+        try:
+            process.terminate()
+            process.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            process.kill()
+        except Exception as error:  # pragma: no cover - defensive
+            print(f"Error stopping grid display: {error}")
+
+    # Fallback: kill any renderer that survived an application restart.
+    for candidate in psutil.process_iter(['pid', 'cmdline']):
+        try:
+            cmdline = candidate.info.get('cmdline') or []
+            if any('grid_display.py' in str(part) for part in cmdline):
+                candidate.kill()
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
+
+
+def is_grid_running():
+    if _grid_process is not None and _grid_process.poll() is None:
+        return True
+    for candidate in psutil.process_iter(['pid', 'cmdline']):
+        try:
+            cmdline = candidate.info.get('cmdline') or []
+            if any('grid_display.py' in str(part) for part in cmdline):
+                return True
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
+    return False
+
+
+def start_grid_display():
+    """Start the grid renderer as a separate process (owns the matrix)."""
+    global _grid_process
+    stopProcess()
+
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    script = os.path.join(project_root, 'grid_display.py')
+    if not os.path.exists(script):
+        print(f"Grid display script not found: {script}")
+        return False
+
+    if os.geteuid() == 0:
+        cmd = [sys.executable, script]
+    else:
+        cmd = ["sudo", sys.executable, script]
+
+    print(f"Starting grid display: {' '.join(cmd)}")
+    try:
+        _grid_process = subprocess.Popen(cmd, cwd=project_root)
+    except Exception as error:
+        print(f"Failed to start grid display: {error}")
+        _grid_process = None
+        return False
+    return True
+
+
 def stopProcess():
+    stop_grid_display()
+
     for process in psutil.process_iter():
         if "led-image-viewer" in process.name():
             process.kill()
@@ -289,4 +412,3 @@ def trigger_rotation(angle_delta):
         process_thread.start()
 
 
-is_not_running = True
