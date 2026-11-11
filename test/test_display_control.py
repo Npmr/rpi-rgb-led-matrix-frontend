@@ -4,7 +4,7 @@ from PIL import Image
 
 from modules.display_control import (
     get_pixel_mapper_config, get_matrix_dimensions,
-    apply_exif_orientation, fill_crop_image
+    apply_exif_orientation, fill_crop_image, _start_display_process
 )
 
 
@@ -150,6 +150,65 @@ class TestFillCropImage(unittest.TestCase):
         img = Image.new('RGB', (180, 320), color='cyan')
         result = fill_crop_image(img, 64, 64)
         self.assertEqual(result.size, (64, 64))
+
+
+class TestStartDisplayProcess(unittest.TestCase):
+    """Regression tests for the brightness/slowdown settings parsing.
+
+    These call sites previously passed (value, default) instead of
+    (settings, key, default), which raised a TypeError before any display
+    process could start.
+    """
+
+    BASE_SETTINGS = {
+        'heightInPixel': '32',
+        'widthInPixel': '32',
+        'chainLength': '12',
+        'parallelChains': '2',
+        'direction': 'horizontal',
+        'displayBrightness': '100',
+        'ledSlowdown': '2',
+    }
+
+    def _run(self, settings):
+        with patch('modules.display_control.Thread'), \
+                patch('modules.display_control.subprocess.Popen') as mock_popen, \
+                patch('modules.display_control.process_image_for_display',
+                      return_value='/tmp/processed.png'), \
+                patch('modules.display_control.stopProcess'), \
+                patch('modules.display_control.read_settings', return_value=settings):
+            _start_display_process('photo.png', 'displayImage', 'static/pictures')
+        return mock_popen.call_args[0][0]
+
+    def test_display_image_uses_brightness_and_slowdown(self):
+        cmd = self._run(dict(self.BASE_SETTINGS))
+        self.assertIn('--led-brightness=100', cmd)
+        self.assertIn('--led-slowdown-gpio=2', cmd)
+
+    def test_invalid_numeric_settings_fall_back_to_defaults(self):
+        settings = dict(
+            self.BASE_SETTINGS,
+            displayBrightness='not-a-number',
+            ledSlowdown=None,
+        )
+        cmd = self._run(settings)
+        self.assertIn('--led-brightness=100', cmd)
+        self.assertIn('--led-slowdown-gpio=2', cmd)
+
+    def test_demo_uses_parsed_settings(self):
+        settings = dict(
+            self.BASE_SETTINGS,
+            displayBrightness='40',
+            ledSlowdown='3',
+        )
+        with patch('modules.display_control.Thread'), \
+                patch('modules.display_control.subprocess.Popen') as mock_popen, \
+                patch('modules.display_control.stopProcess'), \
+                patch('modules.display_control.read_settings', return_value=settings):
+            _start_display_process(1, 'displayDemo', 'static/pictures')
+        cmd = mock_popen.call_args[0][0]
+        self.assertIn('--led-brightness=40', cmd)
+        self.assertIn('--led-slowdown-gpio=3', cmd)
 
 
 if __name__ == '__main__':

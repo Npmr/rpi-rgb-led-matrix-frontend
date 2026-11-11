@@ -1,7 +1,18 @@
 {
-  "currentApplicationVersion": "v0.0.52",
-  "whatChanged": "Grid layout now derives its size from settings.json (mapper-aware visible canvas) instead of duplicating cell size in layout.json",
+  "currentApplicationVersion": "v0.0.53",
+  "whatChanged": "Fixed a TypeError in display_control that broke all image, demo and clock displays (brightness/slowdown settings parsing)",
   "changelog": [
+    {
+      "version": "v0.0.53",
+      "date": "2026-11-11",
+      "changes": [
+        "Fixed TypeError: _get_int_setting() missing 1 required positional argument when starting any display (image, Giphy, Immich, demo or clock)",
+        "Brightness and GPIO slowdown settings are now parsed with the shared safe integer helper",
+        "Tracked the missing modules/widgets/__init__.py in git, which caused an ImportError when starting the grid display on the Pi",
+        "Grid renderer now imports widget classes from their explicit submodules so it stays importable even if the package init is missing",
+        "Added regression tests for display process command construction and invalid numeric settings"
+      ]
+    },
     {
       "version": "v0.0.52",
       "date": "2026-11-10",

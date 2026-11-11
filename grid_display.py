@@ -28,7 +28,8 @@ from modules.geometry import get_display_geometry
 from modules.layout_handler import read_layout
 from modules.settings_handler import read_settings
 from modules.surface import Surface
-from modules.widgets import WidgetContext, build_widgets, stop_widgets
+from modules.widgets.base import WidgetContext
+from modules.widgets.registry import build_widgets, stop_widgets
 
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 LAYOUT_PATH = os.path.join(PROJECT_ROOT, "layout.json")

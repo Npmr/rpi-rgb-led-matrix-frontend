@@ -186,8 +186,8 @@ def _start_display_process(image_name, command_line, static_folder, rotation_off
     cols = _get_int_setting(settings, 'widthInPixel', 32)
     chain = _get_int_setting(settings, 'chainLength', 1)
     parallel = _get_int_setting(settings, 'parallelChains', 1)
-    brightness = _get_int_setting(settings.get('displayBrightness', 100), 100)
-    slowdown = _get_int_setting(settings.get('ledSlowdown', 2), 2)
+    brightness = _get_int_setting(settings, 'displayBrightness', 100)
+    slowdown = _get_int_setting(settings, 'ledSlowdown', 2)
 
     base_matrix_dir = os.path.abspath(
         os.path.join(os.path.dirname(__file__), '..', '..', 'rpi-rgb-led-matrix')
