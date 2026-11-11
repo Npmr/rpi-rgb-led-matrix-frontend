@@ -276,12 +276,10 @@
             </div>
         </div>
 
-        <button type="button" formaction="/regenerate_thumbnails" formmethod="POST" class="btn btn--outline mt-md"
-                onclick="this.form.action=this.formAction; this.form.method=this.formMethod; this.form.submit();">
+        <button type="submit" formaction="/regenerate_thumbnails" formmethod="POST" formnovalidate class="btn btn--outline mt-md">
             <i class="material-icons" style="font-size:18px;">refresh</i>
             Regenerate Thumbnails
         </button>
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     </div>
 
     {# === Image Display + Startup Screen === #}
@@ -388,32 +386,30 @@
             </div>
         </div>
 
+        {# These buttons live inside the settings form (forms cannot be nested),
+           so they target their own endpoint with formaction/formmethod. #}
         <div class="maintenance-actions">
-            <form action="/shutdown" method="POST" data-confirm="Are you sure you want to shut down the system?" style="flex:1;">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn--outline btn--full">
-                    <i class="material-icons" style="font-size:18px;">power_settings_new</i>
-                    Shutdown
-                </button>
-            </form>
-            <form action="/reboot" method="POST" data-confirm="Reboot the Raspberry Pi?" style="flex:1;">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn--danger btn--full">
-                    <i class="material-icons" style="font-size:18px;">restart_alt</i>
-                    Reboot Device
-                </button>
-            </form>
+            <button type="submit" class="btn btn--outline btn--full"
+                    formaction="/shutdown" formmethod="POST" formnovalidate
+                    data-confirm="Are you sure you want to shut down the system?">
+                <i class="material-icons" style="font-size:18px;">power_settings_new</i>
+                Shutdown
+            </button>
+            <button type="submit" class="btn btn--danger btn--full"
+                    formaction="/reboot" formmethod="POST" formnovalidate
+                    data-confirm="Reboot the Raspberry Pi?">
+                <i class="material-icons" style="font-size:18px;">restart_alt</i>
+                Reboot Device
+            </button>
         </div>
     </div>
 
     {# === Bottom Bar === #}
     <div style="display:flex;justify-content:space-between;align-items:center;padding:var(--space-md) 0;border-top:1px solid var(--color-border);position:sticky;bottom:0;background:var(--color-bg);z-index:10;">
-        <button type="button" formaction="/regenerate_thumbnails" formmethod="POST" class="btn btn--ghost"
-                onclick="this.form.action=this.formAction; this.form.method=this.formMethod; this.form.submit();">
+        <button type="submit" formaction="/regenerate_thumbnails" formmethod="POST" formnovalidate class="btn btn--ghost">
             <i class="material-icons" style="font-size:18px;">refresh</i>
             Regenerate Thumbnails
         </button>
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn--primary">
             <i class="material-icons" style="font-size:18px;">save</i>
             Save Settings

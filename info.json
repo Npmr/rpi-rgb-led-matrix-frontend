@@ -1,7 +1,19 @@
 {
-  "currentApplicationVersion": "v0.0.57",
-  "whatChanged": "Saving the settings page works again (brightness and picture duration are editable once more) and the update button actually starts the update",
+  "currentApplicationVersion": "v0.0.58",
+  "whatChanged": "The Save Settings button really submits the form now - the page no longer nests its forms",
   "changelog": [
+    {
+      "version": "v0.0.58",
+      "date": "2026-11-11",
+      "changes": [
+        "Fixed the Save Settings button doing nothing: the settings page nested the Shutdown and Reboot forms inside the save form, and browsers drop nested <form> tags, so the first </form> closed the settings form and the Save button ended up outside any form",
+        "Shutdown and Reboot are plain buttons of the settings form that target their own endpoints with formaction/formmethod, so they no longer save the settings by accident",
+        "Both 'Regenerate Thumbnails' buttons submit properly again - their JavaScript copied the action from a form that did not exist and threw a TypeError",
+        "The confirmation dialog for shutdown/reboot now also works for buttons that are not wrapped in their own form",
+        "The mobile menu button is type=\"button\" so it can never submit anything",
+        "Added regression tests that parse the rendered settings page: forms must not be nested, the Save button must belong to the /save_settings form, and no submit button or named input may be left outside a form"
+      ]
+    },
     {
       "version": "v0.0.57",
       "date": "2026-11-11",

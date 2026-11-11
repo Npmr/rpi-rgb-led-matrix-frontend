@@ -1,5 +1,6 @@
 import re
 import unittest
+from html.parser import HTMLParser
 from unittest.mock import patch, MagicMock
 from app import app
 
@@ -305,6 +306,144 @@ class TestSaveSettingsDisplayOptions(unittest.TestCase):
                 data=settings_form(displayBrightness='60'))
         self.assertEqual(response.status_code, 302)
         mock_grid.assert_not_called()
+
+
+class _FormStructureParser(HTMLParser):
+    """Tracks <form> nesting and where buttons/inputs end up.
+
+    It follows the HTML5 rule that makes the old markup fail: a <form> start
+    tag that appears while a form is already open is ignored, and the first
+    </form> then closes that open form. Parsing the rendered page this way
+    reproduces the browser outcome without a browser.
+    """
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.max_nesting = 0
+        self.forms = []
+        self.orphan_buttons = []
+        self.orphan_inputs = []
+        self._raw_depth = 0
+        self._form_element = None
+        self._button = None
+
+    @property
+    def buttons(self):
+        found = [b for form in self.forms for b in form['buttons']]
+        return found + self.orphan_buttons
+
+    def handle_starttag(self, tag, attrs):
+        attributes = dict(attrs)
+        if tag == 'form':
+            # Raw nesting as written in the template, before normalisation.
+            self._raw_depth += 1
+            self.max_nesting = max(self.max_nesting, self._raw_depth)
+            if self._form_element is not None:
+                return  # ignored by the HTML parser, contents stay in the outer form
+            form = {'action': attributes.get('action'), 'buttons': []}
+            self.forms.append(form)
+            self._form_element = form
+        elif tag == 'button':
+            button = {
+                'type': (attributes.get('type') or 'submit').lower(),
+                'formaction': attributes.get('formaction'),
+                'text': '',
+            }
+            if self._form_element is not None:
+                self._form_element['buttons'].append(button)
+            else:
+                self.orphan_buttons.append(button)
+            self._button = button
+        elif tag == 'input' and attributes.get('name'):
+            if self._form_element is None:
+                self.orphan_inputs.append(attributes['name'])
+
+    def handle_startendtag(self, tag, attrs):
+        self.handle_starttag(tag, attrs)
+
+    def handle_endtag(self, tag):
+        if tag == 'form':
+            self._raw_depth = max(0, self._raw_depth - 1)
+            # The first </form> closes the (only) open form, even when it was
+            # written to close a nested one.
+            self._form_element = None
+        elif tag == 'button':
+            self._button = None
+
+    def handle_data(self, data):
+        if self._button is not None:
+            self._button['text'] += data
+
+
+class TestSettingsFormStructure(unittest.TestCase):
+    """Regression tests for the nested-form bug fixed in v0.0.58.
+
+    settings.html used to wrap the Shutdown/Reboot forms inside the
+    /save_settings form. Chromium dropped the nested <form> tag and closed the
+    settings form at the first </form>, so the Save button belonged to no form
+    at all: clicking it sent no request, which looked like a broken save.
+    """
+
+    def setUp(self):
+        self.client = app.test_client()
+        with self.client.session_transaction() as sess:
+            sess['_csrf_token'] = 'test'
+        with patch('app.read_infos', return_value={'currentApplicationVersion': 'v1'}), \
+                patch('app.fetch_update_info', return_value=None), \
+                patch('app.getFreeDiskSpace', return_value=(50.0, 10)), \
+                patch('app.countMediaTypeAndNumber', return_value=([], [], [])), \
+                patch('app.read_settings', return_value=dict(BASE_SETTINGS)), \
+                patch('app.available_pictures', return_value=[]):
+            response = self.client.get('/settings')
+        self.assertEqual(response.status_code, 200)
+        self.html = response.get_data(as_text=True)
+        self.parser = _FormStructureParser()
+        self.parser.feed(self.html)
+
+    def test_forms_are_not_nested(self):
+        self.assertEqual(
+            self.parser.max_nesting, 1,
+            'nested <form> elements are dropped by the browser parser and '
+            'break the outer form')
+
+    def test_save_button_belongs_to_the_settings_form(self):
+        settings_forms = [f for f in self.parser.forms
+                          if f['action'] == '/save_settings']
+        self.assertEqual(len(settings_forms), 1)
+        labels = [b['text'] for b in settings_forms[0]['buttons']]
+        self.assertTrue(any('Save Settings' in label for label in labels))
+
+    def test_no_submit_button_is_orphaned(self):
+        orphans = [b for b in self.parser.orphan_buttons
+                   if b['type'] in ('submit', '')]
+        self.assertEqual([b['text'].strip() for b in orphans], [])
+
+    def test_every_named_input_is_inside_a_form(self):
+        self.assertEqual(self.parser.orphan_inputs, [])
+
+    def test_maintenance_buttons_target_their_own_endpoints(self):
+        targets = {b['formaction'] for b in self.parser.buttons}
+        self.assertIn('/shutdown', targets)
+        self.assertIn('/reboot', targets)
+
+    def test_regenerate_buttons_post_to_the_regenerate_route(self):
+        regenerate = [b for b in self.parser.buttons
+                      if 'Regenerate Thumbnails' in b['text']]
+        self.assertTrue(regenerate, 'no Regenerate Thumbnails button rendered')
+        for button in regenerate:
+            self.assertEqual(button['formaction'], '/regenerate_thumbnails')
+
+    def test_nested_form_bug_would_be_detected(self):
+        """The parser must actually catch the old markup."""
+        broken = ('<form action="/save_settings"><input name="a">'
+                  '<div><form action="/shutdown"><button>Shutdown</button>'
+                  '</form></div><div><button id="save">Save Settings</button>'
+                  '</div></form>')
+        parser = _FormStructureParser()
+        parser.feed(broken)
+        self.assertEqual(parser.max_nesting, 2)
+        self.assertTrue(any('Save Settings' in b['text']
+                            for b in parser.orphan_buttons))
 
 
 if __name__ == '__main__':

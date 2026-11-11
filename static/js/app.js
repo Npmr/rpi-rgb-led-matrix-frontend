@@ -91,4 +91,16 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    // Buttons that target another endpoint via formaction cannot live in their
+    // own <form> (nested forms are dropped by the parser), so confirm on click.
+    var dangerButtons = document.querySelectorAll('button[data-confirm]');
+    dangerButtons.forEach(function (button) {
+        button.addEventListener('click', function (e) {
+            var message = button.getAttribute('data-confirm') || 'Are you sure?';
+            if (!confirm(message)) {
+                e.preventDefault();
+            }
+        });
+    });
+
 });
