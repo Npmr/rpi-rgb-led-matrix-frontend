@@ -89,6 +89,11 @@ def immich_display_loop():
                     print(f"Immich asset {asset_id} EXIF orientation: {exif_orientation}")
             
             local_path = immich_handler.download_asset(asset_id)
+            if local_path and not immich_running:
+                # Stopped while downloading: do not show one more picture.
+                if os.path.exists(local_path):
+                    os.remove(local_path)
+                local_path = None
             if local_path:
                 filename = os.path.basename(local_path)
                 print(f"Displaying Immich ({_current_source_type}): {filename}")

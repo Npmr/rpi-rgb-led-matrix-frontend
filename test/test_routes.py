@@ -211,6 +211,21 @@ class TestStopProcessRoute(unittest.TestCase):
         mock_stop.assert_called_once()
         mock_immich.stop_immich_loop.assert_called_once()
 
+    def test_stop_process_stops_a_running_giphy_loop(self):
+        from modules import display_control, giphy_controller
+        giphy_controller.giphy_running = True
+        giphy_controller._current_search_term = 'art'
+        self.addCleanup(giphy_controller.stop_giphy_loop)
+        with patch.object(display_control, 'stop_grid_display'), \
+                patch.object(display_control.psutil, 'process_iter',
+                             return_value=[]), \
+                patch('modules.startup_screen.cancel_startup_screen'):
+            response = self.client.post('/stop_process',
+                                        data={'csrf_token': 'test'})
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(giphy_controller.giphy_running)
+        self.assertTrue(giphy_controller._stop_event.is_set())
+
 
 class TestDeleteImageRoute(unittest.TestCase):
 

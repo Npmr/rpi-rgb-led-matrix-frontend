@@ -353,8 +353,34 @@ def display_image_file(image_path, rotation_offset=0, cleanup_path=None):
     return _launch_display_command(cmd, geometry=geometry, cleanup_path=cleanup_path)
 
 
+def _loop_is_running(keep_loops):
+    """True while the slideshow that owns a picture is still running."""
+    if 'giphy' in keep_loops:
+        from . import giphy_controller
+        return giphy_controller.giphy_running
+    if 'immich' in keep_loops:
+        return immich_controller.immich_running
+    return True
+
+
 def _start_display_process(image_name, command_line, static_folder, rotation_offset=0, exif_orientation=None):
-    stopProcess()
+    # Work out which playback loop this picture belongs to *before* the folder
+    # name is normalised, so that loop can be kept alive while it shows its own
+    # picture and every other loop is stopped.
+    keep_loops = ()
+    if static_folder == "static/giphy_cache":
+        keep_loops = ('giphy',)
+    elif static_folder == "static/immich_cache":
+        keep_loops = ('immich',)
+
+    # The slideshow may have been stopped while the picture was downloaded or
+    # while a throttled display was queued. Showing it now would look like the
+    # display restarted itself right after the Stop button was pressed.
+    if keep_loops and not _loop_is_running(keep_loops):
+        print("Not displaying the slideshow picture: the loop was stopped.")
+        return
+
+    stopProcess(keep_loops=keep_loops)
     settings = read_settings()
 
     base_rotation = get_base_rotation(settings)
@@ -544,8 +570,31 @@ def start_grid_display():
     return True
 
 
-def stopProcess():
+def _cancel_pending_display():
+    """Drop a display call that is waiting for the throttle timer.
+
+    Without this a queued picture would still appear a few seconds after the
+    user pressed Stop, which looks like the display simply ignored the button.
+    The throttle timestamp is left alone on purpose: resetting it would allow
+    an immediate display again and defeat the throttle.
+    """
+    global _pending_process_args, _throttle_timer
+    timer = _throttle_timer
+    _throttle_timer = None
+    _pending_process_args = None
+    if timer is not None and timer.is_alive():
+        timer.cancel()
+
+
+def stopProcess(keep_loops=()):
+    """Stop the current display and the loops that feed it.
+
+    ``keep_loops`` names playback loops that must survive, because a loop that
+    is displaying its own picture would otherwise stop itself: the Giphy and
+    Immich loops call into the display path for every picture they show.
+    """
     stop_grid_display()
+    _cancel_pending_display()
 
     for process in psutil.process_iter():
         if "led-image-viewer" in process.name():
@@ -560,8 +609,15 @@ def stopProcess():
                 process.kill()
                 break
 
-    # Also stop Immich loop if running
-    immich_controller.stop_immich_loop()
+    # Also stop the slideshow loops unless the caller is one of them.
+    if 'immich' not in keep_loops:
+        immich_controller.stop_immich_loop()
+    if 'giphy' not in keep_loops:
+        try:
+            from . import giphy_controller
+            giphy_controller.stop_giphy_loop()
+        except Exception as error:  # pragma: no cover - defensive
+            print(f"Could not stop the Giphy loop: {error}")
 
     # Any display action dismisses a startup screen that is still showing.
     try:

@@ -1,7 +1,23 @@
 {
-  "currentApplicationVersion": "v0.0.59",
-  "whatChanged": "Startup screen text can be sized or scrolled so the name and IP fit small panels, and grid picture blocks play animated GIFs",
+  "currentApplicationVersion": "v0.0.60",
+  "whatChanged": "The Stop button really stops Giphy and Immich now - no picture reappears after it",
   "changelog": [
+    {
+      "version": "v0.0.60",
+      "date": "2026-11-11",
+      "changes": [
+        "Fixed the Giphy slideshow continuing after Stop was pressed: it killed the picture but the loop thread kept sleeping and showed another GIF minutes later",
+        "The Giphy loop now waits on an interruptible event instead of time.sleep(), so a stop wakes it immediately instead of after the five minute display time",
+        "The loop checks again after fetching and after downloading a GIF, so nothing is shown when Stop was pressed while the picture was on its way",
+        "A queued (throttled) display is cancelled by Stop as well, so a picture scheduled a few seconds earlier can no longer appear afterwards",
+        "A picture belonging to a slideshow that has just been stopped is dropped in the display path instead of being launched anyway",
+        "The Stop button and MQTT now stop the Giphy loop, not only Home Assistant's own giphy_stop command",
+        "Stale Giphy threads are ignored by a generation counter, so a stopped loop cannot keep a restarted one alive",
+        "The Immich slideshow no longer shows one more picture when it is stopped while downloading",
+        "The Giphy and Immich loops keep running while they display their own pictures again (they used to stop themselves after the first picture)",
+        "Added tests for the Giphy loop stopping, for the pending display being cancelled and for Stop reaching the Giphy loop"
+      ]
+    },
     {
       "version": "v0.0.59",
       "date": "2026-11-11",

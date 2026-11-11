@@ -451,5 +451,132 @@ class TestStartDisplayProcess(unittest.TestCase):
         self.assertEqual((kwargs['width'], kwargs['height']), (128, 192))
 
 
+class TestStartDisplayProcessKeepsItsOwnLoop(unittest.TestCase):
+    """A slideshow must not stop itself when it displays its own picture."""
+
+    BASE_SETTINGS = TestStartDisplayProcess.BASE_SETTINGS
+
+    def _run(self, static_folder, giphy_running=True, immich_running=True):
+        from modules import giphy_controller, immich_controller
+        with patch('modules.display_control.Thread'), \
+                patch('modules.display_control.subprocess.Popen') as mock_popen, \
+                patch('modules.display_control.process_image_for_display',
+                      return_value='/tmp/processed.png'), \
+                patch('modules.display_control.stopProcess') as mock_stop, \
+                patch('modules.display_control.read_settings',
+                      return_value=dict(self.BASE_SETTINGS)), \
+                patch.object(giphy_controller, 'giphy_running', giphy_running), \
+                patch.object(immich_controller, 'immich_running', immich_running):
+            _start_display_process('photo.png', 'displayImage', static_folder)
+        return mock_stop, mock_popen
+
+    def test_giphy_picture_keeps_the_giphy_loop(self):
+        mock_stop, mock_popen = self._run('static/giphy_cache')
+        mock_stop.assert_called_once_with(keep_loops=('giphy',))
+        mock_popen.assert_called_once()
+
+    def test_immich_picture_keeps_the_immich_loop(self):
+        mock_stop, mock_popen = self._run('static/immich_cache')
+        mock_stop.assert_called_once_with(keep_loops=('immich',))
+        mock_popen.assert_called_once()
+
+    def test_regular_picture_stops_every_loop(self):
+        mock_stop, mock_popen = self._run('static/pictures')
+        mock_stop.assert_called_once_with(keep_loops=())
+        mock_popen.assert_called_once()
+
+    def test_giphy_picture_is_dropped_after_the_loop_was_stopped(self):
+        mock_stop, mock_popen = self._run('static/giphy_cache',
+                                          giphy_running=False)
+        mock_stop.assert_not_called()
+        mock_popen.assert_not_called()
+
+    def test_immich_picture_is_dropped_after_the_loop_was_stopped(self):
+        mock_stop, mock_popen = self._run('static/immich_cache',
+                                          immich_running=False)
+        mock_stop.assert_not_called()
+        mock_popen.assert_not_called()
+
+
+class TestStopProcessLoops(unittest.TestCase):
+    """The Stop button must stop the Giphy and Immich slideshows."""
+
+    def _stop(self, **kwargs):
+        from modules import display_control
+        with patch.object(display_control, 'stop_grid_display'), \
+                patch.object(display_control.psutil, 'process_iter',
+                             return_value=[]), \
+                patch('modules.immich_controller.stop_immich_loop') as mock_immich, \
+                patch('modules.giphy_controller.stop_giphy_loop') as mock_giphy, \
+                patch('modules.startup_screen.cancel_startup_screen'):
+            display_control.stopProcess(**kwargs)
+        return mock_immich, mock_giphy
+
+    def test_stops_both_slideshows_by_default(self):
+        mock_immich, mock_giphy = self._stop()
+        mock_immich.assert_called_once()
+        mock_giphy.assert_called_once()
+
+    def test_keep_giphy_leaves_the_giphy_loop_running(self):
+        mock_immich, mock_giphy = self._stop(keep_loops=('giphy',))
+        mock_immich.assert_called_once()
+        mock_giphy.assert_not_called()
+
+    def test_keep_immich_leaves_the_immich_loop_running(self):
+        mock_immich, mock_giphy = self._stop(keep_loops=('immich',))
+        mock_immich.assert_not_called()
+        mock_giphy.assert_called_once()
+
+
+class TestCancelPendingDisplay(unittest.TestCase):
+    """A throttled display must not pop up after the user pressed Stop."""
+
+    def setUp(self):
+        from modules import display_control
+        self.dc = display_control
+        self._saved = (display_control._pending_process_args,
+                       display_control._throttle_timer,
+                       display_control._last_process_call_time)
+        self.addCleanup(self._restore)
+
+    def _restore(self):
+        (self.dc._pending_process_args,
+         self.dc._throttle_timer,
+         self.dc._last_process_call_time) = self._saved
+
+    def test_cancels_a_live_timer_and_clears_the_pending_call(self):
+        self.dc._pending_process_args = ('a.png', 'displayImage',
+                                         'static/pictures', 0, None)
+        self.dc._throttle_timer = MagicMock()
+        self.dc._throttle_timer.is_alive.return_value = True
+        timer = self.dc._throttle_timer
+        self.dc._cancel_pending_display()
+        timer.cancel.assert_called_once()
+        self.assertIsNone(self.dc._pending_process_args)
+        self.assertIsNone(self.dc._throttle_timer)
+
+    def test_does_not_reset_the_throttle_timestamp(self):
+        self.dc._last_process_call_time = 12345.0
+        self.dc._throttle_timer = None
+        self.dc._pending_process_args = None
+        self.dc._cancel_pending_display()
+        self.assertEqual(self.dc._last_process_call_time, 12345.0)
+
+    def test_stop_process_cancels_a_pending_display(self):
+        self.dc._pending_process_args = ('queued.png', 'displayImage',
+                                         'static/pictures', 0, None)
+        self.dc._throttle_timer = MagicMock()
+        self.dc._throttle_timer.is_alive.return_value = True
+        timer = self.dc._throttle_timer
+        with patch.object(self.dc, 'stop_grid_display'), \
+                patch.object(self.dc.psutil, 'process_iter', return_value=[]), \
+                patch('modules.immich_controller.stop_immich_loop'), \
+                patch('modules.giphy_controller.stop_giphy_loop'), \
+                patch('modules.startup_screen.cancel_startup_screen'):
+            self.dc.stopProcess()
+        timer.cancel.assert_called_once()
+        self.assertIsNone(self.dc._pending_process_args)
+
+
 if __name__ == '__main__':
     unittest.main()
