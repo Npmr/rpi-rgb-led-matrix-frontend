@@ -3,6 +3,7 @@ import unittest
 from html.parser import HTMLParser
 from unittest.mock import patch, MagicMock
 from app import app
+from modules import startup_screen as startup
 
 
 BASE_SETTINGS = {
@@ -173,6 +174,32 @@ class TestSaveSettingsDisplayOptions(unittest.TestCase):
     def test_startup_image_must_come_from_the_library(self):
         saved = self._post(settings_form(startupScreenImage='../../etc/passwd'))
         self.assertEqual(saved['startupScreenImage'], '')
+
+    def test_startup_text_size_and_scrolling_are_stored(self):
+        saved = self._post(settings_form(startupScreenFontSize='13',
+                                         startupScreenScroll='always',
+                                         startupScreenScrollSpeed='24'))
+        self.assertEqual(saved['startupScreenFontSize'], '13')
+        self.assertEqual(saved['startupScreenScroll'], 'always')
+        self.assertEqual(saved['startupScreenScrollSpeed'], '24')
+
+    def test_invalid_startup_text_settings_fall_back(self):
+        saved = self._post(settings_form(startupScreenFontSize='huge',
+                                         startupScreenScroll='sideways',
+                                         startupScreenScrollSpeed='999'))
+        self.assertEqual(saved['startupScreenFontSize'], 'auto')
+        self.assertEqual(saved['startupScreenScroll'], 'auto')
+        self.assertEqual(saved['startupScreenScrollSpeed'],
+                         str(startup.MAX_SCROLL_SPEED))
+
+    def test_missing_startup_text_settings_keep_stored_values(self):
+        saved = self._post(settings_form(startupScreenFontSize=None,
+                                         startupScreenScroll=None,
+                                         startupScreenScrollSpeed=None))
+        self.assertEqual(saved['startupScreenFontSize'], 'auto')
+        self.assertEqual(saved['startupScreenScroll'], 'auto')
+        # BASE_SETTINGS has no speed, so the default is used.
+        self.assertEqual(saved['startupScreenScrollSpeed'], '12')
 
     def test_startup_screen_disabled_when_toggle_is_off(self):
         saved = self._post(settings_form(startupScreenEnabled=None))

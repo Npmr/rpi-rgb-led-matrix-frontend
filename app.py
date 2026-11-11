@@ -427,8 +427,26 @@ def save_settings_route():
         new_startupScreenImage = ''
     new_startupScreenText = request.form.get(
         'startupScreenText', previous_settings.get('startupScreenText', ''))
-    new_startupScreenDuration = request.form.get(
-        'startupScreenDuration', previous_settings.get('startupScreenDuration', '30'))
+    new_startupScreenDuration = form_number(
+        'startupScreenDuration', 'startupScreenDuration', 30)
+    new_startupScreenFontSize = form_text(
+        'startupScreenFontSize', 'startupScreenFontSize', 'auto').strip()
+    if new_startupScreenFontSize != 'auto' and new_startupScreenFontSize not in [
+            str(size) for size in startup_screen.FONT_SIZES]:
+        new_startupScreenFontSize = 'auto'
+    new_startupScreenScroll = form_text(
+        'startupScreenScroll', 'startupScreenScroll', 'auto').strip()
+    if new_startupScreenScroll not in startup_screen.SCROLL_MODES:
+        new_startupScreenScroll = 'auto'
+    new_startupScreenScrollSpeed = form_number(
+        'startupScreenScrollSpeed', 'startupScreenScrollSpeed',
+        startup_screen.DEFAULT_SCROLL_SPEED)
+    try:
+        speed_setting = int(float(new_startupScreenScrollSpeed))
+    except (TypeError, ValueError):
+        speed_setting = startup_screen.DEFAULT_SCROLL_SPEED
+    new_startupScreenScrollSpeed = str(
+        max(1, min(speed_setting, startup_screen.MAX_SCROLL_SPEED)))
 
     # Validate strftime formats
     valid, err = validate_strftime(new_clockFormatDate)
@@ -475,6 +493,9 @@ def save_settings_route():
         'startupScreenImage': new_startupScreenImage,
         'startupScreenText': new_startupScreenText,
         'startupScreenDuration': new_startupScreenDuration,
+        'startupScreenFontSize': new_startupScreenFontSize,
+        'startupScreenScroll': new_startupScreenScroll,
+        'startupScreenScrollSpeed': new_startupScreenScrollSpeed,
     }
     existing_settings.update(merged_settings)
     if save_settings(existing_settings):

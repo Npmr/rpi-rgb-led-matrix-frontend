@@ -1,6 +1,8 @@
+import os
+import tempfile
 import unittest
 from datetime import date, datetime, timezone
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 
 from PIL import Image
 
@@ -232,6 +234,104 @@ class TestImageWidget(unittest.TestCase):
         surface = Surface(32, 32)
         widget.render(surface, (0, 0, 32, 32))
         self.assertIsNone(surface.image.getbbox())
+
+
+class TestAnimatedImageWidget(unittest.TestCase):
+    """GIF playback in the grid: frames, timing, looping and scaling."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.folder = self._tmp.name
+        patcher = patch.object(WidgetContext, 'static_pictures_dir',
+                               new_callable=PropertyMock,
+                               return_value=self.folder)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def _make_gif(self, colours, size=(40, 40), duration=100,
+                  name='anim.gif'):
+        frames = [Image.new('RGB', size, colour) for colour in colours]
+        path = os.path.join(self.folder, name)
+        frames[0].save(path, save_all=True, append_images=frames[1:],
+                       duration=duration, loop=0)
+        return path
+
+    def _widget(self, filename='anim.gif', fit='cover'):
+        return ImageWidget(
+            spec('image', {'filename': filename}, style={'fit': fit}),
+            make_context())
+
+    def _render(self, widget, now, rect=(0, 0, 32, 32), canvas=(48, 48)):
+        widget.update(now)
+        surface = Surface(*canvas)
+        widget.render(surface, rect)
+        return surface
+
+    def test_frames_advance_and_loop(self):
+        self._make_gif([(255, 0, 0), (0, 255, 0), (0, 0, 255)])
+        widget = self._widget()
+        self.assertEqual(self._render(widget, 100.0).image.getpixel((0, 0)),
+                         (255, 0, 0))
+        self.assertEqual(self._render(widget, 100.15).image.getpixel((0, 0)),
+                         (0, 255, 0))
+        self.assertEqual(self._render(widget, 100.25).image.getpixel((0, 0)),
+                         (0, 0, 255))
+        # After the last frame the animation restarts.
+        self.assertEqual(self._render(widget, 100.35).image.getpixel((0, 0)),
+                         (255, 0, 0))
+
+    def test_frames_are_scaled_to_the_widget_rect_only(self):
+        self._make_gif([(255, 0, 0), (0, 255, 0)])
+        widget = self._widget()
+        surface = self._render(widget, 100.0, rect=(0, 0, 16, 16))
+        self.assertEqual(surface.image.getpixel((0, 0)), (255, 0, 0))
+        # Everything outside the widget rectangle stays black.
+        self.assertEqual(surface.image.getpixel((20, 20)), (0, 0, 0))
+
+    def test_contain_letterboxes_into_the_rect(self):
+        self._make_gif([(255, 0, 0)], size=(40, 20))
+        widget = self._widget(fit='contain')
+        surface = self._render(widget, 100.0, rect=(0, 0, 32, 32))
+        # A wide picture is letterboxed: the red band sits at the top, the
+        # rest of the rectangle stays black.
+        self.assertEqual(surface.image.getpixel((16, 0)), (255, 0, 0))
+        self.assertEqual(surface.image.getpixel((16, 30)), (0, 0, 0))
+
+    def test_still_image_still_renders(self):
+        Image.new('RGB', (40, 40), (10, 20, 30)).save(
+            os.path.join(self.folder, 'still.png'))
+        widget = self._widget(filename='still.png')
+        self.assertEqual(self._render(widget, 100.0).image.getpixel((0, 0)),
+                         (10, 20, 30))
+
+    def test_frame_count_is_capped(self):
+        self._make_gif([(i, 0, 0) for i in range(8)], duration=100)
+        with patch('modules.widgets.image.MAX_FRAMES', 2):
+            widget = self._widget()
+            self._render(widget, 100.0)
+            frames = len(widget._frames)
+            total = widget._total_ms
+        self.assertEqual(frames, 2)
+        # Dropped frames keep the original timing (8 frames * 100 ms).
+        self.assertEqual(total, 800)
+
+    def test_file_change_reloads_the_frames(self):
+        self._make_gif([(255, 0, 0), (0, 255, 0)])
+        widget = self._widget()
+        self._render(widget, 100.0)
+        self._make_gif([(0, 0, 255), (255, 255, 0)])
+        os.utime(os.path.join(self.folder, 'anim.gif'),
+                 (1000000000, 1000000000))
+        self.assertEqual(self._render(widget, 200.0, canvas=(48, 48))
+                         .image.getpixel((0, 0)), (0, 0, 255))
+
+    def test_stop_releases_the_frames(self):
+        self._make_gif([(255, 0, 0)])
+        widget = self._widget()
+        self._render(widget, 100.0)
+        widget.stop()
+        self.assertIsNone(widget._frames)
 
 
 class TestSurface(unittest.TestCase):

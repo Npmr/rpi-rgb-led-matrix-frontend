@@ -34,5 +34,8 @@
     "startupScreenEnabled": "on",
     "startupScreenImage": "",
     "startupScreenText": "Welcome",
-    "startupScreenDuration": "30"
+    "startupScreenDuration": "30",
+    "startupScreenFontSize": "auto",
+    "startupScreenScroll": "auto",
+    "startupScreenScrollSpeed": "12"
 }

@@ -1,7 +1,24 @@
 {
-  "currentApplicationVersion": "v0.0.58",
-  "whatChanged": "The Save Settings button really submits the form now - the page no longer nests its forms",
+  "currentApplicationVersion": "v0.0.59",
+  "whatChanged": "Startup screen text can be sized or scrolled so the name and IP fit small panels, and grid picture blocks play animated GIFs",
   "changelog": [
+    {
+      "version": "v0.0.59",
+      "date": "2026-11-11",
+      "changes": [
+        "Startup screen: the device name is now wrapped like the welcome text, and long words (an IP address or hostname) are split so nothing silently runs off the panel",
+        "New 'Text size' setting for the startup screen (auto, 6, 8, 10, 13, 18 or 20 px). Auto keeps the largest bundled bitmap font whose wrapped text still fits",
+        "New 'Text movement' setting: scroll only when the text does not fit (default), always scroll, or never scroll",
+        "Scrolling renders a looping animated GIF ticker with the name and IP in amber and the welcome text in white - this is what makes name plus IP readable on a 32x32 panel",
+        "New 'Ticker speed' setting in pixels per second (1-120), default 12",
+        "The startup screen no longer drops lines or shrinks the text into unreadable sizes when there is not enough room",
+        "Grid layout: picture blocks now play animated GIFs and animated WebP files instead of showing only the first frame",
+        "Grid GIF frames are decoded once and pre-scaled to the block size, so playback stays cheap on a Raspberry Pi; file changes are still picked up automatically",
+        "Animated GIFs are limited to 150 decoded frames (dropping frames keeps the original timing) so a huge file cannot exhaust the memory of a small Pi",
+        "The picture picker in the layout editor marks GIFs as '(animated)'",
+        "Added tests for the startup text plan, ticker rendering, GIF frame timing/looping/scaling and the new settings"
+      ]
+    },
     {
       "version": "v0.0.58",
       "date": "2026-11-11",

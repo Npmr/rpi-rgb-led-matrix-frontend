@@ -491,7 +491,8 @@
                 pictures.forEach(function (name) {
                     var option = document.createElement('option');
                     option.value = name;
-                    option.textContent = name;
+                    // Animated GIFs play inside the grid; stills are static.
+                    option.textContent = /\.gif$/i.test(name) ? name + ' (animated)' : name;
                     if (name === config.filename) {
                         option.selected = true;
                     }

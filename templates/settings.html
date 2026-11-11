@@ -370,6 +370,37 @@
                 </div>
             </div>
 
+            <div class="settings-section__fields mt-md">
+                <div class="field">
+                    <label class="field__label" for="startupScreenFontSize">Text size</label>
+                    {% set current_font_size = settings.get('startupScreenFontSize', 'auto')|string %}
+                    <select name="startupScreenFontSize" id="startupScreenFontSize" class="field__input">
+                        <option value="auto" {% if current_font_size == 'auto' %}selected{% endif %}>Auto (largest text that fits)</option>
+                        <option value="6" {% if current_font_size == '6' %}selected{% endif %}>6 px - smallest</option>
+                        <option value="8" {% if current_font_size == '8' %}selected{% endif %}>8 px</option>
+                        <option value="10" {% if current_font_size == '10' %}selected{% endif %}>10 px</option>
+                        <option value="13" {% if current_font_size == '13' %}selected{% endif %}>13 px</option>
+                        <option value="18" {% if current_font_size == '18' %}selected{% endif %}>18 px</option>
+                        <option value="20" {% if current_font_size == '20' %}selected{% endif %}>20 px - largest</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label class="field__label" for="startupScreenScroll">Text movement</label>
+                    {% set current_scroll = settings.get('startupScreenScroll', 'auto') %}
+                    <select name="startupScreenScroll" id="startupScreenScroll" class="field__input">
+                        <option value="auto" {% if current_scroll == 'auto' %}selected{% endif %}>Scroll only when the text does not fit</option>
+                        <option value="always" {% if current_scroll == 'always' %}selected{% endif %}>Always scroll (ticker)</option>
+                        <option value="never" {% if current_scroll == 'never' %}selected{% endif %}>Never scroll (wrap and clip)</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label class="field__label" for="startupScreenScrollSpeed">Ticker speed in px/s</label>
+                    <input class="field__input" type="number" min="1" max="120" name="startupScreenScrollSpeed" id="startupScreenScrollSpeed" value="{{ settings.get('startupScreenScrollSpeed', 12) }}">
+                </div>
+            </div>
+
             <p style="font-size:var(--font-size-sm);color:var(--color-text-secondary);margin-top:var(--space-sm);">Current device IP: <strong>{{ localIp }}</strong></p>
         </div>
     </div>

@@ -6,6 +6,7 @@ from unittest.mock import patch, MagicMock
 from PIL import Image
 
 from modules import startup_screen as ss
+from modules.surface import Surface, load_font
 
 
 SETTINGS = {
@@ -82,14 +83,119 @@ class TestInfoImage(StartupScreenTestCase):
 
     def test_long_message_is_wrapped_and_bounded(self):
         settings = dict(SETTINGS, startupScreenText='word ' * 200)
-        lines = ss.build_info_lines(settings, '10.0.0.2', 192, 128)
-        self.assertGreater(len(lines), 2)
-        self.assertLessEqual(len(lines), 128 // 8)
+        plan = ss.plan_info(settings, '10.0.0.2', 192, 128)
+        self.assertGreater(len(plan['lines']), 2)
+        # Too much text for the canvas: the caller switches to a ticker.
+        self.assertFalse(plan['fits'])
+
+    def test_long_words_are_split_by_character(self):
+        settings = dict(SETTINGS, deviceName='', startupScreenText='')
+        lines = ss.build_info_lines(settings, '192.168.100.200', 32, 32)
+        self.assertGreater(len(lines), 1)
+        surface = Surface(32, 32)
+        font = load_font(6)
+        for line in lines:
+            self.assertLessEqual(surface.measure_text(line, font), 28)
+
+    def test_device_name_is_wrapped_too(self):
+        settings = dict(SETTINGS, deviceName='Pixel Matrix Deluxe')
+        plan = ss.plan_info(settings, '10.0.0.2', 64, 32)
+        joined = ' '.join(plan['lines'])
+        self.assertIn('Pixel', joined)
+        self.assertIn('Deluxe', joined)
 
     def test_missing_message_still_shows_ip(self):
         settings = dict(SETTINGS, startupScreenText='')
         lines = ss.build_info_lines(settings, '10.0.0.2', 192, 128)
         self.assertIn('IP: 10.0.0.2', lines)
+
+    def test_large_canvas_uses_the_largest_font_that_fits(self):
+        plan = ss.plan_info(dict(SETTINGS), '10.0.0.2', 192, 128)
+        self.assertTrue(plan['fits'])
+        self.assertEqual(plan['fontHeight'], 20)
+        self.assertEqual(plan['headerLines'], 2)
+
+    def test_small_canvas_does_not_fit(self):
+        # A 32x32 panel cannot show name, IP and message without scrolling.
+        plan = ss.plan_info(dict(SETTINGS), '192.168.1.123', 32, 32)
+        self.assertFalse(plan['fits'])
+
+
+class TestInfoTicker(StartupScreenTestCase):
+
+    def test_small_canvas_renders_a_looping_gif(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, 'startup.gif')
+            result = ss.render_info_image(dict(SETTINGS), ip='192.168.1.123',
+                                          size=(32, 32), path=path)
+            self.assertTrue(result.endswith('.gif'))
+            with Image.open(result) as img:
+                self.assertEqual(img.format, 'GIF')
+                self.assertEqual(img.size, (32, 32))
+                self.assertGreater(img.n_frames, 1)
+                self.assertEqual(img.info.get('loop'), 0)
+
+    def test_ticker_always_mode_on_a_large_canvas(self):
+        settings = dict(SETTINGS, startupScreenScroll='always')
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, 'startup.gif')
+            result = ss.render_info_image(settings, ip='10.0.0.2',
+                                          size=(192, 128), path=path)
+            self.assertTrue(result.endswith('.gif'))
+
+    def test_scroll_never_keeps_the_static_png(self):
+        settings = dict(SETTINGS, startupScreenScroll='never')
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, 'startup.png')
+            result = ss.render_info_image(settings, ip='192.168.1.123',
+                                          size=(32, 32), path=path)
+            self.assertTrue(result.endswith('.png'))
+            with Image.open(result) as img:
+                self.assertEqual(img.format, 'PNG')
+                self.assertEqual(img.size, (32, 32))
+
+    def test_ticker_frames_scroll(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, 'startup.gif')
+            ss.render_info_image(dict(SETTINGS), ip='192.168.1.123',
+                                  size=(32, 32), path=path)
+            with Image.open(path) as img:
+                img.seek(4)
+                first = img.convert('L').tobytes()
+                img.seek(40)
+                later = img.convert('L').tobytes()
+        self.assertNotEqual(first, later)
+
+    def test_explicit_font_size_is_respected(self):
+        settings = dict(SETTINGS, startupScreenFontSize='13')
+        plan = ss.plan_info(settings, '10.0.0.2', 192, 128)
+        self.assertEqual(plan['fontHeight'], 13)
+        self.assertTrue(plan['fits'])
+
+    def test_invalid_font_size_falls_back_to_auto(self):
+        self.assertIsNone(ss.font_size_setting(
+            {'startupScreenFontSize': 'huge'}))
+        self.assertIsNone(ss.font_size_setting({'startupScreenFontSize': '1'}))
+        self.assertEqual(ss.font_size_setting(
+            {'startupScreenFontSize': '13'}), 13)
+        self.assertIsNone(ss.font_size_setting({}))
+
+    def test_ticker_font_grows_with_the_canvas(self):
+        self.assertEqual(ss.ticker_font_height({}, 32, 32), 8)
+        self.assertEqual(ss.ticker_font_height({}, 128, 192), 20)
+
+    def test_scroll_mode_and_speed_are_sanitised(self):
+        self.assertEqual(ss.scroll_mode({'startupScreenScroll': 'always'}),
+                         'always')
+        self.assertEqual(ss.scroll_mode({'startupScreenScroll': 'nope'}),
+                         'auto')
+        self.assertEqual(ss.scroll_mode({}), 'auto')
+        self.assertEqual(ss.scroll_speed_setting(
+            {'startupScreenScrollSpeed': '0'}), 1.0)
+        self.assertEqual(ss.scroll_speed_setting(
+            {'startupScreenScrollSpeed': '999'}), float(ss.MAX_SCROLL_SPEED))
+        self.assertEqual(ss.scroll_speed_setting({}),
+                         float(ss.DEFAULT_SCROLL_SPEED))
 
 
 class TestDurationSetting(unittest.TestCase):
