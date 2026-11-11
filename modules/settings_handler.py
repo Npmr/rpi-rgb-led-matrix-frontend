@@ -28,3 +28,27 @@ def save_settings(new_settings, filename="settings.json"):
     except IOError as e:
         print(f"Error: Could not write to {filepath}: {e}")
         return False
+
+
+_TRUE_VALUES = {"on", "true", "checked", "1", "yes"}
+
+
+def flag_setting(settings, key, default=False):
+    """Read a boolean style setting stored as a form/JSON string."""
+    if key not in settings:
+        return default
+    value = settings.get(key)
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return default
+    return str(value).strip().lower() in _TRUE_VALUES
+
+
+def choice_setting(settings, key, choices, default):
+    """Return ``settings[key]`` when it is one of ``choices``, else ``default``."""
+    value = str(settings.get(key, "")).strip().lower()
+    for choice in choices:
+        if value == choice:
+            return choice
+    return default

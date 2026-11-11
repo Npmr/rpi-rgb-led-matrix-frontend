@@ -47,6 +47,18 @@
                 </div>
             </div>
 
+            <div class="field mt-md">
+                <label class="field__label" for="direction">Display Orientation</label>
+                <select name="direction" id="direction" class="field__input">
+                    {% set current_direction = settings.get('direction', 'horizontal') %}
+                    <option value="horizontalTurned" {% if current_direction == 'horizontalTurned' %}selected{% endif %}>0&deg; - Landscape</option>
+                    <option value="verticalTurned" {% if current_direction == 'verticalTurned' %}selected{% endif %}>90&deg; - Portrait</option>
+                    <option value="horizontal" {% if current_direction == 'horizontal' %}selected{% endif %}>180&deg; - Landscape (turned)</option>
+                    <option value="vertical" {% if current_direction == 'vertical' %}selected{% endif %}>270&deg; - Portrait (turned)</option>
+                </select>
+                <span style="font-size:var(--font-size-sm);color:var(--color-text-secondary);">Rotation that matches how the panels are mounted.</span>
+            </div>
+
             <div class="mt-md">
                 <label class="field__label" for="ledSlowdown">Display Slowdown (Standard: 2)</label>
                 <input class="field__input" type="number" min="0" name="ledSlowdown" pattern="-?[0-9]*(\.[0-9]+)?" id="ledSlowdown" value="{{ settings['ledSlowdown'] }}" style="max-width:200px;">
@@ -270,6 +282,86 @@
             Regenerate Thumbnails
         </button>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    </div>
+
+    {# === Image Display + Startup Screen === #}
+    <div class="settings-grid mb-lg">
+
+        {# Image Scaling #}
+        <div class="settings-section">
+            <div class="settings-section__header">
+                <div class="settings-section__icon">
+                    <i class="material-icons">aspect_ratio</i>
+                </div>
+                <h3 class="settings-section__title">Image Scaling</h3>
+            </div>
+
+            <div class="field">
+                <label class="field__label" for="imageFitMode">How pictures fill the display</label>
+                {% set current_fit = settings.get('imageFitMode', 'cover') %}
+                <select name="imageFitMode" id="imageFitMode" class="field__input">
+                    <option value="cover" {% if current_fit == 'cover' %}selected{% endif %}>Cover - fill the screen, crop the overflow</option>
+                    <option value="contain" {% if current_fit == 'contain' %}selected{% endif %}>Contain - show the whole picture, black bars</option>
+                    <option value="stretch" {% if current_fit == 'stretch' %}selected{% endif %}>Stretch - fill the screen, distort the aspect ratio</option>
+                </select>
+            </div>
+
+            <div class="field mt-md">
+                <label class="field__label" for="imageFitAnchor">Crop / Align Anchor</label>
+                {% set current_anchor = settings.get('imageFitAnchor', 'center') %}
+                <select name="imageFitAnchor" id="imageFitAnchor" class="field__input">
+                    <option value="center" {% if current_anchor == 'center' %}selected{% endif %}>Center</option>
+                    <option value="top" {% if current_anchor == 'top' %}selected{% endif %}>Top</option>
+                    <option value="bottom" {% if current_anchor == 'bottom' %}selected{% endif %}>Bottom</option>
+                    <option value="left" {% if current_anchor == 'left' %}selected{% endif %}>Left</option>
+                    <option value="right" {% if current_anchor == 'right' %}selected{% endif %}>Right</option>
+                </select>
+                <span style="font-size:var(--font-size-sm);color:var(--color-text-secondary);">Which edge stays visible when a picture is cropped or letterboxed.</span>
+            </div>
+        </div>
+
+        {# Startup Screen #}
+        <div class="settings-section">
+            <div class="settings-section__header">
+                <div class="settings-section__icon">
+                    <i class="material-icons">power_settings_new</i>
+                </div>
+                <h3 class="settings-section__title">Startup Screen</h3>
+            </div>
+
+            <label class="toggle">
+                <input type="checkbox" class="toggle__input" id="startupScreenEnabled" name="startupScreenEnabled" {% if settings.get('startupScreenEnabled') == 'on' %}checked{% endif %}>
+                <div>
+                    <span class="toggle__label">Show a screen at boot</span>
+                    <span class="toggle__description">Shown until the timer runs out or you display something else</span>
+                </div>
+            </label>
+
+            <div class="field mt-md">
+                <label class="field__label" for="startupScreenImage">Startup Picture</label>
+                {% set current_startup_image = settings.get('startupScreenImage', '') %}
+                <select name="startupScreenImage" id="startupScreenImage" class="field__input">
+                    <option value="" {% if not current_startup_image %}selected{% endif %}>Device info (IP address + welcome text)</option>
+                    {% for picture in pictures %}
+                    <option value="{{ picture }}" {% if current_startup_image == picture %}selected{% endif %}>{{ picture }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="settings-section__fields mt-md">
+                <div class="field">
+                    <label class="field__label" for="startupScreenText">Welcome Text</label>
+                    <input class="field__input" type="text" name="startupScreenText" id="startupScreenText" value="{{ settings.get('startupScreenText', 'Welcome') }}" placeholder="Welcome">
+                </div>
+
+                <div class="field">
+                    <label class="field__label" for="startupScreenDuration">Duration in seconds (0 = until dismissed)</label>
+                    <input class="field__input" type="number" min="0" name="startupScreenDuration" id="startupScreenDuration" value="{{ settings.get('startupScreenDuration', 30) }}">
+                </div>
+            </div>
+
+            <p style="font-size:var(--font-size-sm);color:var(--color-text-secondary);margin-top:var(--space-sm);">Current device IP: <strong>{{ localIp }}</strong></p>
+        </div>
     </div>
 
     {# === System Maintenance === #}

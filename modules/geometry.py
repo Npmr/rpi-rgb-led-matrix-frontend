@@ -11,6 +11,10 @@ the renderer/driver use instead of storing duplicate values.
 
 DEFAULT_PANEL = 32
 
+# Keys accepted in the ``direction`` setting, in display order.
+DIRECTIONS = ("horizontalTurned", "verticalTurned", "horizontal", "vertical")
+DEFAULT_DIRECTION = "horizontal"
+
 
 def _int_setting(settings, key, default):
     try:

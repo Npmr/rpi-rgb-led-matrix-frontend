@@ -1,7 +1,20 @@
 {
-  "currentApplicationVersion": "v0.0.55",
-  "whatChanged": "Pictures are now cropped to the mapper-aware visible canvas, so they fill the whole display again when a U-mapper folds the panel chains",
+  "currentApplicationVersion": "v0.0.56",
+  "whatChanged": "New display orientation and image scaling settings plus a startup screen that shows a picture or the device IP with a welcome text at boot",
   "changelog": [
+    {
+      "version": "v0.0.56",
+      "date": "2026-11-11",
+      "changes": [
+        "Display orientation is back in the settings page (0/90/180/270 degrees), which also fixes the HTTP 400 error when saving the settings form",
+        "New image scaling setting: cover (fill and crop), contain (whole picture with black bars) or stretch, plus a crop/align anchor (center, top, bottom, left, right) - applies to pictures and every GIF frame",
+        "New startup screen: shows a picture from the library or a generated device info screen with the IP address and a welcome text",
+        "The startup screen disappears when the timer runs out (the panels are switched off with a black frame) or as soon as anything else is displayed; a duration of 0 keeps it visible until the next action",
+        "Any display action (picture, Giphy, Immich, demo, grid, MQTT) cancels the startup screen via stopProcess()",
+        "The grid renderer is restarted automatically when the hardware geometry settings change",
+        "Added tests for orientation, image fit modes, startup screen rendering/cancelling and the settings route"
+      ]
+    },
     {
       "version": "v0.0.55",
       "date": "2026-11-11",

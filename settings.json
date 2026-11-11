@@ -28,5 +28,11 @@
     "immichAutoOrientation": "on",
     "timezone": "Europe/Berlin",
     "clockFormatDate": "%A",
-    "clockFormatTime": "%H:%M:%S"
+    "clockFormatTime": "%H:%M:%S",
+    "imageFitMode": "cover",
+    "imageFitAnchor": "center",
+    "startupScreenEnabled": "on",
+    "startupScreenImage": "",
+    "startupScreenText": "Welcome",
+    "startupScreenDuration": "30"
 }

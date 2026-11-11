@@ -1,6 +1,8 @@
 import unittest
 
 from modules.geometry import (
+    DIRECTIONS,
+    DEFAULT_DIRECTION,
     get_base_rotation,
     get_display_geometry,
     get_matrix_dimensions,
@@ -21,6 +23,13 @@ def settings(**overrides):
 
 
 class TestBaseRotation(unittest.TestCase):
+
+    def test_every_direction_has_a_rotation(self):
+        self.assertEqual(len(DIRECTIONS), 4)
+        self.assertIn(DEFAULT_DIRECTION, DIRECTIONS)
+        for direction in DIRECTIONS:
+            self.assertIn(get_base_rotation({'direction': direction}),
+                          (0, 90, 180, 270))
 
     def test_directional_rotations(self):
         self.assertEqual(get_base_rotation({"direction": "horizontal"}), 180)

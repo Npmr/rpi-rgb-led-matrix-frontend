@@ -6,7 +6,8 @@ from PIL import Image
 
 from modules.display_control import (
     get_pixel_mapper_config, get_matrix_dimensions,
-    apply_exif_orientation, fill_crop_image, process_image_for_display,
+    apply_exif_orientation, fill_crop_image, fit_image, process_image_for_display,
+    get_image_fit_mode, get_image_fit_anchor,
     _parse_reported_size, _start_display_process
 )
 
@@ -127,6 +128,95 @@ class TestApplyExifOrientation(unittest.TestCase):
         self.assertEqual(result.size, img.size)
 
 
+class TestFitImage(unittest.TestCase):
+    """cover / contain / stretch plus the crop anchor."""
+
+    TARGET = (192, 128)
+
+    @staticmethod
+    def _two_tone(size=(192, 400), top='blue', bottom='red', split=200):
+        img = Image.new('RGB', size, bottom)
+        img.paste(Image.new('RGB', (size[0], split), top), (0, 0))
+        return img
+
+    def test_cover_fills_the_canvas(self):
+        img = Image.new('RGB', (400, 200), 'red')
+        result = fit_image(img, *self.TARGET, mode='cover')
+        self.assertEqual(result.size, self.TARGET)
+
+    def test_cover_center_crops_equally(self):
+        img = self._two_tone()
+        result = fit_image(img, *self.TARGET, mode='cover', anchor='center')
+        # 192x400 is narrowed vertically: the centre crop starts at y=136,
+        # which is still inside the blue area (rows 0-199).
+        self.assertEqual(result.getpixel((0, 0)), (0, 0, 255))
+        self.assertEqual(result.getpixel((0, 127)), (255, 0, 0))
+
+    def test_cover_top_anchor_keeps_top(self):
+        img = self._two_tone()
+        result = fit_image(img, *self.TARGET, mode='cover', anchor='top')
+        self.assertEqual(result.getpixel((0, 0)), (0, 0, 255))
+        self.assertEqual(result.getpixel((0, 127)), (0, 0, 255))
+
+    def test_cover_bottom_anchor_keeps_bottom(self):
+        img = self._two_tone()
+        result = fit_image(img, *self.TARGET, mode='cover', anchor='bottom')
+        self.assertEqual(result.getpixel((0, 0)), (255, 0, 0))
+
+    def test_contain_letterboxes_with_background(self):
+        img = Image.new('RGB', (400, 200), 'red')
+        result = fit_image(img, *self.TARGET, mode='contain', anchor='center')
+        self.assertEqual(result.size, self.TARGET)
+        self.assertEqual(result.getpixel((0, 0)), (0, 0, 0))
+        self.assertEqual(result.getpixel((96, 64)), (255, 0, 0))
+
+    def test_contain_top_anchor_aligns_to_top(self):
+        img = Image.new('RGB', (400, 200), 'red')
+        result = fit_image(img, *self.TARGET, mode='contain', anchor='top')
+        self.assertEqual(result.getpixel((96, 0)), (255, 0, 0))
+        self.assertEqual(result.getpixel((96, 127)), (0, 0, 0))
+
+    def test_contain_left_anchor_aligns_left(self):
+        img = Image.new('RGB', (100, 400), 'red')
+        result = fit_image(img, *self.TARGET, mode='contain', anchor='left')
+        self.assertEqual(result.getpixel((0, 64)), (255, 0, 0))
+        self.assertEqual(result.getpixel((191, 64)), (0, 0, 0))
+
+    def test_stretch_ignores_aspect_ratio(self):
+        img = Image.new('RGB', (400, 200), 'red')
+        result = fit_image(img, *self.TARGET, mode='stretch')
+        self.assertEqual(result.size, self.TARGET)
+
+    def test_unknown_mode_falls_back_to_cover(self):
+        img = Image.new('RGB', (400, 200), 'red')
+        result = fit_image(img, *self.TARGET, mode='nonsense')
+        self.assertEqual(result.size, self.TARGET)
+
+    def test_rgba_image_keeps_alpha(self):
+        img = Image.new('RGBA', (400, 200), (255, 0, 0, 128))
+        result = fit_image(img, *self.TARGET, mode='contain')
+        self.assertEqual(result.mode, 'RGBA')
+        self.assertEqual(result.size, self.TARGET)
+
+
+class TestImageFitSettings(unittest.TestCase):
+
+    def test_defaults(self):
+        self.assertEqual(get_image_fit_mode({}), 'cover')
+        self.assertEqual(get_image_fit_anchor({}), 'center')
+
+    def test_values_are_read(self):
+        self.assertEqual(
+            get_image_fit_mode({'imageFitMode': 'Contain'}), 'contain')
+        self.assertEqual(
+            get_image_fit_anchor({'imageFitAnchor': 'top'}), 'top')
+
+    def test_invalid_values_fall_back(self):
+        self.assertEqual(get_image_fit_mode({'imageFitMode': 'zoom'}), 'cover')
+        self.assertEqual(get_image_fit_anchor({'imageFitAnchor': 'middle'}),
+                         'center')
+
+
 class TestFillCropImage(unittest.TestCase):
 
     def test_already_correct_ratio(self):
@@ -201,6 +291,73 @@ class TestProcessImageTargetSize(unittest.TestCase):
         self.assertEqual(
             self._processed_size(source_size=(200, 1200)), (192, 128)
         )
+
+
+class TestProcessImageFitSettings(unittest.TestCase):
+    """The imageFitMode/Anchor settings control the preprocessing result."""
+
+    SETTINGS = {
+        'heightInPixel': '32',
+        'widthInPixel': '32',
+        'chainLength': '12',
+        'parallelChains': '2',
+        'direction': 'horizontal',
+        'immichAutoOrientation': 'true',
+    }
+
+    def _process(self, source, **overrides):
+        settings = dict(self.SETTINGS)
+        settings.update(overrides)
+        return process_image_for_display(source, settings)
+
+    def test_contain_letterboxes_wide_picture(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = os.path.join(tmp, 'wide.png')
+            Image.new('RGB', (400, 200), 'red').save(source)
+            result = self._process(source, imageFitMode='contain')
+            try:
+                with Image.open(result) as img:
+                    self.assertEqual(img.size, (192, 128))
+                    rgb = img.convert('RGB')
+                    self.assertEqual(rgb.getpixel((0, 0)), (0, 0, 0))
+                    self.assertEqual(rgb.getpixel((96, 64)), (255, 0, 0))
+            finally:
+                if result != source and os.path.exists(result):
+                    os.remove(result)
+
+    def test_cover_has_no_black_bars(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = os.path.join(tmp, 'wide.png')
+            Image.new('RGB', (400, 200), 'red').save(source)
+            result = self._process(source, imageFitMode='cover')
+            try:
+                with Image.open(result) as img:
+                    rgb = img.convert('RGB')
+                    self.assertEqual(rgb.getpixel((0, 0)), (255, 0, 0))
+                    self.assertEqual(rgb.getpixel((0, 127)), (255, 0, 0))
+            finally:
+                if result != source and os.path.exists(result):
+                    os.remove(result)
+
+    def test_gif_frames_use_the_fit_mode(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = os.path.join(tmp, 'anim.gif')
+            frames = [Image.new('RGB', (400, 200), 'red'),
+                      Image.new('RGB', (400, 200), 'blue')]
+            frames[0].save(source, save_all=True, append_images=frames[1:],
+                           duration=100, loop=0)
+            result = self._process(source, imageFitMode='contain')
+            try:
+                with Image.open(result) as img:
+                    self.assertEqual(img.size, (192, 128))
+                    img.seek(0)
+                    rgb = img.convert('RGB')
+                    # Letterboxed: the top row is background, not picture.
+                    self.assertEqual(rgb.getpixel((0, 0)), (0, 0, 0))
+                    self.assertEqual(rgb.getpixel((96, 64)), (255, 0, 0))
+            finally:
+                if result != source and os.path.exists(result):
+                    os.remove(result)
 
 
 class TestParseReportedSize(unittest.TestCase):

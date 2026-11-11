@@ -8,7 +8,7 @@ import os
 import re
 import uuid
 from PIL import Image
-from .settings_handler import read_settings
+from .settings_handler import choice_setting, read_settings
 from .geometry import (
     get_base_rotation,
     get_display_geometry,
@@ -69,25 +69,92 @@ def apply_exif_orientation(img, orientation):
     return img
 
 
+IMAGE_FIT_MODES = ("cover", "contain", "stretch")
+IMAGE_FIT_ANCHORS = ("center", "top", "bottom", "left", "right")
+
+
+def get_image_fit_mode(settings):
+    """Scaling mode for full screen pictures: cover, contain or stretch."""
+    return choice_setting(settings, "imageFitMode", IMAGE_FIT_MODES, "cover")
+
+
+def get_image_fit_anchor(settings):
+    """Which edge keeps visible when a picture has to be cropped/positioned."""
+    return choice_setting(settings, "imageFitAnchor", IMAGE_FIT_ANCHORS, "center")
+
+
+def _background_color(mode, background):
+    """Return a fill colour that is valid for the given image mode."""
+    if mode in ("RGBA", "LA"):
+        if len(background) == 4:
+            return tuple(int(c) for c in background)
+        return tuple(int(c) for c in background) + (255,)
+    return tuple(int(c) for c in background)
+
+
+def fit_image(img, target_width, target_height, mode="cover", anchor="center",
+              background=(0, 0, 0)):
+    """Scale ``img`` onto a ``target_width`` x ``target_height`` canvas.
+
+    ``mode``:
+        cover   - scale up until the canvas is fully covered, crop the overflow
+        contain - scale down until the whole image fits, letterbox the rest
+        stretch - scale exactly to the canvas, ignoring the aspect ratio
+    ``anchor`` decides which edge/content stays visible when there is a choice
+    (crop side for cover, alignment for contain).
+    """
+    target_width = max(1, int(target_width))
+    target_height = max(1, int(target_height))
+    if img.width <= 0 or img.height <= 0:
+        return img
+
+    if mode == "stretch":
+        return img.resize((target_width, target_height), Image.Resampling.LANCZOS)
+
+    if mode == "contain":
+        ratio = min(target_width / img.width, target_height / img.height)
+        new_size = (max(1, round(img.width * ratio)), max(1, round(img.height * ratio)))
+        resized = img.resize(new_size, Image.Resampling.LANCZOS)
+        canvas = Image.new(
+            img.mode,
+            (target_width, target_height),
+            _background_color(img.mode, background),
+        )
+        x = (target_width - resized.width) // 2
+        y = (target_height - resized.height) // 2
+        if anchor == "top":
+            y = 0
+        elif anchor == "bottom":
+            y = target_height - resized.height
+        elif anchor == "left":
+            x = 0
+        elif anchor == "right":
+            x = target_width - resized.width
+        canvas.paste(resized, (x, y))
+        return canvas
+
+    # cover
+    ratio = max(target_width / img.width, target_height / img.height)
+    new_size = (max(1, round(img.width * ratio)), max(1, round(img.height * ratio)))
+    resized = img.resize(new_size, Image.Resampling.LANCZOS)
+
+    left = (resized.width - target_width) // 2
+    top = (resized.height - target_height) // 2
+    if anchor == "top":
+        top = 0
+    elif anchor == "bottom":
+        top = max(0, resized.height - target_height)
+    elif anchor == "left":
+        left = 0
+    elif anchor == "right":
+        left = max(0, resized.width - target_width)
+
+    return resized.crop((left, top, left + target_width, top + target_height))
+
+
 def fill_crop_image(img, target_width, target_height):
-    img_ratio = img.width / img.height
-    target_ratio = target_width / target_height
-
-    if img_ratio > target_ratio:
-        new_height = target_height
-        new_width = int(target_height * img_ratio)
-    else:
-        new_width = target_width
-        new_height = int(target_width / img_ratio)
-
-    img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-
-    left = (img.width - target_width) // 2
-    top = (img.height - target_height) // 2
-    right = left + target_width
-    bottom = top + target_height
-
-    return img.crop((left, top, right, bottom))
+    """Backwards compatible wrapper: fill the canvas and crop the overflow."""
+    return fit_image(img, target_width, target_height, "cover", "center")
 
 
 def process_image_for_display(image_path, settings, exif_orientation=None,
@@ -106,6 +173,8 @@ def process_image_for_display(image_path, settings, exif_orientation=None,
     if width is None or height is None:
         geometry = get_display_geometry(settings)
         width, height = geometry["width"], geometry["height"]
+    fit_mode = get_image_fit_mode(settings)
+    fit_anchor = get_image_fit_anchor(settings)
     temp_path = None
 
     try:
@@ -125,7 +194,8 @@ def process_image_for_display(image_path, settings, exif_orientation=None,
                     # Apply EXIF orientation to each frame
                     if auto_orient and exif_orientation:
                         frame = apply_exif_orientation(frame, exif_orientation)
-                    processed_frame = fill_crop_image(frame, width, height)
+                    processed_frame = fit_image(
+                        frame, width, height, fit_mode, fit_anchor)
                     frames.append(processed_frame)
                     durations.append(img.info.get('duration', 100))
 
@@ -149,7 +219,8 @@ def process_image_for_display(image_path, settings, exif_orientation=None,
                 elif img.mode != 'RGB':
                     img = img.convert('RGB')
 
-                processed_img = fill_crop_image(img, width, height)
+                processed_img = fit_image(
+                    img, width, height, fit_mode, fit_anchor)
 
                 ext = os.path.splitext(image_path)[1].lower()
                 if ext not in ['.jpg', '.jpeg', '.png', '.bmp', '.webp']:
@@ -200,6 +271,88 @@ def _parse_reported_size(output):
     return int(match.group(1)), int(match.group(2))
 
 
+def _base_matrix_dir():
+    return os.path.abspath(
+        os.path.join(os.path.dirname(__file__), '..', '..', 'rpi-rgb-led-matrix')
+    )
+
+
+def _viewer_command(image_path, settings, geometry):
+    """Build the ``led-image-viewer`` command for an already prepared image."""
+    base_matrix_dir = _base_matrix_dir()
+    rows = _get_int_setting(settings, 'heightInPixel', 32)
+    cols = _get_int_setting(settings, 'widthInPixel', 32)
+    chain = _get_int_setting(settings, 'chainLength', 1)
+    parallel = _get_int_setting(settings, 'parallelChains', 1)
+    brightness = _get_int_setting(settings, 'displayBrightness', 100)
+    slowdown = _get_int_setting(settings, 'ledSlowdown', 2)
+
+    return [
+        "sudo",
+        os.path.join(base_matrix_dir, "utils", "led-image-viewer"),
+        "-C",
+        f"--led-rows={rows}",
+        f"--led-cols={cols}",
+        f"--led-chain={chain}",
+        f"--led-parallel={parallel}",
+        f"--led-brightness={brightness}",
+        f"--led-pixel-mapper={geometry['pixelMapper']}",
+        f"--led-slowdown-gpio={slowdown}",
+        image_path,
+    ]
+
+
+def _launch_display_command(cmd, geometry=None, env=None, cleanup_path=None):
+    """Start a display command and remove ``cleanup_path`` once it exits."""
+    global _is_process_running
+    print(f"Executing: {' '.join(cmd)}")
+    process = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    _is_process_running = True
+
+    def capture_output():
+        stdout, stderr = process.communicate()
+        if stdout:
+            text = stdout.decode(errors="replace")
+            print(f"Process output: {text}")
+            if geometry is not None:
+                reported = _parse_reported_size(text)
+                expected = (geometry["width"], geometry["height"])
+                if reported and reported != expected:
+                    print(
+                        f"Warning: driver reports a {reported[0]}x{reported[1]} canvas "
+                        f"but settings imply {expected[0]}x{expected[1]}. "
+                        "Check the panel wiring (chainLength/parallelChains) and pixel mapper."
+                    )
+        if stderr:
+            print(f"Process error: {stderr.decode(errors='replace')}")
+        global _is_process_running
+        _is_process_running = False
+        if cleanup_path and os.path.exists(cleanup_path):
+            try:
+                os.remove(cleanup_path)
+            except Exception as e:
+                print(f"Error cleaning up temp file {cleanup_path}: {e}")
+
+    output_thread = Thread(target=capture_output)
+    output_thread.daemon = True
+    output_thread.start()
+    return process
+
+
+def display_image_file(image_path, rotation_offset=0, cleanup_path=None):
+    """Display an already prepared image/GIF file.
+
+    Used by the startup screen, which renders its own content. ``cleanup_path``
+    is deleted again once the viewer exits.
+    """
+    stopProcess()
+    settings = read_settings()
+    final_rotation = (get_base_rotation(settings) + rotation_offset) % 360
+    geometry = get_display_geometry(settings, rotation=final_rotation)
+    cmd = _viewer_command(image_path, settings, geometry)
+    return _launch_display_command(cmd, geometry=geometry, cleanup_path=cleanup_path)
+
+
 def _start_display_process(image_name, command_line, static_folder, rotation_offset=0, exif_orientation=None):
     stopProcess()
     settings = read_settings()
@@ -220,12 +373,10 @@ def _start_display_process(image_name, command_line, static_folder, rotation_off
     brightness = _get_int_setting(settings, 'displayBrightness', 100)
     slowdown = _get_int_setting(settings, 'ledSlowdown', 2)
 
-    base_matrix_dir = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), '..', '..', 'rpi-rgb-led-matrix')
-    )
+    base_matrix_dir = _base_matrix_dir()
 
     cmd = []
-    processed_image_path = None
+    cleanup_path = None
     original_path = None
     env = None
 
@@ -242,20 +393,9 @@ def _start_display_process(image_name, command_line, static_folder, rotation_off
             width=geometry["width"],
             height=geometry["height"],
         )
-
-        cmd = [
-            "sudo",
-            os.path.join(base_matrix_dir, "utils", "led-image-viewer"),
-            "-C",
-            f"--led-rows={rows}",
-            f"--led-cols={cols}",
-            f"--led-chain={chain}",
-            f"--led-parallel={parallel}",
-            f"--led-brightness={brightness}",
-            f"--led-pixel-mapper={pixel_mapper}",
-            f"--led-slowdown-gpio={slowdown}",
-            processed_image_path,
-        ]
+        if processed_image_path and processed_image_path != original_path:
+            cleanup_path = processed_image_path
+        cmd = _viewer_command(processed_image_path, settings, geometry)
     elif command_line == "displayDemo":
         if image_name == 12:
             tz = settings.get('timezone', 'UTC')
@@ -292,35 +432,8 @@ def _start_display_process(image_name, command_line, static_folder, rotation_off
             ]
 
     if cmd:
-        print(f"Executing: {' '.join(cmd)}")
-        process = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        def capture_output():
-            stdout, stderr = process.communicate()
-            if stdout:
-                text = stdout.decode(errors="replace")
-                print(f"Process output: {text}")
-                reported = _parse_reported_size(text)
-                expected = (geometry["width"], geometry["height"])
-                if reported and reported != expected:
-                    print(
-                        f"Warning: driver reports a {reported[0]}x{reported[1]} canvas "
-                        f"but settings imply {expected[0]}x{expected[1]}. "
-                        "Check the panel wiring (chainLength/parallelChains) and pixel mapper."
-                    )
-            if stderr:
-                print(f"Process error: {stderr.decode(errors='replace')}")
-            global _is_process_running
-            _is_process_running = False
-            if processed_image_path and processed_image_path != original_path and os.path.exists(processed_image_path):
-                try:
-                    os.remove(processed_image_path)
-                except Exception as e:
-                    print(f"Error cleaning up temp file {processed_image_path}: {e}")
-
-        output_thread = Thread(target=capture_output)
-        output_thread.daemon = True
-        output_thread.start()
+        _launch_display_command(cmd, geometry=geometry, env=env,
+                                cleanup_path=cleanup_path)
     else:
         _is_process_running = False
 
@@ -442,13 +555,20 @@ def stopProcess():
             process.kill()
             break
         settings = read_settings()
-        if settings["displayTimeAndDate"] == "":
+        if settings.get("displayTimeAndDate", "") == "":
             if "clock" in process.name():
                 process.kill()
                 break
 
     # Also stop Immich loop if running
     immich_controller.stop_immich_loop()
+
+    # Any display action dismisses a startup screen that is still showing.
+    try:
+        from . import startup_screen
+        startup_screen.cancel_startup_screen()
+    except Exception:
+        pass
 
 def trigger_rotation(angle_delta):
     global _current_image_name, _current_command_line, _current_static_folder, _current_exif_orientation

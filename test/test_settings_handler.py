@@ -3,7 +3,9 @@ from unittest.mock import patch, mock_open, MagicMock
 import json
 import os
 
-from modules.settings_handler import read_settings, save_settings
+from modules.settings_handler import (
+    read_settings, save_settings, flag_setting, choice_setting
+)
 
 
 class TestSettingsHandler(unittest.TestCase):
@@ -81,6 +83,32 @@ class TestSettingsHandler(unittest.TestCase):
 
             self.assertTrue(result)
             mock_open_file.assert_called_once()
+
+
+class TestSettingHelpers(unittest.TestCase):
+
+    def test_flag_setting_accepts_form_values(self):
+        for value in ('on', 'true', 'checked', '1', 'yes', True):
+            self.assertTrue(flag_setting({'enabled': value}, 'enabled'), value)
+
+    def test_flag_setting_rejects_empty_values(self):
+        for value in ('', 'off', 'false', '0', 'no', None, False):
+            self.assertFalse(flag_setting({'enabled': value}, 'enabled'), value)
+
+    def test_flag_setting_default(self):
+        self.assertFalse(flag_setting({}, 'enabled'))
+        self.assertTrue(flag_setting({}, 'enabled', default=True))
+
+    def test_choice_setting_accepts_known_values(self):
+        choices = ('cover', 'contain', 'stretch')
+        self.assertEqual(choice_setting({'mode': 'Contain'}, 'mode', choices,
+                                        'cover'), 'contain')
+
+    def test_choice_setting_falls_back(self):
+        choices = ('cover', 'contain')
+        self.assertEqual(choice_setting({'mode': 'zoom'}, 'mode', choices,
+                                        'cover'), 'cover')
+        self.assertEqual(choice_setting({}, 'mode', choices, 'cover'), 'cover')
 
 
 if __name__ == '__main__':

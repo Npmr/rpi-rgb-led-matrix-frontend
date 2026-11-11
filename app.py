@@ -10,12 +10,13 @@ from upload_handler import upload_image
 from modules.settings_handler import read_settings, save_settings
 from modules.info_handler import read_infos
 from modules.media_handler import countMediaTypeAndNumber
-from modules.display_control import process_image_async, stopProcess, _current_image_name, _current_command_line, _current_static_folder, trigger_rotation, start_grid_display, stop_grid_display, is_grid_running
-from modules.geometry import get_display_geometry
+from modules.display_control import process_image_async, stopProcess, _current_image_name, _current_command_line, _current_static_folder, trigger_rotation, start_grid_display, stop_grid_display, is_grid_running, IMAGE_FIT_MODES, IMAGE_FIT_ANCHORS
+from modules.geometry import get_display_geometry, DIRECTIONS, DEFAULT_DIRECTION
 from modules.system_handler import getFreeDiskSpace, reboot_system, shutdown_system, sync_time, has_internet, COMMON_TIMEZONES, validate_strftime
 from modules.update_handler import trigger_update, fetch_update_info
 from modules.layout_handler import read_layout, save_layout, validate_layout, grid_dimensions, new_widget, WIDGET_TYPES
 from modules import mqtt_handler, giphy_controller, immich_controller, immich_handler
+from modules import startup_screen
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY')
@@ -120,6 +121,17 @@ def _is_safe_filename(filename):
         return False
     # Only allow a basename
     return os.path.basename(filename) == filename
+
+
+def available_pictures():
+    """Sorted picture/gif filenames in the picture library."""
+    folder = app.config['STATIC_FOLDER']
+    if not os.path.isdir(folder):
+        return []
+    return sorted(
+        name for name in os.listdir(folder)
+        if name.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'))
+    )
 
 
 @app.route('/delete_image', methods=['POST'])
@@ -251,7 +263,9 @@ def settings():
     return render_template('settings.html', settings=settings, numberOfPictues=numberOfPictues,
                            numberOfGifs=numberOfGifs, freeDiskSpaceInPercent=round(freeDiskSpaceInPercent[0]),
                            applicationInfo=infos, updateText=updateText, currentAvailableVersion=updateVersion,
-                           enableUpdateButton=enableUpdateButton, timezones=COMMON_TIMEZONES)
+                           enableUpdateButton=enableUpdateButton, timezones=COMMON_TIMEZONES,
+                           pictures=available_pictures(),
+                           localIp=startup_screen.compute_local_ip())
 
 
 @app.route('/layout')
@@ -261,13 +275,7 @@ def layout():
     layout_data = read_layout()
     cols, rows, cell_w, cell_h = grid_dimensions(geometry)
 
-    pictures = []
-    static_folder = app.config['STATIC_FOLDER']
-    if os.path.isdir(static_folder):
-        pictures = sorted(
-            name for name in os.listdir(static_folder)
-            if name.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'))
-        )
+    pictures = available_pictures()
 
     widget_defaults = {widget_type: new_widget(widget_type) for widget_type in WIDGET_TYPES}
 
@@ -339,7 +347,6 @@ def changelog():
 def save_settings_route():
     new_height = request.form['height']
     new_width = request.form['width']
-    new_direction = request.form['direction']
     new_chainLength = request.form['chainLength']
     new_parallelChains = request.form['parallelChains']
     new_ledSlowdown = request.form['ledSlowdown']
@@ -368,6 +375,40 @@ def save_settings_route():
     new_clockFormatDate = request.form.get('clockFormatDate', '%A')
     new_clockFormatTime = request.form.get('clockFormatTime', '%H:%M:%S')
 
+    # Existing settings are merged below; read them first for the fallbacks.
+    existing_settings = read_settings()
+    previous_settings = dict(existing_settings)
+
+    # Orientation: the form may omit the field (older pages), so fall back to
+    # the stored value and reject anything that is not a known direction.
+    new_direction = request.form.get('direction') or previous_settings.get(
+        'direction', DEFAULT_DIRECTION)
+    if new_direction not in DIRECTIONS:
+        new_direction = previous_settings.get('direction', DEFAULT_DIRECTION)
+        if new_direction not in DIRECTIONS:
+            new_direction = DEFAULT_DIRECTION
+
+    # Image scaling mode and crop anchor for full screen pictures.
+    new_imageFitMode = request.form.get(
+        'imageFitMode', previous_settings.get('imageFitMode', 'cover'))
+    if new_imageFitMode not in IMAGE_FIT_MODES:
+        new_imageFitMode = 'cover'
+    new_imageFitAnchor = request.form.get(
+        'imageFitAnchor', previous_settings.get('imageFitAnchor', 'center'))
+    if new_imageFitAnchor not in IMAGE_FIT_ANCHORS:
+        new_imageFitAnchor = 'center'
+
+    # Startup screen settings.
+    new_startupScreenEnabled = "on" if request.form.get('startupScreenEnabled') == 'on' else ""
+    new_startupScreenImage = request.form.get(
+        'startupScreenImage', previous_settings.get('startupScreenImage', ''))
+    if new_startupScreenImage not in ('', None) and new_startupScreenImage not in available_pictures():
+        new_startupScreenImage = ''
+    new_startupScreenText = request.form.get(
+        'startupScreenText', previous_settings.get('startupScreenText', ''))
+    new_startupScreenDuration = request.form.get(
+        'startupScreenDuration', previous_settings.get('startupScreenDuration', '30'))
+
     # Validate strftime formats
     valid, err = validate_strftime(new_clockFormatDate)
     if not valid:
@@ -376,13 +417,10 @@ def save_settings_route():
     if not valid:
         return f"Invalid time format: {err}", 400
 
-    # Merge form values into existing settings so keys not present in the form
-    # (e.g. custom or future settings) are preserved instead of being deleted.
-    existing_settings = read_settings()
     merged_settings = {
         'heightInPixel': new_height,
         'widthInPixel': new_width,
-        'direction': new_direction if new_direction else existing_settings.get('direction', 'horizontal'),
+        'direction': new_direction,
         'chainLength': new_chainLength,
         'parallelChains': new_parallelChains,
         'ledSlowdown': new_ledSlowdown,
@@ -410,9 +448,26 @@ def save_settings_route():
         'timezone': new_timezone,
         'clockFormatDate': new_clockFormatDate,
         'clockFormatTime': new_clockFormatTime,
+        'imageFitMode': new_imageFitMode,
+        'imageFitAnchor': new_imageFitAnchor,
+        'startupScreenEnabled': new_startupScreenEnabled,
+        'startupScreenImage': new_startupScreenImage,
+        'startupScreenText': new_startupScreenText,
+        'startupScreenDuration': new_startupScreenDuration,
     }
     existing_settings.update(merged_settings)
     save_settings(existing_settings)
+
+    # Hardware/geometry changes only take effect when the renderer restarts.
+    geometry_keys = ('widthInPixel', 'heightInPixel', 'chainLength',
+                     'parallelChains', 'direction')
+    geometry_changed = any(
+        str(previous_settings.get(key)) != str(merged_settings.get(key))
+        for key in geometry_keys
+    )
+    if geometry_changed and is_grid_running():
+        start_grid_display()
+
     return redirect(url_for('settings'))
 
 
@@ -600,5 +655,9 @@ if __name__ == '__main__':
         sync_time()
     else:
         print("No internet detected - skipping time sync")
+
+    # Show the startup screen (image or device info) once the app is ready.
+    # Any display action cancels it via display_control.stopProcess().
+    startup_screen.schedule_startup_screen()
 
     app.run(host='0.0.0.0', port=5000, debug=False)
