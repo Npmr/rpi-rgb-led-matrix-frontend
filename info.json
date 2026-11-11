@@ -1,7 +1,17 @@
 {
-  "currentApplicationVersion": "v0.0.54",
-  "whatChanged": "Install and update scripts now build the rgbmatrix Python bindings from the repository root using the new scikit-build-core/CMake setup",
+  "currentApplicationVersion": "v0.0.55",
+  "whatChanged": "Pictures are now cropped to the mapper-aware visible canvas, so they fill the whole display again when a U-mapper folds the panel chains",
   "changelog": [
+    {
+      "version": "v0.0.55",
+      "date": "2026-11-11",
+      "changes": [
+        "Pictures are now prepared for the visible canvas instead of the raw matrix, so they fill the whole screen again with parallel chains (U-mapper) instead of showing as a thin centred strip",
+        "get_display_geometry() accepts a rotation override so the picture rotate feature uses the same canvas size the driver exposes",
+        "Display process output is checked for the driver's reported 'Size: WxH' and a warning is logged when it does not match the settings",
+        "Added regression tests for image target sizes and driver size parsing"
+      ]
+    },
     {
       "version": "v0.0.54",
       "date": "2026-11-11",

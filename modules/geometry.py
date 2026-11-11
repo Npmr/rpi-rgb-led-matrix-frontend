@@ -55,20 +55,26 @@ def get_matrix_dimensions(settings):
     return width, height
 
 
-def get_display_geometry(settings):
+def get_display_geometry(settings, rotation=None):
     """Return the visible geometry and derived grid for ``settings``.
+
+    ``rotation`` overrides the base rotation derived from ``direction`` so that
+    callers which add their own offset (the picture rotate feature) get the
+    canvas size that matches the mapper actually passed to the driver.
 
     Keys:
         width, height   - visible canvas size after pixel mappers
         rawWidth, rawHeight - size before pixel mappers
         cellW, cellH    - pixel size of one grid cell (one panel)
         cols, rows      - number of grid cells
-        rotation        - base rotation in degrees
+        rotation        - rotation used in degrees
         pixelMapper     - mapper string passed to the driver
     """
     panel_w = _int_setting(settings, "widthInPixel", DEFAULT_PANEL)
     panel_h = _int_setting(settings, "heightInPixel", DEFAULT_PANEL)
-    rotation = get_base_rotation(settings) % 360
+    if rotation is None:
+        rotation = get_base_rotation(settings)
+    rotation = int(rotation) % 360
     pixel_mapper = get_pixel_mapper_config(settings, rotation)
 
     raw_w, raw_h = get_matrix_dimensions(settings)

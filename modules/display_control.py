@@ -5,11 +5,13 @@ import psutil
 from threading import Thread, Timer
 import time
 import os
+import re
 import uuid
 from PIL import Image
 from .settings_handler import read_settings
 from .geometry import (
     get_base_rotation,
+    get_display_geometry,
     get_matrix_dimensions,
     get_pixel_mapper_config,
 )
@@ -88,8 +90,22 @@ def fill_crop_image(img, target_width, target_height):
     return img.crop((left, top, right, bottom))
 
 
-def process_image_for_display(image_path, settings, exif_orientation=None):
-    matrix_width, matrix_height = get_matrix_dimensions(settings)
+def process_image_for_display(image_path, settings, exif_orientation=None,
+                              width=None, height=None):
+    """Crop and resize ``image_path`` to the canvas the driver exposes.
+
+    The target size must be the *visible* canvas (after pixel mappers), not the
+    raw matrix: with a folding U-mapper a raw 384x64 matrix becomes a 192x128
+    canvas, and ``led-image-viewer`` would otherwise letterbox the image into a
+    thin strip because it fits images into the canvas size preserving the
+    aspect ratio.
+
+    ``width``/``height`` may be passed in when the caller already knows the
+    final geometry (for example when the rotate feature adds an offset).
+    """
+    if width is None or height is None:
+        geometry = get_display_geometry(settings)
+        width, height = geometry["width"], geometry["height"]
     temp_path = None
 
     try:
@@ -109,7 +125,7 @@ def process_image_for_display(image_path, settings, exif_orientation=None):
                     # Apply EXIF orientation to each frame
                     if auto_orient and exif_orientation:
                         frame = apply_exif_orientation(frame, exif_orientation)
-                    processed_frame = fill_crop_image(frame, matrix_width, matrix_height)
+                    processed_frame = fill_crop_image(frame, width, height)
                     frames.append(processed_frame)
                     durations.append(img.info.get('duration', 100))
 
@@ -133,7 +149,7 @@ def process_image_for_display(image_path, settings, exif_orientation=None):
                 elif img.mode != 'RGB':
                     img = img.convert('RGB')
 
-                processed_img = fill_crop_image(img, matrix_width, matrix_height)
+                processed_img = fill_crop_image(img, width, height)
 
                 ext = os.path.splitext(image_path)[1].lower()
                 if ext not in ['.jpg', '.jpeg', '.png', '.bmp', '.webp']:
@@ -170,13 +186,28 @@ def _is_safe_basename(filename):
     return os.path.basename(filename) == filename
 
 
+def _parse_reported_size(output):
+    """Extract the canvas size a rpi-rgb-led-matrix tool reports on startup.
+
+    The tools print ``Size: 192x128. Hardware gpio mapping: ...``. Comparing
+    that with the derived geometry catches wiring/mapper mismatches early.
+    """
+    if not output:
+        return None
+    match = re.search(r"Size:\s*(\d+)\s*x\s*(\d+)", output)
+    if not match:
+        return None
+    return int(match.group(1)), int(match.group(2))
+
+
 def _start_display_process(image_name, command_line, static_folder, rotation_offset=0, exif_orientation=None):
     stopProcess()
     settings = read_settings()
 
     base_rotation = get_base_rotation(settings)
     final_rotation = (base_rotation + rotation_offset) % 360
-    pixel_mapper = get_pixel_mapper_config(settings, final_rotation)
+    geometry = get_display_geometry(settings, rotation=final_rotation)
+    pixel_mapper = geometry["pixelMapper"]
 
     if static_folder not in ("static/giphy_cache", "static/immich_cache"):
         static_folder = "static/pictures"
@@ -204,7 +235,13 @@ def _start_display_process(image_name, command_line, static_folder, rotation_off
             _is_process_running = False
             return
         original_path = os.path.join(static_folder, image_name)
-        processed_image_path = process_image_for_display(original_path, settings, exif_orientation)
+        processed_image_path = process_image_for_display(
+            original_path,
+            settings,
+            exif_orientation,
+            width=geometry["width"],
+            height=geometry["height"],
+        )
 
         cmd = [
             "sudo",
@@ -261,9 +298,18 @@ def _start_display_process(image_name, command_line, static_folder, rotation_off
         def capture_output():
             stdout, stderr = process.communicate()
             if stdout:
-                print(f"Process output: {stdout.decode()}")
+                text = stdout.decode(errors="replace")
+                print(f"Process output: {text}")
+                reported = _parse_reported_size(text)
+                expected = (geometry["width"], geometry["height"])
+                if reported and reported != expected:
+                    print(
+                        f"Warning: driver reports a {reported[0]}x{reported[1]} canvas "
+                        f"but settings imply {expected[0]}x{expected[1]}. "
+                        "Check the panel wiring (chainLength/parallelChains) and pixel mapper."
+                    )
             if stderr:
-                print(f"Process error: {stderr.decode()}")
+                print(f"Process error: {stderr.decode(errors='replace')}")
             global _is_process_running
             _is_process_running = False
             if processed_image_path and processed_image_path != original_path and os.path.exists(processed_image_path):

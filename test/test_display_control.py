@@ -1,10 +1,13 @@
+import os
+import tempfile
 import unittest
 from unittest.mock import patch, MagicMock
 from PIL import Image
 
 from modules.display_control import (
     get_pixel_mapper_config, get_matrix_dimensions,
-    apply_exif_orientation, fill_crop_image, _start_display_process
+    apply_exif_orientation, fill_crop_image, process_image_for_display,
+    _parse_reported_size, _start_display_process
 )
 
 
@@ -152,6 +155,66 @@ class TestFillCropImage(unittest.TestCase):
         self.assertEqual(result.size, (64, 64))
 
 
+class TestProcessImageTargetSize(unittest.TestCase):
+    """Images must be prepared for the visible canvas, not the raw matrix.
+
+    With a folding U-mapper the raw 384x64 matrix becomes a 192x128 canvas.
+    Cropping images to the raw size made led-image-viewer fit them into the
+    visible canvas preserving the aspect ratio, which left a thin strip of
+    picture in the middle of the display.
+    """
+
+    SETTINGS = {
+        'heightInPixel': '32',
+        'widthInPixel': '32',
+        'chainLength': '12',
+        'parallelChains': '2',
+        'direction': 'horizontal',
+        'immichAutoOrientation': 'true',
+    }
+
+    def _processed_size(self, settings=None, source_size=(1000, 100), **kwargs):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            source = os.path.join(tmp_dir, 'source.png')
+            Image.new('RGB', source_size, color='red').save(source)
+            result = process_image_for_display(
+                source, settings or dict(self.SETTINGS), **kwargs)
+            try:
+                with Image.open(result) as img:
+                    return img.size
+            finally:
+                if result != source and os.path.exists(result):
+                    os.remove(result)
+
+    def test_umapper_uses_visible_canvas(self):
+        self.assertEqual(self._processed_size(), (192, 128))
+
+    def test_rotation_offset_uses_swapped_canvas(self):
+        # The rotate feature adds an offset, which swaps the canvas axes.
+        self.assertEqual(self._processed_size(width=128, height=192), (128, 192))
+
+    def test_no_umapper_uses_raw_canvas(self):
+        settings = dict(self.SETTINGS, parallelChains='1')
+        self.assertEqual(self._processed_size(settings=settings), (384, 32))
+
+    def test_portrait_source_is_cropped_not_letterboxed(self):
+        self.assertEqual(
+            self._processed_size(source_size=(200, 1200)), (192, 128)
+        )
+
+
+class TestParseReportedSize(unittest.TestCase):
+
+    def test_parses_viewer_output(self):
+        line = ("Size: 192x128. Hardware gpio mapping: adafruit-hat\n"
+                "Loading 1 files...")
+        self.assertEqual(_parse_reported_size(line), (192, 128))
+
+    def test_returns_none_without_size(self):
+        self.assertIsNone(_parse_reported_size("Loading 1 files..."))
+        self.assertIsNone(_parse_reported_size(""))
+
+
 class TestStartDisplayProcess(unittest.TestCase):
     """Regression tests for the brightness/slowdown settings parsing.
 
@@ -209,6 +272,26 @@ class TestStartDisplayProcess(unittest.TestCase):
         cmd = mock_popen.call_args[0][0]
         self.assertIn('--led-brightness=40', cmd)
         self.assertIn('--led-slowdown-gpio=3', cmd)
+
+    def _capture_process_mock(self, rotation_offset=0):
+        with patch('modules.display_control.Thread'), \
+                patch('modules.display_control.subprocess.Popen'), \
+                patch('modules.display_control.process_image_for_display',
+                      return_value='/tmp/processed.png') as mock_process, \
+                patch('modules.display_control.stopProcess'), \
+                patch('modules.display_control.read_settings',
+                      return_value=dict(self.BASE_SETTINGS)):
+            _start_display_process('photo.png', 'displayImage',
+                                   'static/pictures', rotation_offset)
+        return mock_process
+
+    def test_image_is_sized_for_visible_canvas(self):
+        _, kwargs = self._capture_process_mock().call_args
+        self.assertEqual((kwargs['width'], kwargs['height']), (192, 128))
+
+    def test_image_is_sized_for_rotated_canvas(self):
+        _, kwargs = self._capture_process_mock(rotation_offset=90).call_args
+        self.assertEqual((kwargs['width'], kwargs['height']), (128, 192))
 
 
 if __name__ == '__main__':

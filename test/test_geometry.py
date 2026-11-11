@@ -133,6 +133,16 @@ class TestDisplayGeometry(unittest.TestCase):
         self.assertGreaterEqual(geometry["cols"], 1)
         self.assertGreaterEqual(geometry["rows"], 1)
 
+    def test_rotation_override_matches_rotate_feature(self):
+        # The picture rotate feature adds an offset; the derived canvas must
+        # follow the mapper that is actually passed to the driver.
+        geometry = get_display_geometry(settings(), rotation=90)
+        self.assertEqual(geometry["rotation"], 90)
+        self.assertEqual(geometry["pixelMapper"], "U-mapper;Rotate:90")
+        # 192x128 folded canvas, axes swapped by the 90 degree rotation.
+        self.assertEqual(geometry["width"], 128)
+        self.assertEqual(geometry["height"], 192)
+
     def test_invalid_settings_fall_back_to_defaults(self):
         geometry = get_display_geometry(
             {"widthInPixel": "nope", "heightInPixel": None, "chainLength": "x"}
