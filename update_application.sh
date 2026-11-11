@@ -49,14 +49,28 @@ make -C examples-api-use >> "$LOG_FILE" 2>&1
 cd utils && make led-image-viewer >> "$LOG_FILE" 2>&1
 cd /home/pi/rpi-rgb-led-matrix || exit 1
 
-# Ensure the Python bindings used by the grid renderer are available
+# Ensure the Python bindings used by the grid renderer are available.
+# Since February 2026 the bindings use scikit-build-core + CMake and must be
+# installed from the repository root; bindings/python has no setup.py or
+# pyproject.toml anymore. Check with sudo because the app runs as root.
 log "Ensuring rgbmatrix Python bindings..."
-if ! python3 -c "import rgbmatrix" > /dev/null 2>&1; then
-    command -v cython3 > /dev/null 2>&1 || sudo apt-get install -y python3-dev python3-pip cython3 >> "$LOG_FILE" 2>&1
-    cd /home/pi/rpi-rgb-led-matrix/bindings/python || exit 1
-    (sudo pip3 install --break-system-packages . || sudo pip3 install .) >> "$LOG_FILE" 2>&1 \
-        || log "WARNING: could not install rgbmatrix Python bindings (grid display unavailable)"
+if ! sudo python3 -c "import rgbmatrix" > /dev/null 2>&1; then
+    if ! command -v cmake > /dev/null 2>&1 || ! command -v cython3 > /dev/null 2>&1; then
+        log "Installing Python bindings build dependencies..."
+        sudo apt-get install -y python3-dev python3-pip cython3 cmake build-essential >> "$LOG_FILE" 2>&1
+    fi
     cd /home/pi/rpi-rgb-led-matrix || exit 1
+    if [ -f pyproject.toml ]; then
+        (sudo pip3 install --break-system-packages . || sudo pip3 install .) >> "$LOG_FILE" 2>&1 \
+            || log "WARNING: could not install rgbmatrix Python bindings (grid display unavailable)"
+    else
+        cd bindings/python || exit 1
+        (sudo pip3 install --break-system-packages . || sudo pip3 install .) >> "$LOG_FILE" 2>&1 \
+            || log "WARNING: could not install rgbmatrix Python bindings (grid display unavailable)"
+        cd /home/pi/rpi-rgb-led-matrix || exit 1
+    fi
+    sudo python3 -c "import rgbmatrix" > /dev/null 2>&1 \
+        || log "WARNING: rgbmatrix still not importable after install (see pip output above)"
 fi
 
 # Update rpi-rgb-led-matrix-frontend

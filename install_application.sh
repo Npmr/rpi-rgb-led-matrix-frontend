@@ -5,7 +5,7 @@ sudo apt-get update  # To get the latest package lists
 sudo apt install git libgraphicsmagick++-dev libwebp-dev -y
 
 # Install everything for the rpi-rgb-led-matrix-frontend application
-sudo apt install python3 python3-flask python3-psutil python3-pil python3-paho-mqtt python3-requests python3-dev python3-pip cython3 -y
+sudo apt install python3 python3-flask python3-psutil python3-pil python3-paho-mqtt python3-requests python3-dev python3-pip cython3 cmake build-essential -y
 
 # Go into the home directory
 cd
@@ -49,9 +49,20 @@ make -C examples-api-use
 cd utils
 make led-image-viewer
 
-# Build and install the Python bindings used by the grid display renderer
-cd /home/pi/rpi-rgb-led-matrix/bindings/python
-sudo pip3 install --break-system-packages . || sudo pip3 install .
+# Build and install the Python bindings used by the grid display renderer.
+# Since February 2026 the bindings use scikit-build-core + CMake and must be
+# installed from the repository root; bindings/python has no setup.py or
+# pyproject.toml anymore. The fallback keeps older checkouts working.
+cd /home/pi/rpi-rgb-led-matrix
+if [ -f pyproject.toml ]; then
+    sudo pip3 install --break-system-packages . || sudo pip3 install .
+else
+    cd bindings/python
+    sudo pip3 install --break-system-packages . || sudo pip3 install .
+    cd /home/pi/rpi-rgb-led-matrix
+fi
+sudo python3 -c "import rgbmatrix" \
+    || echo "WARNING: rgbmatrix Python bindings missing; grid display unavailable"
 
 # Make the Update script executable
 cd /home/pi/rpi-rgb-led-matrix-frontend

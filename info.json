@@ -1,7 +1,18 @@
 {
-  "currentApplicationVersion": "v0.0.53",
-  "whatChanged": "Fixed a TypeError in display_control that broke all image, demo and clock displays (brightness/slowdown settings parsing)",
+  "currentApplicationVersion": "v0.0.54",
+  "whatChanged": "Install and update scripts now build the rgbmatrix Python bindings from the repository root using the new scikit-build-core/CMake setup",
   "changelog": [
+    {
+      "version": "v0.0.54",
+      "date": "2026-11-11",
+      "changes": [
+        "Install and update scripts now install the rgbmatrix Python bindings from the rpi-rgb-led-matrix repository root (scikit-build-core + CMake), fixing the grid display startup failure",
+        "Added cmake and build-essential to the installed build dependencies",
+        "Bindings install keeps a fallback for older checkouts that still use bindings/python/setup.py",
+        "Update script verifies 'sudo python3 -c \"import rgbmatrix\"' after installing so failures are reported clearly",
+        "Grid renderer error message now points at the correct pip command"
+      ]
+    },
     {
       "version": "v0.0.53",
       "date": "2026-11-11",

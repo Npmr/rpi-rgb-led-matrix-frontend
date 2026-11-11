@@ -49,8 +49,9 @@ def build_matrix(settings):
     """Create the RGBMatrix using the same options as the CLI viewers."""
     if RGBMatrix is None:
         raise RuntimeError(
-            "The rgbmatrix Python bindings are not installed. "
-            "Install them with: pip install ./bindings/python"
+            "The rgbmatrix Python bindings are not installed. Install them from "
+            "the rpi-rgb-led-matrix repository root with: "
+            "sudo pip3 install --break-system-packages ."
         )
 
     rows = _int_setting(settings, "heightInPixel", 32)
