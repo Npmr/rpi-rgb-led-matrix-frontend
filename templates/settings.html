@@ -131,7 +131,7 @@
 
             <div class="field">
                 <label class="field__label" for="mqttIP">Broker IP / Hostname</label>
-                <input class="field__input" type="text" minlength="7" maxlength="15" pattern="^(?>(\d|[1-9]\d{2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(?1)$" name="mqttIP" id="mqttIP" value="{{ settings['mqttIP'] }}">
+                <input class="field__input" type="text" minlength="1" maxlength="253" pattern="^[A-Za-z0-9._:-]+$" name="mqttIP" id="mqttIP" value="{{ settings['mqttIP'] }}">
             </div>
 
             <div class="settings-section__fields">
@@ -287,16 +287,28 @@
     {# === Image Display + Startup Screen === #}
     <div class="settings-grid mb-lg">
 
-        {# Image Scaling #}
+        {# Display Output #}
         <div class="settings-section">
             <div class="settings-section__header">
                 <div class="settings-section__icon">
                     <i class="material-icons">aspect_ratio</i>
                 </div>
-                <h3 class="settings-section__title">Image Scaling</h3>
+                <h3 class="settings-section__title">Display Output</h3>
             </div>
 
-            <div class="field">
+            <div class="settings-section__fields">
+                <div class="field">
+                    <label class="field__label" for="displayBrightness">Brightness in % (1-100)</label>
+                    <input class="field__input" type="number" min="1" max="100" name="displayBrightness" id="displayBrightness" value="{{ settings.get('displayBrightness', 100) }}">
+                </div>
+
+                <div class="field">
+                    <label class="field__label" for="playlistTime">Picture Duration in sec. (min. 30)</label>
+                    <input class="field__input" type="number" min="30" name="playlistTime" id="playlistTime" value="{{ settings.get('playlistTime', 30) }}">
+                </div>
+            </div>
+
+            <div class="field mt-md">
                 <label class="field__label" for="imageFitMode">How pictures fill the display</label>
                 {% set current_fit = settings.get('imageFitMode', 'cover') %}
                 <select name="imageFitMode" id="imageFitMode" class="field__input">

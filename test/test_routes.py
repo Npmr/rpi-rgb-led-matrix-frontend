@@ -468,5 +468,114 @@ class TestLayoutRoutes(unittest.TestCase):
         mock_stop.assert_called_once()
 
 
+class TestUpdateProcessRoute(unittest.TestCase):
+
+    def setUp(self):
+        self.client = app.test_client()
+        with self.client.session_transaction() as sess:
+            sess['_csrf_token'] = 'test'
+
+    def _post(self, data=None):
+        payload = {'csrf_token': 'test'}
+        payload.update(data or {})
+        return self.client.post('/update_process', data=payload)
+
+    @patch('app.Thread')
+    @patch('app.trigger_update')
+    @patch('app.save_settings', return_value=True)
+    @patch('app.read_settings', return_value={'updateBranch': 'main'})
+    @patch('app.is_update_running', return_value=False)
+    def test_starts_update_in_background(self, mock_running, mock_settings,
+                                         mock_save, mock_trigger, mock_thread):
+        response = self._post({'updateBranch': 'dev'})
+        self.assertEqual(response.status_code, 302)
+        mock_thread.assert_called_once_with(target=mock_trigger, args=('dev',),
+                                            daemon=True)
+        mock_thread.return_value.start.assert_called_once()
+
+    @patch('app.Thread')
+    @patch('app.trigger_update')
+    @patch('app.save_settings', return_value=True)
+    @patch('app.read_settings', return_value={'updateBranch': 'main'})
+    @patch('app.is_update_running', return_value=False)
+    def test_selected_branch_is_saved(self, mock_running, mock_settings,
+                                      mock_save, mock_trigger, mock_thread):
+        self._post({'updateBranch': 'dev'})
+        saved = mock_save.call_args[0][0]
+        self.assertEqual(saved['updateBranch'], 'dev')
+
+    @patch('app.Thread')
+    @patch('app.trigger_update')
+    @patch('app.save_settings', return_value=True)
+    @patch('app.read_settings', return_value={'updateBranch': 'main'})
+    @patch('app.is_update_running', return_value=False)
+    def test_unknown_branch_falls_back_to_main(self, mock_running,
+                                               mock_settings, mock_save,
+                                               mock_trigger, mock_thread):
+        self._post({'updateBranch': '../../etc/passwd'})
+        mock_thread.assert_called_once_with(target=mock_trigger, args=('main',),
+                                            daemon=True)
+
+    @patch('app.Thread')
+    @patch('app.trigger_update')
+    @patch('app.read_settings', return_value={'updateBranch': 'main'})
+    @patch('app.is_update_running', return_value=True)
+    def test_second_update_is_not_started(self, mock_running, mock_settings,
+                                          mock_trigger, mock_thread):
+        response = self._post()
+        self.assertEqual(response.status_code, 302)
+        mock_thread.assert_not_called()
+        with self.client.session_transaction() as sess:
+            flashes = sess.get('_flashes', [])
+        self.assertTrue(any(category == 'warning' for category, _ in flashes))
+
+    @patch('app.trigger_update')
+    def test_csrf_token_is_required(self, mock_trigger):
+        response = self.client.post('/update_process', data={'updateBranch': 'main'})
+        self.assertEqual(response.status_code, 403)
+        mock_trigger.assert_not_called()
+
+    @patch('app.fetch_update_info')
+    @patch('app.read_settings')
+    @patch('app.read_infos')
+    def test_changelog_update_form_carries_csrf_token(self, mock_infos,
+                                                      mock_settings,
+                                                      mock_update):
+        mock_infos.return_value = {
+            'currentApplicationVersion': 'v1.0.0',
+            'whatChanged': '',
+            'changelog': [],
+        }
+        mock_settings.return_value = {'updateBranch': 'main'}
+        mock_update.return_value = {'currentApplicationVersion': 'v2.0.0',
+                                    'whatChanged': 'new'}
+        response = self.client.get('/changelog')
+        data = response.data.decode()
+        self.assertIn('action="/update_process"', data)
+        self.assertIn('name="csrf_token"', data)
+        self.assertIn('Install Update', data)
+        self.assertIn('v2.0.0 is available', data)
+
+    @patch('app.is_update_running', return_value=True)
+    @patch('app.fetch_update_info')
+    @patch('app.read_settings')
+    @patch('app.read_infos')
+    def test_install_button_disabled_while_update_runs(self, mock_infos,
+                                                       mock_settings,
+                                                       mock_update,
+                                                       mock_running):
+        mock_infos.return_value = {
+            'currentApplicationVersion': 'v1.0.0',
+            'whatChanged': '',
+            'changelog': [],
+        }
+        mock_settings.return_value = {'updateBranch': 'main'}
+        mock_update.return_value = {'currentApplicationVersion': 'v2.0.0',
+                                    'whatChanged': 'new'}
+        data = self.client.get('/changelog').get_data(as_text=True)
+        self.assertIn('An update is currently running', data)
+        self.assertIn('disabled', data)
+
+
 if __name__ == '__main__':
     unittest.main()

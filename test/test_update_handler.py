@@ -1,23 +1,69 @@
 import unittest
 from unittest.mock import patch, MagicMock
 import json
+import os
 
-from modules.update_handler import trigger_update, fetch_update_info
+from modules.update_handler import (
+    trigger_update, fetch_update_info, update_script_path, is_update_running
+)
 
 
 class TestUpdateHandler(unittest.TestCase):
+
+    def tearDown(self):
+        # Make sure a failing test cannot leave the guard switched on.
+        import modules.update_handler as handler
+        handler._update_running = False
 
     @patch('modules.update_handler.subprocess.run')
     def test_trigger_update_default_branch(self, mock_run):
         result = trigger_update()
         self.assertEqual(result, "Update triggered successfully!")
-        mock_run.assert_called_once_with(['sh', 'update_application.sh', 'main'])
+        mock_run.assert_called_once_with(
+            ['sh', update_script_path(), 'main'])
 
     @patch('modules.update_handler.subprocess.run')
     def test_trigger_update_custom_branch(self, mock_run):
         result = trigger_update(branch="develop")
         self.assertEqual(result, "Update triggered successfully!")
-        mock_run.assert_called_once_with(['sh', 'update_application.sh', 'develop'])
+        mock_run.assert_called_once_with(
+            ['sh', update_script_path(), 'develop'])
+
+    def test_script_path_is_absolute(self):
+        path = update_script_path()
+        self.assertTrue(os.path.isabs(path))
+        self.assertTrue(path.endswith('update_application.sh'))
+
+    @patch('modules.update_handler.subprocess.run')
+    def test_running_flag_is_set_while_script_runs(self, mock_run):
+        import modules.update_handler as handler
+        started = []
+
+        def slow_run(*args, **kwargs):
+            started.append(handler.is_update_running())
+
+        mock_run.side_effect = slow_run
+        trigger_update('main')
+        # The guard is active while the script runs and released afterwards.
+        self.assertEqual(started, [True])
+        self.assertFalse(is_update_running())
+
+    @patch('modules.update_handler.subprocess.run')
+    def test_second_update_is_rejected_while_running(self, mock_run):
+        import modules.update_handler as handler
+        handler._update_running = True
+        try:
+            self.assertEqual(trigger_update('main'), "Update already running")
+        finally:
+            handler._update_running = False
+        mock_run.assert_not_called()
+
+    @patch('modules.update_handler.subprocess.run')
+    def test_guard_is_released_on_failure(self, mock_run):
+        mock_run.side_effect = OSError('script missing')
+        with self.assertRaises(OSError):
+            trigger_update('main')
+        self.assertFalse(is_update_running())
 
     @patch('modules.update_handler.requests.get')
     def test_fetch_update_info_success(self, mock_get):

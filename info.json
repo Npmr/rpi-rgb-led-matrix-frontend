@@ -1,7 +1,25 @@
 {
-  "currentApplicationVersion": "v0.0.56",
-  "whatChanged": "New display orientation and image scaling settings plus a startup screen that shows a picture or the device IP with a welcome text at boot",
+  "currentApplicationVersion": "v0.0.57",
+  "whatChanged": "Saving the settings page works again (brightness and picture duration are editable once more) and the update button actually starts the update",
   "changelog": [
+    {
+      "version": "v0.0.57",
+      "date": "2026-11-11",
+      "changes": [
+        "Fixed saving the settings page: brightness and picture duration were removed from the form in v0.0.52 while the route still required them, so every save returned HTTP 400 and nothing was written",
+        "Brightness (1-100 %) and picture duration (seconds) are editable in the new 'Display Output' section again",
+        "The save route now falls back to the stored value for any field the page does not submit, so a missing input can never break saving again",
+        "Fields without a form input (language, update branch) are no longer reset when saving",
+        "The MQTT broker field accepts hostnames and the placeholder again instead of only IPv4 addresses",
+        "Saving shows a confirmation banner, or an error banner when settings.json cannot be written",
+        "Fixed the update button: the changelog forms were missing the CSRF token, so starting an update was rejected with HTTP 403",
+        "The update channel dropdown is now part of the update form and is stored when an update is started",
+        "Updates run in the background and return immediately with a status message instead of blocking the request, and a second update cannot be started while one is running",
+        "The changelog status card now shows whether an update is available or currently running, and the button reads 'Install Update'",
+        "The update script path is resolved absolutely instead of relying on the working directory",
+        "Added a contract test that posts exactly the fields the settings page renders, so template/route drift is caught by the test suite"
+      ]
+    },
     {
       "version": "v0.0.56",
       "date": "2026-11-11",

@@ -37,10 +37,22 @@
             </div>
 
             <div class="status-card mt-md">
+                {% if updateRunning %}
+                <i class="material-icons">sync</i>
+                <div class="status-card__text">
+                    An update is currently running. The device restarts the application when it is done.
+                </div>
+                {% elif updateAvailable %}
+                <i class="material-icons">system_update</i>
+                <div class="status-card__text">
+                    Version {{ currentAvailableVersion }} is available on the {{ settings.updateBranch }} branch.
+                </div>
+                {% else %}
                 <i class="material-icons">check_circle</i>
                 <div class="status-card__text">
                     System is up to date. No pending installations found in the current branch.
                 </div>
+                {% endif %}
             </div>
         </div>
 
@@ -53,18 +65,20 @@
                 <h3 class="settings-section__title">Update Controller</h3>
             </div>
 
-            <div class="field">
-                <label class="field__label" for="updateBranch">Update Channel</label>
-                <select name="updateBranch" id="updateBranch" class="field__input">
-                    <option value="main" {% if settings['updateBranch'] == 'main' %}selected{% endif %}>Main (Stable Releases)</option>
-                    <option value="dev" {% if settings['updateBranch'] == 'dev' %}selected{% endif %}>Dev (Development)</option>
-                </select>
-            </div>
+            <form action="/update_process" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-            <form action="/update_process" method="POST" class="mt-md">
-                <button class="btn btn--primary btn--full" {{ enableUpdateButton }}>
+                <div class="field">
+                    <label class="field__label" for="updateBranch">Update Channel</label>
+                    <select name="updateBranch" id="updateBranch" class="field__input">
+                        <option value="main" {% if settings['updateBranch'] == 'main' %}selected{% endif %}>Main (Stable Releases)</option>
+                        <option value="dev" {% if settings['updateBranch'] == 'dev' %}selected{% endif %}>Dev (Development)</option>
+                    </select>
+                </div>
+
+                <button class="btn btn--primary btn--full mt-md" {{ enableUpdateButton }}>
                     <i class="material-icons" style="font-size:18px;">system_update</i>
-                    Check for Updates
+                    {% if updateAvailable %}Install Update{% else %}Check for Updates{% endif %}
                 </button>
             </form>
 
@@ -74,6 +88,7 @@
                 Force Re-install Current
             </button>
             <form id="force-reinstall-form" action="/update_process" method="POST" style="display:none;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="force" value="true">
             </form>
         </div>

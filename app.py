@@ -1,7 +1,7 @@
 import os
 import secrets
 from functools import wraps
-from flask import Flask, render_template, request, url_for, redirect, jsonify, send_from_directory, session, abort, current_app, Response
+from flask import Flask, render_template, request, url_for, redirect, jsonify, send_from_directory, session, abort, current_app, Response, flash
 from threading import Thread
 from datetime import timedelta
 from PIL import Image
@@ -13,7 +13,7 @@ from modules.media_handler import countMediaTypeAndNumber
 from modules.display_control import process_image_async, stopProcess, _current_image_name, _current_command_line, _current_static_folder, trigger_rotation, start_grid_display, stop_grid_display, is_grid_running, IMAGE_FIT_MODES, IMAGE_FIT_ANCHORS
 from modules.geometry import get_display_geometry, DIRECTIONS, DEFAULT_DIRECTION
 from modules.system_handler import getFreeDiskSpace, reboot_system, shutdown_system, sync_time, has_internet, COMMON_TIMEZONES, validate_strftime
-from modules.update_handler import trigger_update, fetch_update_info
+from modules.update_handler import trigger_update, fetch_update_info, is_update_running
 from modules.layout_handler import read_layout, save_layout, validate_layout, grid_dimensions, new_widget, WIDGET_TYPES
 from modules import mqtt_handler, giphy_controller, immich_controller, immich_handler
 from modules import startup_screen
@@ -337,32 +337,57 @@ def changelog():
     update_info = fetch_update_info(update_branch)
     update_version = update_info.get('currentApplicationVersion') if update_info else 'unknown'
     current_version_num = infos.get('currentApplicationVersion', 'unknown')
-    enable_update_button = "" if update_version != current_version_num and update_info else "disabled"
+    update_available = bool(update_info) and update_version != current_version_num
+    update_running = is_update_running()
+    enable_update_button = "" if update_available and not update_running else "disabled"
     return render_template('changelog.html', changelog=changelog, current_version=current_version,
                            applicationInfo=infos, settings=settings_data,
-                           currentAvailableVersion=update_version, enableUpdateButton=enable_update_button)
+                           currentAvailableVersion=update_version, enableUpdateButton=enable_update_button,
+                           updateAvailable=update_available,
+                           updateRunning=update_running)
 
 
 @app.route('/save_settings', methods=['POST'])
 def save_settings_route():
-    new_height = request.form['height']
-    new_width = request.form['width']
-    new_chainLength = request.form['chainLength']
-    new_parallelChains = request.form['parallelChains']
-    new_ledSlowdown = request.form['ledSlowdown']
-    new_playlistTime = request.form['playlistTime']
+    # Merge form values into the stored settings. Fields that are missing from
+    # the form (older pages, MQTT clients, curl) keep their stored value instead
+    # of raising a 400, so a single removed input can never break saving.
+    existing_settings = read_settings()
+    previous_settings = dict(existing_settings)
+
+    def form_text(name, stored_key, default=''):
+        """Submitted value; a missing field keeps the stored value."""
+        value = request.form.get(name)
+        if value is None:
+            value = previous_settings.get(stored_key, default)
+        return value
+
+    def form_number(name, stored_key, default):
+        """Missing or empty numeric fields keep the stored value."""
+        value = (request.form.get(name) or '').strip()
+        if not value:
+            stored = previous_settings.get(stored_key)
+            value = str(stored) if stored not in (None, '') else str(default)
+        return value
+
+    new_height = form_number('height', 'heightInPixel', 32)
+    new_width = form_number('width', 'widthInPixel', 32)
+    new_chainLength = form_number('chainLength', 'chainLength', 1)
+    new_parallelChains = form_number('parallelChains', 'parallelChains', 1)
+    new_ledSlowdown = form_number('ledSlowdown', 'ledSlowdown', 2)
+    new_playlistTime = form_number('playlistTime', 'playlistTime', 30)
+    new_displayBrightness = form_number('displayBrightness', 'displayBrightness', 100)
     new_displayTimeAndDate = request.form.get('showClockAndPicture')
-    new_language = request.form.get('language')
-    new_mqttIp = request.form['mqttIP']
-    new_mqttPort = request.form['mqttPort']
-    new_deviceId = request.form['deviceID']
-    new_deviceName = request.form['deviceName']
-    new_giphyApiCode = request.form['giphyApiKey']
-    new_displayBrightness = request.form['displayBrightness']
+    new_language = form_text('language', 'language', 'en')
+    new_mqttIp = form_text('mqttIP', 'mqttIP', '')
+    new_mqttPort = form_number('mqttPort', 'mqttPort', 1883)
+    new_deviceId = form_text('deviceID', 'deviceID', '')
+    new_deviceName = form_text('deviceName', 'deviceName', '')
+    new_giphyApiCode = form_text('giphyApiKey', 'giphyApiKey', '')
     new_webpQuality = request.form.get('webpQuality', '85')
     new_avifQuality = request.form.get('avifQuality', '50')
     new_thumbnailQuality = request.form.get('thumbnailQuality', '80')
-    new_updateBranch = request.form.get('updateBranch', 'main')
+    new_updateBranch = form_text('updateBranch', 'updateBranch', 'main')
     new_immichUrl = request.form.get('immichUrl', '')
     new_immichApiKey = request.form.get('immichApiKey', '')
     new_immichAlbumId = request.form.get('immichAlbumId', '')
@@ -374,10 +399,6 @@ def save_settings_route():
     new_timezone = request.form.get('timezone', 'UTC')
     new_clockFormatDate = request.form.get('clockFormatDate', '%A')
     new_clockFormatTime = request.form.get('clockFormatTime', '%H:%M:%S')
-
-    # Existing settings are merged below; read them first for the fallbacks.
-    existing_settings = read_settings()
-    previous_settings = dict(existing_settings)
 
     # Orientation: the form may omit the field (older pages), so fall back to
     # the stored value and reject anything that is not a known direction.
@@ -456,7 +477,10 @@ def save_settings_route():
         'startupScreenDuration': new_startupScreenDuration,
     }
     existing_settings.update(merged_settings)
-    save_settings(existing_settings)
+    if save_settings(existing_settings):
+        flash('Settings saved.', 'success')
+    else:
+        flash('Could not write settings.json - check the file permissions.', 'error')
 
     # Hardware/geometry changes only take effect when the renderer restarts.
     geometry_keys = ('widthInPixel', 'heightInPixel', 'chainLength',
@@ -580,10 +604,24 @@ def rotate_right():
 
 @app.route('/update_process', methods=['POST'])
 def update_process_route():
-    settings = read_settings()
-    update_branch = settings.get('updateBranch', 'main')
-    result = trigger_update(update_branch)
-    return result
+    settings_data = read_settings()
+    branch = request.form.get('updateBranch') or settings_data.get('updateBranch', 'main')
+    if branch not in ('main', 'dev'):
+        branch = 'main'
+    if settings_data.get('updateBranch') != branch:
+        settings_data['updateBranch'] = branch
+        save_settings(settings_data)
+
+    if is_update_running():
+        flash('An update is already running. Please wait for it to finish.', 'warning')
+        return redirect(url_for('changelog'))
+
+    # The script pulls, rebuilds and restarts this application, which would kill
+    # the request. Run it in the background and answer immediately instead.
+    Thread(target=trigger_update, args=(branch,), daemon=True).start()
+    flash(f'Update started on branch "{branch}". The app restarts when it is done - '
+          f'this page will be unavailable for a few minutes.', 'success')
+    return redirect(url_for('changelog'))
 
 
 @app.route('/reboot', methods=['POST'])
