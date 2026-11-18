@@ -18,6 +18,9 @@ venv/
 env/
 .env
 
+# Generated bot face previews
+preview/
+
 # Logs
 *.log
 

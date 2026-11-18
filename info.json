@@ -1,7 +1,19 @@
 {
-  "currentApplicationVersion": "v0.0.60",
-  "whatChanged": "The Stop button really stops Giphy and Immich now - no picture reappears after it",
+  "currentApplicationVersion": "v0.0.61",
+  "whatChanged": "Display bot foundation: cute robot and minimal B&W faces that scale from 32x32 upwards",
   "changelog": [
+    {
+      "version": "v0.0.61",
+      "date": "2026-11-18",
+      "changes": [
+        "Added the display bot foundation: a shared expression model with ten moods (idle, happy, excited, curious, thinking, sad, alarmed, sleepy, love, wink)",
+        "Added two procedural face styles: a cute coloured robot with antenna, screen eyes and LED mouth, and a minimal black-and-white emoji face",
+        "Faces scale from a 32x32 panel to large matrices without bitmap assets, using a virtual 32x32 design grid",
+        "Idle animation includes blinking, gaze saccades and a subtle bob; sleeping slows the animation down",
+        "Moved RGB matrix construction into modules/matrix.py so the grid and the upcoming full-screen bot renderer share identical driver options",
+        "Added tools/preview_bot.py to render contact sheets of every style and mood without hardware"
+      ]
+    },
     {
       "version": "v0.0.60",
       "date": "2026-11-11",
