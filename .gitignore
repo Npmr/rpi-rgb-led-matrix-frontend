@@ -21,6 +21,9 @@ env/
 # Generated bot face previews
 preview/
 
+# Bot runtime event spool and state
+runtime/
+
 # Logs
 *.log
 

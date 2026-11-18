@@ -1,5 +1,6 @@
 import os
 import secrets
+import time
 from functools import wraps
 from flask import Flask, render_template, request, url_for, redirect, jsonify, send_from_directory, session, abort, current_app, Response, flash
 from threading import Thread
@@ -15,10 +16,15 @@ from modules.geometry import get_display_geometry, DIRECTIONS, DEFAULT_DIRECTION
 from modules.system_handler import getFreeDiskSpace, reboot_system, shutdown_system, sync_time, has_internet, COMMON_TIMEZONES, validate_strftime
 from modules.update_handler import trigger_update, fetch_update_info, is_update_running
 from modules.layout_handler import read_layout, save_layout, validate_layout, grid_dimensions, new_widget, WIDGET_TYPES
+from modules.bot.bus import BotBus
+from modules.bot.face import MOOD_NAMES
+from modules.bot.reactions import build_reaction
+from modules.bot.schedule import is_sleeping, parse_bool
 from modules import mqtt_handler, giphy_controller, immich_controller, immich_handler
 from modules import startup_screen
 
 app = Flask(__name__)
+bot_bus = BotBus()
 app.secret_key = os.environ.get('SECRET_KEY')
 if not app.secret_key:
     app.secret_key = secrets.token_hex(32)
@@ -325,6 +331,57 @@ def start_grid():
 def stop_grid():
     stop_grid_display()
     return redirect(url_for('layout'))
+
+
+@app.route('/bot/event', methods=['POST'])
+def bot_event():
+    """Accept a bot event as JSON or as a plain-text message.
+
+    The renderer (a separate process) consumes the event through
+    :mod:`modules.bot.bus`. This endpoint only validates and queues it.
+    """
+    payload = request.get_json(silent=True)
+    if payload is None:
+        text = request.get_data(as_text=True).strip()
+        if not text:
+            return jsonify({'ok': False, 'error': 'Expected a JSON bot event or a text message'}), 400
+        payload = {'type': 'message', 'text': text}
+
+    if isinstance(payload, str):
+        payload = {'type': 'message', 'text': payload}
+
+    if not isinstance(payload, dict):
+        return jsonify({'ok': False, 'error': 'Bot event must be a JSON object'}), 400
+
+    reaction = build_reaction(payload)
+    if reaction is None:
+        return jsonify({'ok': False, 'error': 'Event does not contain a type, text or mood'}), 400
+
+    try:
+        stored = bot_bus.publish(payload, source='rest')
+    except (OSError, TypeError) as error:
+        print(f"Error queueing bot event: {error}")
+        return jsonify({'ok': False, 'error': 'Could not queue the bot event'}), 500
+
+    return jsonify({'ok': True, 'event': stored, 'reaction': reaction.as_dict()})
+
+
+@app.route('/bot/state')
+def bot_state():
+    settings = read_settings()
+    now = time.time()
+    return jsonify({
+        'sleeping': is_sleeping(
+            now,
+            start=settings.get('botSleepStart', '22:00'),
+            end=settings.get('botSleepEnd', '07:00'),
+            timezone=settings.get('timezone', 'UTC'),
+            enabled=parse_bool(settings.get('botSleepEnabled'), False),
+        ),
+        'sleepEnabled': parse_bool(settings.get('botSleepEnabled'), False),
+        'queuedEvents': bot_bus.count(),
+        'moods': list(MOOD_NAMES),
+    })
 
 
 @app.route('/changelog')

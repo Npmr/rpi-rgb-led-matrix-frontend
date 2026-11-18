@@ -1,7 +1,21 @@
 {
-  "currentApplicationVersion": "v0.0.62",
-  "whatChanged": "Added the transparent Screen face style: only eyes and a mouth, no plate",
+  "currentApplicationVersion": "v0.0.63",
+  "whatChanged": "Bot events now flow through a priority engine with sleep hours and REST ingress",
   "changelog": [
+    {
+      "version": "v0.0.63",
+      "date": "2026-11-18",
+      "changes": [
+        "Added a cross-process bot event spool: the Flask process writes atomic JSON events and the renderer consumes them without shared locks",
+        "Event files expire after five minutes and the spool is capped, so stale reminders are never replayed after a restart",
+        "Added reaction mappings for messages, meeting soon/started/ended, weather conditions, doorbell, timers, news, alarms, sleep and wake",
+        "Every event can override mood, priority, duration and text; messages also accept a plain-text body",
+        "Added a priority queue with preemption, coalescing of duplicate events and resuming of a lower-priority reaction afterwards",
+        "Added sleep hours with timezone support, an optional wake-on-alarm priority, and manual sleep/wake events",
+        "Added POST /bot/event (JSON or plain text) and GET /bot/state for integrations and debugging",
+        "Added 37 tests covering the event bus, schedule, reactions, engine priority/sleep behaviour and the REST routes"
+      ]
+    },
     {
       "version": "v0.0.62",
       "date": "2026-11-18",
