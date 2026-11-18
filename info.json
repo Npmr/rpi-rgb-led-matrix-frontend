@@ -1,7 +1,24 @@
 {
-  "currentApplicationVersion": "v0.0.60",
-  "whatChanged": "The Stop button really stops Giphy and Immich now - no picture reappears after it",
+  "currentApplicationVersion": "v0.0.61",
+  "whatChanged": "The changelog page can now check the main and dev channels on demand and installs exactly the newest commit of the channel you pick",
   "changelog": [
+    {
+      "version": "v0.0.61",
+      "date": "2026-11-18",
+      "changes": [
+        "The Changelog page checks both update channels (main and dev) on demand instead of only the saved one, without reloading the page",
+        "Each channel shows its own state: update available, up to date, local build is newer, branch not found, check failed or not checked yet",
+        "A missing dev branch is reported as 'branch not found' instead of silently pretending the system is up to date or falling back to main",
+        "Version comparison is now numeric (v0.0.67 > v0.0.66), so an older remote branch is no longer offered as an 'update' that would downgrade the device",
+        "The Install button installs the channel selected in the dropdown and is only enabled when that channel really has a newer version",
+        "Installing asks for confirmation and shows the version and channel it will install before restarting the application",
+        "Added GET /api/update_check to check one or all channels and return the result as JSON",
+        "The update script now verifies that the requested branch exists on origin and stops with a clear log message instead of updating a different branch",
+        "The update script resets the frontend to origin/<branch> (git checkout -f -B + git reset --hard) so the most current commit is installed even when the local checkout diverged",
+        "The matrix library update now tracks a branch only when it exists on its origin, otherwise it keeps the current checkout",
+        "Added tests for version comparison, missing branches, network failures, the update check API and the changelog states"
+      ]
+    },
     {
       "version": "v0.0.60",
       "date": "2026-11-11",

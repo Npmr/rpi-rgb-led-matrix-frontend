@@ -28,29 +28,45 @@
                 <span class="info-row__value">{{ applicationInfo.currentApplicationVersion }}</span>
             </div>
             <div class="info-row">
-                <span class="info-row__label">Latest Available</span>
-                <span class="info-row__value">{{ currentAvailableVersion }}</span>
+                <span class="info-row__label">Update Channel</span>
+                <span class="info-row__value" id="selected-branch-label">{{ selectedBranchLabel }}</span>
             </div>
             <div class="info-row">
-                <span class="info-row__label">Branch</span>
-                <span class="branch-badge">{{ settings.updateBranch|capitalize }}</span>
+                <span class="info-row__label">Latest Available</span>
+                <span class="info-row__value" id="latest-version">{{ currentAvailableVersion }}</span>
             </div>
 
-            <div class="status-card mt-md">
+            <div class="status-card mt-md" id="update-status-card"
+                 data-update-running="{{ 'true' if updateRunning else 'false' }}">
                 {% if updateRunning %}
-                <i class="material-icons">sync</i>
-                <div class="status-card__text">
+                <i class="material-icons" id="update-status-icon">sync</i>
+                <div class="status-card__text" id="update-status-text">
                     An update is currently running. The device restarts the application when it is done.
                 </div>
-                {% elif updateAvailable %}
-                <i class="material-icons">system_update</i>
-                <div class="status-card__text">
-                    Version {{ currentAvailableVersion }} is available on the {{ settings.updateBranch }} branch.
+                {% elif selectedView.updateAvailable %}
+                <i class="material-icons" id="update-status-icon">system_update</i>
+                <div class="status-card__text" id="update-status-text">
+                    Version {{ selectedView.version }} is available on the {{ selectedBranch }} branch.
+                </div>
+                {% elif selectedView.stateClass == 'up-to-date' %}
+                <i class="material-icons" id="update-status-icon">check_circle</i>
+                <div class="status-card__text" id="update-status-text">
+                    System is up to date. No pending installations found in the {{ selectedBranch }} branch.
+                </div>
+                {% elif selectedView.stateClass == 'missing' or selectedView.stateClass == 'unknown' %}
+                <i class="material-icons" id="update-status-icon">error_outline</i>
+                <div class="status-card__text" id="update-status-text">
+                    {{ selectedView.note }}
+                </div>
+                {% elif selectedView.stateClass == 'local-newer' %}
+                <i class="material-icons" id="update-status-icon">info</i>
+                <div class="status-card__text" id="update-status-text">
+                    {{ selectedView.note }}
                 </div>
                 {% else %}
-                <i class="material-icons">check_circle</i>
-                <div class="status-card__text">
-                    System is up to date. No pending installations found in the current branch.
+                <i class="material-icons" id="update-status-icon">help_outline</i>
+                <div class="status-card__text" id="update-status-text">
+                    {{ selectedView.note }}
                 </div>
                 {% endif %}
             </div>
@@ -65,22 +81,50 @@
                 <h3 class="settings-section__title">Update Controller</h3>
             </div>
 
-            <form action="/update_process" method="POST">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
+            <form id="update-check-form" action="{{ url_for('changelog') }}" method="GET">
                 <div class="field">
                     <label class="field__label" for="updateBranch">Update Channel</label>
                     <select name="updateBranch" id="updateBranch" class="field__input">
-                        <option value="main" {% if settings['updateBranch'] == 'main' %}selected{% endif %}>Main (Stable Releases)</option>
-                        <option value="dev" {% if settings['updateBranch'] == 'dev' %}selected{% endif %}>Dev (Development)</option>
+                        {% for branch in updateBranches %}
+                        <option value="{{ branch.key }}" {% if branch.key == selectedBranch %}selected{% endif %}>{{ branch.label }}</option>
+                        {% endfor %}
                     </select>
                 </div>
 
-                <button class="btn btn--primary btn--full mt-md" {{ enableUpdateButton }}>
-                    <i class="material-icons" style="font-size:18px;">system_update</i>
-                    {% if updateAvailable %}Install Update{% else %}Check for Updates{% endif %}
+                <button type="submit" class="btn btn--outline btn--full mt-md" id="check-updates-button">
+                    <i class="material-icons" style="font-size:18px;">search</i>
+                    <span id="check-updates-label">Check for Updates</span>
                 </button>
             </form>
+
+            <div class="update-branch-list mt-md" id="update-branch-list">
+                {% for branch in updateBranches %}
+                <div class="update-branch {% if branch.key == selectedBranch %}update-branch--selected{% endif %}"
+                     data-branch="{{ branch.key }}">
+                    <div class="update-branch__head">
+                        <span class="update-branch__name">{{ branch.label }}</span>
+                        <span class="update-branch__state update-branch__state--{{ branch.stateClass }}"
+                              data-role="state">{{ branch.stateText }}</span>
+                    </div>
+                    <p class="update-branch__note" data-role="note"
+                       {% if not branch.note %}hidden{% endif %}>{{ branch.note }}</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <form id="install-update-form" action="/update_process" method="POST" class="mt-md">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="updateBranch" id="install-branch" value="{{ selectedBranch }}">
+                <button type="submit" class="btn btn--primary btn--full" id="install-update-button"
+                        {% if not canInstall %}disabled{% endif %}>
+                    <i class="material-icons" style="font-size:18px;">system_update</i>
+                    <span id="install-update-label">{% if updateAvailable %}Install Update{% else %}No Update Available{% endif %}</span>
+                </button>
+            </form>
+            <p class="update-hint">
+                Installing checks out the selected channel and resets it to the newest commit on origin.
+                The device restarts the application afterwards.
+            </p>
 
             <button type="button" class="btn btn--outline btn--full mt-md"
                     onclick="if(confirm('Force re-install current version?')){document.getElementById('force-reinstall-form').submit();}">
@@ -135,4 +179,185 @@
     </div>
 
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    var initialBranches = {{ updateBranches|tojson }};
+    var checkUrl = {{ url_for('update_check_api')|tojson }};
+
+    var checkForm = document.getElementById('update-check-form');
+    var checkButton = document.getElementById('check-updates-button');
+    var checkLabel = document.getElementById('check-updates-label');
+    var branchSelect = document.getElementById('updateBranch');
+    var installForm = document.getElementById('install-update-form');
+    var installBranch = document.getElementById('install-branch');
+    var installButton = document.getElementById('install-update-button');
+    var installLabel = document.getElementById('install-update-label');
+    var statusCard = document.getElementById('update-status-card');
+    var statusIcon = document.getElementById('update-status-icon');
+    var statusText = document.getElementById('update-status-text');
+    var latestVersion = document.getElementById('latest-version');
+    var branchLabel = document.getElementById('selected-branch-label');
+
+    if (!checkForm || !branchSelect || !installForm || !statusCard) return;
+
+    var reports = {};
+    initialBranches.forEach(function (branch) { reports[branch.key] = branch; });
+
+    function updateRunning() {
+        return statusCard.getAttribute('data-update-running') === 'true';
+    }
+
+    function reportFor(key) {
+        return reports[key] || {
+            key: key,
+            label: key,
+            checked: false,
+            version: null,
+            updateAvailable: false,
+            stateClass: 'unchecked',
+            stateText: 'Not checked',
+            note: ''
+        };
+    }
+
+    function setRow(report) {
+        var row = document.querySelector('.update-branch[data-branch="' + report.key + '"]');
+        if (!row) return;
+        var state = row.querySelector('[data-role="state"]');
+        var note = row.querySelector('[data-role="note"]');
+        if (state) {
+            state.className = 'update-branch__state update-branch__state--' + report.stateClass;
+            state.textContent = report.stateText;
+        }
+        if (note) {
+            note.textContent = report.note || '';
+            note.hidden = !report.note;
+        }
+    }
+
+    function selectedOptionText() {
+        var option = branchSelect.options[branchSelect.selectedIndex];
+        return option ? option.text : branchSelect.value;
+    }
+
+    function refreshStatus() {
+        var key = branchSelect.value;
+        var report = reportFor(key);
+        var icon = 'help_outline';
+        var text;
+
+        branchLabel.textContent = selectedOptionText();
+        latestVersion.textContent = report.version || 'unknown';
+
+        if (updateRunning()) {
+            icon = 'sync';
+            text = 'An update is currently running. The device restarts the application when it is done.';
+        } else if (report.updateAvailable) {
+            icon = 'system_update';
+            text = 'Version ' + report.version + ' is available on the ' + key + ' branch.';
+        } else if (report.stateClass === 'up-to-date') {
+            icon = 'check_circle';
+            text = 'System is up to date. No pending installations found in the ' + key + ' branch.';
+        } else if (report.stateClass === 'missing' || report.stateClass === 'unknown') {
+            icon = 'error_outline';
+            text = report.note || 'The update check failed.';
+        } else if (report.stateClass === 'local-newer') {
+            icon = 'info';
+            text = report.note || 'The installed build is newer than the selected branch.';
+        } else {
+            text = 'Check for updates to see whether a newer version exists on the ' + key + ' branch.';
+        }
+
+        statusIcon.textContent = icon;
+        statusText.textContent = text;
+    }
+
+    function refreshInstall() {
+        var key = branchSelect.value;
+        var report = reportFor(key);
+        var canInstall = !!report.updateAvailable && !updateRunning();
+
+        installBranch.value = key;
+        installLabel.textContent = report.updateAvailable ? 'Install Update' : 'No Update Available';
+        installButton.disabled = !canInstall;
+
+        if (canInstall) {
+            installForm.setAttribute('data-confirm',
+                'Install version ' + report.version + ' from the ' + key +
+                ' branch? The device restarts the application when it is done.');
+        } else {
+            installForm.removeAttribute('data-confirm');
+        }
+    }
+
+    function setBusy(busy) {
+        checkButton.disabled = busy;
+        checkLabel.textContent = busy ? 'Checking...' : 'Check for Updates';
+        refreshInstall();
+        if (busy) installButton.disabled = true;
+    }
+
+    function markCheckFailed(error) {
+        Object.keys(reports).forEach(function (key) {
+            reports[key] = {
+                key: key,
+                label: reports[key].label || key,
+                checked: true,
+                version: null,
+                updateAvailable: false,
+                stateClass: 'unknown',
+                stateText: 'Check failed',
+                note: 'Could not reach the update server (' + error.message + ').'
+            };
+            setRow(reports[key]);
+        });
+        refreshStatus();
+        refreshInstall();
+    }
+
+    function performCheck() {
+        setBusy(true);
+        fetch(checkUrl, { headers: { 'Accept': 'application/json' }, cache: 'no-store' })
+            .then(function (response) {
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                return response.json();
+            })
+            .then(function (data) {
+                statusCard.setAttribute('data-update-running', data.updateRunning ? 'true' : 'false');
+                (data.branches || []).forEach(function (report) {
+                    reports[report.key] = report;
+                    setRow(report);
+                });
+                refreshStatus();
+                refreshInstall();
+            })
+            .catch(function (error) {
+                markCheckFailed(error);
+            })
+            .then(function () {
+                setBusy(false);
+            });
+    }
+
+    checkForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        performCheck();
+    });
+
+    branchSelect.addEventListener('change', function () {
+        document.querySelectorAll('.update-branch').forEach(function (row) {
+            row.classList.toggle('update-branch--selected',
+                row.getAttribute('data-branch') === branchSelect.value);
+        });
+        refreshStatus();
+        refreshInstall();
+    });
+
+    refreshStatus();
+    refreshInstall();
+})();
+</script>
 {% endblock %}

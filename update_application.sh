@@ -1,11 +1,22 @@
 #!/bin/sh
 BRANCH="${1:-main}"
+FRONTEND_DIR="/home/pi/rpi-rgb-led-matrix-frontend"
 
 LOG_FILE="/home/pi/update_application.log"
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
 }
+
+# Only the channels offered by the UI are allowed. Anything else could check
+# out an unintended branch, so fall back to the stable channel.
+case "$BRANCH" in
+    main|dev) ;;
+    *)
+        log "WARNING: unsupported branch '$BRANCH', falling back to main"
+        BRANCH="main"
+        ;;
+esac
 
 backup_configs() {
     CONFIG_BACKUP_DIR="/tmp/rpi-rgb-matrix-config-backup-$$"
@@ -33,15 +44,36 @@ cleanup_backup() {
 
 log "Starting update on branch: $BRANCH"
 
+# Fail fast when the requested branch does not exist for the frontend. Without
+# this check the script would previously fall back to the current checkout and
+# silently install a different channel than the user picked.
+if [ -d "$FRONTEND_DIR/.git" ]; then
+    log "Verifying that branch '$BRANCH' exists on origin..."
+    git -C "$FRONTEND_DIR" fetch --all --prune >> "$LOG_FILE" 2>&1
+    if ! git -C "$FRONTEND_DIR" rev-parse --verify --quiet "refs/remotes/origin/$BRANCH" > /dev/null; then
+        log "ERROR: branch '$BRANCH' does not exist on origin in $FRONTEND_DIR - nothing was changed"
+        exit 1
+    fi
+fi
+
 backup_configs
 
 # Update rpi-rgb-led-matrix
 log "Updating rpi-rgb-led-matrix..."
 cd /home/pi/rpi-rgb-led-matrix || { log "ERROR: rpi-rgb-led-matrix directory not found"; exit 1; }
-git fetch --all >> "$LOG_FILE" 2>&1
-git checkout "$BRANCH" >> "$LOG_FILE" 2>&1 || git checkout main >> "$LOG_FILE" 2>&1
-git reset --hard HEAD >> "$LOG_FILE" 2>&1
-git pull >> "$LOG_FILE" 2>&1
+git fetch --all --prune >> "$LOG_FILE" 2>&1
+if git rev-parse --verify --quiet "refs/remotes/origin/$BRANCH" > /dev/null; then
+    # Land exactly on the newest commit of the channel instead of merging.
+    git checkout -f -B "$BRANCH" "origin/$BRANCH" >> "$LOG_FILE" 2>&1
+    git reset --hard "origin/$BRANCH" >> "$LOG_FILE" 2>&1
+else
+    # The matrix library does not use the same branch names, keep its current
+    # checkout and just fast-forward it.
+    log "Branch '$BRANCH' not found in rpi-rgb-led-matrix, updating current checkout"
+    git reset --hard HEAD >> "$LOG_FILE" 2>&1
+    git pull >> "$LOG_FILE" 2>&1
+fi
+log "rpi-rgb-led-matrix is now at $(git rev-parse --short HEAD 2>/dev/null)"
 
 # Rebuild led-image-viewer and other utilities
 log "Building rpi-rgb-led-matrix..."
@@ -75,11 +107,20 @@ fi
 
 # Update rpi-rgb-led-matrix-frontend
 log "Updating rpi-rgb-led-matrix-frontend..."
-cd /home/pi/rpi-rgb-led-matrix-frontend || { log "ERROR: Frontend directory not found"; exit 1; }
-git fetch --all >> "$LOG_FILE" 2>&1
-git checkout "$BRANCH" >> "$LOG_FILE" 2>&1 || git checkout main >> "$LOG_FILE" 2>&1
-git reset --hard HEAD >> "$LOG_FILE" 2>&1
-git pull >> "$LOG_FILE" 2>&1
+cd "$FRONTEND_DIR" || { log "ERROR: Frontend directory not found"; exit 1; }
+git fetch --all --prune >> "$LOG_FILE" 2>&1
+if ! git rev-parse --verify --quiet "refs/remotes/origin/$BRANCH" > /dev/null; then
+    log "ERROR: branch '$BRANCH' no longer exists on origin - aborting without changing the checkout"
+    restore_configs
+    cleanup_backup
+    exit 1
+fi
+# Check out the branch and reset it to the newest commit on origin, so the
+# "most current version" of the channel is installed even when the local
+# checkout diverged.
+git checkout -f -B "$BRANCH" "origin/$BRANCH" >> "$LOG_FILE" 2>&1
+git reset --hard "origin/$BRANCH" >> "$LOG_FILE" 2>&1
+log "rpi-rgb-led-matrix-frontend is now at $(git rev-parse --short HEAD 2>/dev/null) on branch $BRANCH"
 
 # Make update script executable
 chmod +x update_application.sh

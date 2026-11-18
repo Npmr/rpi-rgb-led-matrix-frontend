@@ -13,7 +13,10 @@ from modules.media_handler import countMediaTypeAndNumber
 from modules.display_control import process_image_async, stopProcess, _current_image_name, _current_command_line, _current_static_folder, trigger_rotation, start_grid_display, stop_grid_display, is_grid_running, IMAGE_FIT_MODES, IMAGE_FIT_ANCHORS
 from modules.geometry import get_display_geometry, DIRECTIONS, DEFAULT_DIRECTION
 from modules.system_handler import getFreeDiskSpace, reboot_system, shutdown_system, sync_time, has_internet, COMMON_TIMEZONES, validate_strftime
-from modules.update_handler import trigger_update, fetch_update_info, is_update_running
+from modules.update_handler import (
+    trigger_update, fetch_update_info, is_update_running, BRANCHES,
+    BRANCH_LABELS, normalize_branch, check_branch_update, branch_view,
+)
 from modules.layout_handler import read_layout, save_layout, validate_layout, grid_dimensions, new_widget, WIDGET_TYPES
 from modules import mqtt_handler, giphy_controller, immich_controller, immich_handler
 from modules import startup_screen
@@ -333,18 +336,60 @@ def changelog():
     changelog = infos.get('changelog', [])
     current_version = infos.get('currentApplicationVersion', 'unknown')
     settings_data = read_settings()
-    update_branch = settings_data.get('updateBranch', 'main')
-    update_info = fetch_update_info(update_branch)
-    update_version = update_info.get('currentApplicationVersion') if update_info else 'unknown'
-    current_version_num = infos.get('currentApplicationVersion', 'unknown')
-    update_available = bool(update_info) and update_version != current_version_num
+
+    selected_branch = normalize_branch(settings_data.get('updateBranch', 'main'))
+
+    # The no-JS "Check for Updates" form submits ?updateBranch=<branch>. Use
+    # it as the selected channel for this request (status, check and install
+    # target) without writing settings; /update_process persists the channel
+    # as soon as the update is installed.
+    requested_branch = request.args.get('updateBranch')
+    if requested_branch:
+        selected_branch = normalize_branch(requested_branch)
+
+    selected_report = check_branch_update(selected_branch, current_version)
+    reports = {selected_branch: selected_report}
+    update_available = bool(selected_report['updateAvailable'])
     update_running = is_update_running()
-    enable_update_button = "" if update_available and not update_running else "disabled"
-    return render_template('changelog.html', changelog=changelog, current_version=current_version,
-                           applicationInfo=infos, settings=settings_data,
-                           currentAvailableVersion=update_version, enableUpdateButton=enable_update_button,
-                           updateAvailable=update_available,
-                           updateRunning=update_running)
+
+    return render_template(
+        'changelog.html',
+        changelog=changelog,
+        current_version=current_version,
+        applicationInfo=infos,
+        settings=settings_data,
+        updateBranches=[branch_view(branch, reports.get(branch), current_version)
+                        for branch in BRANCHES],
+        selectedBranch=selected_branch,
+        selectedBranchLabel=BRANCH_LABELS[selected_branch],
+        selectedView=branch_view(selected_branch, selected_report, current_version),
+        currentAvailableVersion=selected_report.get('version') or 'unknown',
+        updateAvailable=update_available,
+        updateRunning=update_running,
+        canInstall=update_available and not update_running,
+    )
+
+
+@app.route('/api/update_check')
+def update_check_api():
+    """Check one or all update branches and return the result as JSON."""
+    infos = read_infos()
+    current_version = infos.get('currentApplicationVersion', 'unknown')
+
+    requested_branch = request.args.get('branch')
+    if requested_branch:
+        branches = [normalize_branch(requested_branch)]
+    else:
+        branches = list(BRANCHES)
+
+    reports = {branch: check_branch_update(branch, current_version)
+               for branch in branches}
+    return jsonify({
+        'currentVersion': current_version,
+        'updateRunning': is_update_running(),
+        'branches': [branch_view(branch, reports[branch], current_version)
+                     for branch in branches],
+    })
 
 
 @app.route('/save_settings', methods=['POST'])
@@ -626,9 +671,8 @@ def rotate_right():
 @app.route('/update_process', methods=['POST'])
 def update_process_route():
     settings_data = read_settings()
-    branch = request.form.get('updateBranch') or settings_data.get('updateBranch', 'main')
-    if branch not in ('main', 'dev'):
-        branch = 'main'
+    branch = normalize_branch(
+        request.form.get('updateBranch') or settings_data.get('updateBranch', 'main'))
     if settings_data.get('updateBranch') != branch:
         settings_data['updateBranch'] = branch
         save_settings(settings_data)

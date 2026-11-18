@@ -1648,6 +1648,71 @@ select.field__input {
     color: var(--color-success);
 }
 
+/* --- Update Branches --- */
+.update-branch-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.update-branch {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-sm) var(--space-md);
+    background: var(--color-surface);
+    transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.update-branch--selected {
+    border-color: var(--color-primary);
+    background: var(--color-primary-bg);
+}
+
+.update-branch__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+}
+
+.update-branch__name {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.update-branch__state {
+    flex-shrink: 0;
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    border-radius: var(--radius-lg);
+    background: var(--color-divider);
+    color: var(--color-text-secondary);
+}
+
+.update-branch__state--available { background: var(--color-primary-bg); color: var(--color-primary-dark); }
+.update-branch__state--up-to-date { background: var(--color-primary-bg); color: var(--color-primary-dark); }
+.update-branch__state--local-newer { background: #fff4e5; color: #b26a00; }
+.update-branch__state--missing { background: #fdecea; color: var(--color-error); }
+.update-branch__state--unknown { background: #fdecea; color: var(--color-error); }
+
+.update-branch__note {
+    margin-top: var(--space-xs);
+    font-size: var(--font-size-xs);
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+}
+
+.update-hint {
+    margin-top: var(--space-sm);
+    font-size: var(--font-size-xs);
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+}
+
 /* --- Status Card (green bg) --- */
 .status-card {
     background: var(--color-primary-bg);

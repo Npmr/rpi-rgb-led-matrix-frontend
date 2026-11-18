@@ -77,6 +77,19 @@ class TestUploadRoute(unittest.TestCase):
         self.assertIn('dropzone', data)
 
 
+def update_report(branch='main', version=None, relation='up-to-date', error=None,
+                  what_changed=''):
+    """Build a check_branch_update() report for route tests."""
+    return {
+        'branch': branch,
+        'version': version,
+        'whatChanged': what_changed,
+        'updateAvailable': relation == 'available',
+        'relation': 'unknown' if error else relation,
+        'error': error,
+    }
+
+
 class TestChangelogRoute(unittest.TestCase):
 
     def setUp(self):
@@ -84,24 +97,24 @@ class TestChangelogRoute(unittest.TestCase):
         with self.client.session_transaction() as sess:
             sess['_csrf_token'] = 'test'
 
-    @patch('app.fetch_update_info')
+    @patch('app.check_branch_update')
     @patch('app.read_settings')
     @patch('app.read_infos')
-    def test_changelog_returns_200(self, mock_infos, mock_settings, mock_update):
+    def test_changelog_returns_200(self, mock_infos, mock_settings, mock_check):
         mock_infos.return_value = {
             'currentApplicationVersion': 'v1.0.0',
             'whatChanged': 'test',
             'changelog': []
         }
         mock_settings.return_value = {'updateBranch': 'main'}
-        mock_update.return_value = {'currentApplicationVersion': 'v1.0.0', 'whatChanged': ''}
+        mock_check.return_value = update_report(version='v1.0.0')
         response = self.client.get('/changelog')
         self.assertEqual(response.status_code, 200)
 
-    @patch('app.fetch_update_info')
+    @patch('app.check_branch_update')
     @patch('app.read_settings')
     @patch('app.read_infos')
-    def test_changelog_contains_version(self, mock_infos, mock_settings, mock_update):
+    def test_changelog_contains_version(self, mock_infos, mock_settings, mock_check):
         mock_infos.return_value = {
             'currentApplicationVersion': 'v1.0.0',
             'whatChanged': 'test',
@@ -110,26 +123,152 @@ class TestChangelogRoute(unittest.TestCase):
             ]
         }
         mock_settings.return_value = {'updateBranch': 'main'}
-        mock_update.return_value = {'currentApplicationVersion': 'v1.0.0', 'whatChanged': ''}
+        mock_check.return_value = update_report(version='v1.0.0')
         response = self.client.get('/changelog')
         data = response.data.decode()
         self.assertIn('v1.0.0', data)
         self.assertIn('Feature A', data)
         self.assertIn('Bug fix B', data)
 
-    @patch('app.fetch_update_info')
+    @patch('app.check_branch_update')
     @patch('app.read_settings')
     @patch('app.read_infos')
-    def test_changelog_empty(self, mock_infos, mock_settings, mock_update):
+    def test_changelog_empty(self, mock_infos, mock_settings, mock_check):
         mock_infos.return_value = {
             'currentApplicationVersion': 'v1.0.0',
             'whatChanged': '',
             'changelog': []
         }
         mock_settings.return_value = {'updateBranch': 'main'}
-        mock_update.return_value = None
+        mock_check.return_value = update_report(error='network')
         response = self.client.get('/changelog')
         self.assertEqual(response.status_code, 200)
+        self.assertIn('Check failed', response.get_data(as_text=True))
+
+    @patch('app.check_branch_update')
+    @patch('app.read_settings')
+    @patch('app.read_infos')
+    def test_update_available_offers_install(self, mock_infos, mock_settings,
+                                             mock_check):
+        mock_infos.return_value = {
+            'currentApplicationVersion': 'v1.0.0',
+            'whatChanged': '',
+            'changelog': [],
+        }
+        mock_settings.return_value = {'updateBranch': 'main'}
+        mock_check.return_value = update_report(
+            version='v2.0.0', relation='available')
+        data = self.client.get('/changelog').get_data(as_text=True)
+        self.assertIn('Version v2.0.0 is available', data)
+        self.assertIn('Install Update', data)
+        # The dev channel is only checked when requested.
+        self.assertIn('Not checked', data)
+
+    @patch('app.check_branch_update')
+    @patch('app.read_settings')
+    @patch('app.read_infos')
+    def test_dev_branch_missing_is_reported(self, mock_infos, mock_settings,
+                                            mock_check):
+        mock_infos.return_value = {
+            'currentApplicationVersion': 'v1.0.0',
+            'whatChanged': '',
+            'changelog': [],
+        }
+        mock_settings.return_value = {'updateBranch': 'dev'}
+        mock_check.return_value = update_report(
+            branch='dev', error='not-found')
+        data = self.client.get('/changelog').get_data(as_text=True)
+        self.assertIn('Branch not found', data)
+        self.assertIn('does not exist on origin', data)
+        self.assertIn('No Update Available', data)
+
+    @patch('app.check_branch_update')
+    @patch('app.read_settings')
+    @patch('app.read_infos')
+    def test_checking_another_channel_targets_it(self, mock_infos,
+                                                 mock_settings, mock_check):
+        mock_infos.return_value = {
+            'currentApplicationVersion': 'v1.0.0',
+            'whatChanged': '',
+            'changelog': [],
+        }
+        mock_settings.return_value = {'updateBranch': 'main'}
+        mock_check.return_value = update_report(branch='dev', version='v1.0.0')
+        data = self.client.get('/changelog?updateBranch=dev').get_data(as_text=True)
+        mock_check.assert_called_once_with('dev', 'v1.0.0')
+        self.assertIn('name="updateBranch" id="install-branch" value="dev"', data)
+        self.assertIn('<option value="dev" selected>', data)
+
+    @patch('app.check_branch_update')
+    @patch('app.read_settings')
+    @patch('app.read_infos')
+    def test_older_remote_is_not_an_update(self, mock_infos, mock_settings,
+                                           mock_check):
+        mock_infos.return_value = {
+            'currentApplicationVersion': 'v1.0.0',
+            'whatChanged': '',
+            'changelog': [],
+        }
+        mock_settings.return_value = {'updateBranch': 'main'}
+        mock_check.return_value = update_report(
+            version='v0.9.0', relation='local-newer')
+        data = self.client.get('/changelog').get_data(as_text=True)
+        self.assertIn('Local build is newer', data)
+        self.assertIn('No Update Available', data)
+
+
+class TestUpdateCheckApi(unittest.TestCase):
+
+    def setUp(self):
+        self.client = app.test_client()
+
+    @patch('app.is_update_running', return_value=False)
+    @patch('app.check_branch_update')
+    @patch('app.read_infos')
+    def test_checks_both_branches_by_default(self, mock_infos, mock_check,
+                                             mock_running):
+        mock_infos.return_value = {
+            'currentApplicationVersion': 'v1.0.0',
+            'changelog': [],
+        }
+        mock_check.side_effect = lambda branch, current: update_report(
+            branch=branch, version='v1.1.0', relation='available')
+        response = self.client.get('/api/update_check')
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload['currentVersion'], 'v1.0.0')
+        self.assertFalse(payload['updateRunning'])
+        self.assertEqual([b['key'] for b in payload['branches']],
+                         ['main', 'dev'])
+        self.assertTrue(all(b['updateAvailable'] for b in payload['branches']))
+
+    @patch('app.is_update_running', return_value=False)
+    @patch('app.check_branch_update')
+    @patch('app.read_infos')
+    def test_single_branch_and_unknown_branch(self, mock_infos, mock_check,
+                                              mock_running):
+        mock_infos.return_value = {
+            'currentApplicationVersion': 'v1.0.0',
+            'changelog': [],
+        }
+        mock_check.side_effect = lambda branch, current: update_report(
+            branch=branch, version='v1.0.0')
+        payload = self.client.get(
+            '/api/update_check?branch=../../etc/passwd').get_json()
+        self.assertEqual(len(payload['branches']), 1)
+        self.assertEqual(payload['branches'][0]['key'], 'main')
+        mock_check.assert_called_once_with('main', 'v1.0.0')
+
+    @patch('app.is_update_running', return_value=True)
+    @patch('app.check_branch_update')
+    @patch('app.read_infos')
+    def test_running_flag_is_exposed(self, mock_infos, mock_check,
+                                     mock_running):
+        mock_infos.return_value = {'currentApplicationVersion': 'v1.0.0'}
+        mock_check.return_value = update_report(branch='dev', error='not-found')
+        payload = self.client.get('/api/update_check?branch=dev').get_json()
+        self.assertTrue(payload['updateRunning'])
+        self.assertEqual(payload['branches'][0]['stateClass'], 'missing')
 
 
 class TestSaveSettingsRoute(unittest.TestCase):
@@ -550,20 +689,20 @@ class TestUpdateProcessRoute(unittest.TestCase):
         self.assertEqual(response.status_code, 403)
         mock_trigger.assert_not_called()
 
-    @patch('app.fetch_update_info')
+    @patch('app.check_branch_update')
     @patch('app.read_settings')
     @patch('app.read_infos')
     def test_changelog_update_form_carries_csrf_token(self, mock_infos,
                                                       mock_settings,
-                                                      mock_update):
+                                                      mock_check):
         mock_infos.return_value = {
             'currentApplicationVersion': 'v1.0.0',
             'whatChanged': '',
             'changelog': [],
         }
         mock_settings.return_value = {'updateBranch': 'main'}
-        mock_update.return_value = {'currentApplicationVersion': 'v2.0.0',
-                                    'whatChanged': 'new'}
+        mock_check.return_value = update_report(
+            version='v2.0.0', relation='available', what_changed='new')
         response = self.client.get('/changelog')
         data = response.data.decode()
         self.assertIn('action="/update_process"', data)
@@ -572,12 +711,12 @@ class TestUpdateProcessRoute(unittest.TestCase):
         self.assertIn('v2.0.0 is available', data)
 
     @patch('app.is_update_running', return_value=True)
-    @patch('app.fetch_update_info')
+    @patch('app.check_branch_update')
     @patch('app.read_settings')
     @patch('app.read_infos')
     def test_install_button_disabled_while_update_runs(self, mock_infos,
                                                        mock_settings,
-                                                       mock_update,
+                                                       mock_check,
                                                        mock_running):
         mock_infos.return_value = {
             'currentApplicationVersion': 'v1.0.0',
@@ -585,8 +724,8 @@ class TestUpdateProcessRoute(unittest.TestCase):
             'changelog': [],
         }
         mock_settings.return_value = {'updateBranch': 'main'}
-        mock_update.return_value = {'currentApplicationVersion': 'v2.0.0',
-                                    'whatChanged': 'new'}
+        mock_check.return_value = update_report(
+            version='v2.0.0', relation='available', what_changed='new')
         data = self.client.get('/changelog').get_data(as_text=True)
         self.assertIn('An update is currently running', data)
         self.assertIn('disabled', data)
