@@ -213,6 +213,16 @@ class TestNewWidget(unittest.TestCase):
             self.assertIn("config", widget)
             self.assertTrue(widget["id"])
 
+    def test_bot_defaults(self):
+        widget = new_widget("bot")
+        self.assertEqual(widget["type"], "bot")
+        self.assertEqual(widget["config"]["faceStyle"], "robot")
+        self.assertEqual(widget["config"]["accent"], "#ffb000")
+        self.assertIn("color", widget["style"])
+
+    def test_bot_is_a_known_widget_type(self):
+        self.assertIn("bot", WIDGET_TYPES)
+
     def test_widget_ids_are_unique(self):
         ids = {new_widget("clock")["id"] for _ in range(20)}
         self.assertEqual(len(ids), 20)

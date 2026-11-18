@@ -482,6 +482,18 @@ class TestLayoutRoutes(unittest.TestCase):
         self.assertEqual(response.status_code, 302)
         mock_stop.assert_called_once()
 
+    @patch('app.start_bot_display', return_value=True)
+    def test_start_bot_redirects(self, mock_start):
+        response = self.client.post('/start_bot', data={'csrf_token': 'test'})
+        self.assertEqual(response.status_code, 302)
+        mock_start.assert_called_once()
+
+    @patch('app.stop_bot_display')
+    def test_stop_bot_redirects(self, mock_stop):
+        response = self.client.post('/stop_bot', data={'csrf_token': 'test'})
+        self.assertEqual(response.status_code, 302)
+        mock_stop.assert_called_once()
+
 
 class TestUpdateProcessRoute(unittest.TestCase):
 

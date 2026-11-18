@@ -12,7 +12,7 @@ import uuid
 LAYOUT_FILENAME = "layout.json"
 
 # Widget types that the renderer/registry knows about.
-WIDGET_TYPES = ("clock", "days_until", "api_text", "static_text", "image")
+WIDGET_TYPES = ("clock", "days_until", "api_text", "static_text", "image", "bot")
 
 DEFAULT_LAYOUT = {
     "enabled": False,
@@ -259,6 +259,16 @@ def new_widget(widget_type, col=0, row=0, width=1, height=1):
         "image": {
             "style": {"fit": "cover"},
             "config": {"filename": ""},
+        },
+        "bot": {
+            "style": {"color": [0, 212, 255], "align": "center", "fit": "cover"},
+            "config": {
+                "faceStyle": "robot",
+                "accent": "#ffb000",
+                "eyeSize": 1.0,
+                "eyeGap": 0.0,
+                "eyeOffsetY": 0.0,
+            },
         },
     }
     template = copy.deepcopy(defaults.get(widget_type, {"style": {}, "config": {}}))

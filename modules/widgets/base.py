@@ -27,6 +27,32 @@ class WidgetContext:
         self.cols = int(self.geometry["cols"])
         self.rows = int(self.geometry["rows"])
 
+        # One bot engine is shared by every bot widget in this frame context.
+        # Events are drained once per frame instead of once per widget.
+        self._bot_engine = None
+        self._bot_updated_at = None
+
+    @property
+    def bot_engine(self):
+        """Lazily create the bot engine used by all bot widgets."""
+        if self._bot_engine is None:
+            from ..bot.engine import BotEngine
+
+            self._bot_engine = BotEngine(self.settings)
+        return self._bot_engine
+
+    def update_bot(self, now):
+        """Advance the shared bot engine at most once per frame timestamp."""
+        if self._bot_updated_at != now:
+            self.bot_engine.update(now)
+            self._bot_updated_at = now
+
+    def bot_status(self):
+        """Return the engine state, or ``{}`` when no bot widget exists."""
+        if self._bot_engine is None:
+            return {}
+        return self._bot_engine.state()
+
     @property
     def timezone(self):
         return self.settings.get("timezone", "UTC") or "UTC"

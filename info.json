@@ -1,7 +1,84 @@
 {
-  "currentApplicationVersion": "v0.0.60",
-  "whatChanged": "The Stop button really stops Giphy and Immich now - no picture reappears after it",
+  "currentApplicationVersion": "v0.0.66",
+  "whatChanged": "The display bot can now run full screen, be driven from Home Assistant over MQTT, and move its eyes or wander across big panels",
   "changelog": [
+    {
+      "version": "v0.0.66",
+      "date": "2026-11-18",
+      "changes": [
+        "Added eye geometry controls: eyeSize scales the square eyes, eyeGap moves them apart or together and eyeOffsetY shifts them up or down",
+        "Eye geometry works everywhere at once: per-widget in the layout inspector, globally in Settings, in the full-screen renderer and in the preview endpoint",
+        "Values are clamped (eyeSize 0.5-1.8, eyeGap -0.6-1.0, eyeOffsetY -4-4) so a hand-edited layout.json can never push the eyes off the canvas",
+        "Added opt-in wandering for big panels: the face drifts with a gentle bounce, turns now and then and is capped at 85% of the short side so it always has room to move",
+        "Wandering pauses while a reaction is held or the bot is sleeping, so an alarm face always looks straight at you; speed is configurable up to 120 px/s",
+        "The face position rescales instead of teleporting when the panel size or rotation changes",
+        "Added 27 tests covering eye option parsing and clamping, wander motion, bounce limits, pausing, resize and the renderer face rectangle"
+      ]
+    },
+    {
+      "version": "v0.0.65",
+      "date": "2026-11-18",
+      "changes": [
+        "Added bot_display.py, a full-screen renderer that draws one large face, owns the matrix and hot-reloads settings.json while it runs",
+        "Added Start Bot / Stop Bot controls to the Grid Layout page, with the toolbar showing whether the grid or the bot is running",
+        "Added MQTT control: bot/<device>/event for JSON events, /message/set for plain text, /mood/set to hold a mood, /sleep/set for sleep and wake, /display/set to start or stop the full-screen face",
+        "Bot payloads bypass the listener's duplicate filter, so saying the same thing twice is two events instead of one",
+        "Added automatic Home Assistant discovery: mood sensor, sleeping binary sensor, mode sensor, mood preset select, message text box, sleep switch, full-screen switch and a Wake button",
+        "Added a retained bot/<device>/state topic published every 2 seconds from the renderer's own status, so HA shows the real mood and mode",
+        "Added a Display Bot section to Settings: face style, colours, face size, eye geometry, wander, sleep hours and wake priority, all validated on save",
+        "Added docs/home_assistant_bot_automations.yaml with 11 ready-to-use automations for doorbell, calendar, timers, weather, news, sleep and wake",
+        "Added 27 tests covering MQTT ingress, Home Assistant discovery payloads, state publishing, the full-screen renderer and settings validation"
+      ]
+    },
+    {
+      "version": "v0.0.64",
+      "date": "2026-11-18",
+      "changes": [
+        "Added the Bot grid widget: place it in the layout editor and it renders the live robot, emoji or screen face on the matrix",
+        "All bot widgets in a frame share one engine, so queued events are consumed once per frame instead of once per widget",
+        "Added a face-style selector (Cute robot, Minimal B&W emoji, Screen face), a robot accent colour and a preview mood selector to the layout inspector",
+        "The layout editor now shows a live face preview inside Bot blocks, including the transparent screen face",
+        "Bot face style and robot accent can also be set globally with the botFaceStyle and botRobotAccent settings, with the per-widget value taking precedence",
+        "Added GET /bot/preview.png to render a face at any size, style, mood and colour for the editor and external previews",
+        "Added 15 tests covering the widget, shared engine, event-driven mood changes, preview fallbacks, size clamping and layout defaults"
+      ]
+    },
+    {
+      "version": "v0.0.63",
+      "date": "2026-11-18",
+      "changes": [
+        "Added a cross-process bot event spool: the Flask process writes atomic JSON events and the renderer consumes them without shared locks",
+        "Event files expire after five minutes and the spool is capped, so stale reminders are never replayed after a restart",
+        "Added reaction mappings for messages, meeting soon/started/ended, weather conditions, doorbell, timers, news, alarms, sleep and wake",
+        "Every event can override mood, priority, duration and text; messages also accept a plain-text body",
+        "Added a priority queue with preemption, coalescing of duplicate events and resuming of a lower-priority reaction afterwards",
+        "Added sleep hours with timezone support, an optional wake-on-alarm priority, and manual sleep/wake events",
+        "Added POST /bot/event (JSON or plain text) and GET /bot/state for integrations and debugging",
+        "Added 37 tests covering the event bus, schedule, reactions, engine priority/sleep behaviour and the REST routes"
+      ]
+    },
+    {
+      "version": "v0.0.62",
+      "date": "2026-11-18",
+      "changes": [
+        "Added a third bot face style called Screen face: two white rounded-rectangle eyes and a small white smile on a fully transparent background",
+        "The Screen face draws no disc, outline, brows or plate, so it works over the grid background and on a black full-screen canvas",
+        "Screen face supports every existing mood, blinking, gaze shifts and the idle bob through the shared expression model",
+        "Added a test that the Screen face never emits colours other than white and leaves the corners transparent"
+      ]
+    },
+    {
+      "version": "v0.0.61",
+      "date": "2026-11-18",
+      "changes": [
+        "Added the display bot foundation: a shared expression model with ten moods (idle, happy, excited, curious, thinking, sad, alarmed, sleepy, love, wink)",
+        "Added two procedural face styles: a cute coloured robot with antenna, screen eyes and LED mouth, and a minimal black-and-white emoji face",
+        "Faces scale from a 32x32 panel to large matrices without bitmap assets, using a virtual 32x32 design grid",
+        "Idle animation includes blinking, gaze saccades and a subtle bob; sleeping slows the animation down",
+        "Moved RGB matrix construction into modules/matrix.py so the grid and the upcoming full-screen bot renderer share identical driver options",
+        "Added tools/preview_bot.py to render contact sheets of every style and mood without hardware"
+      ]
+    },
     {
       "version": "v0.0.60",
       "date": "2026-11-11",

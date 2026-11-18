@@ -28,6 +28,7 @@ _current_rotation_offset = 0
 _current_exif_orientation = None
 _is_process_running = False
 _grid_process = None
+_bot_process = None
 
 
 def apply_exif_orientation(img, orientation):
@@ -544,30 +545,79 @@ def is_grid_running():
     return False
 
 
-def start_grid_display():
-    """Start the grid renderer as a separate process (owns the matrix)."""
-    global _grid_process
-    stopProcess()
+def stop_bot_display():
+    """Stop the full-screen bot renderer (including orphans)."""
+    global _bot_process
+    process = _bot_process
+    _bot_process = None
+    if process is not None and process.poll() is None:
+        try:
+            process.terminate()
+            process.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            process.kill()
+        except Exception as error:  # pragma: no cover - defensive
+            print(f"Error stopping bot display: {error}")
 
+    for candidate in psutil.process_iter(['pid', 'cmdline']):
+        try:
+            cmdline = candidate.info.get('cmdline') or []
+            if any('bot_display.py' in str(part) for part in cmdline):
+                candidate.kill()
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
+
+
+def is_bot_running():
+    if _bot_process is not None and _bot_process.poll() is None:
+        return True
+    for candidate in psutil.process_iter(['pid', 'cmdline']):
+        try:
+            cmdline = candidate.info.get('cmdline') or []
+            if any('bot_display.py' in str(part) for part in cmdline):
+                return True
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
+    return False
+
+
+def _start_renderer(script_name):
+    """Start one of the Pillow renderers as a separate root process."""
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-    script = os.path.join(project_root, 'grid_display.py')
+    script = os.path.join(project_root, script_name)
     if not os.path.exists(script):
-        print(f"Grid display script not found: {script}")
-        return False
+        print(f"Renderer script not found: {script}")
+        return None
 
     if os.geteuid() == 0:
         cmd = [sys.executable, script]
     else:
         cmd = ["sudo", sys.executable, script]
 
-    print(f"Starting grid display: {' '.join(cmd)}")
+    print(f"Starting renderer: {' '.join(cmd)}")
     try:
-        _grid_process = subprocess.Popen(cmd, cwd=project_root)
+        return subprocess.Popen(cmd, cwd=project_root)
     except Exception as error:
-        print(f"Failed to start grid display: {error}")
-        _grid_process = None
-        return False
-    return True
+        print(f"Failed to start renderer: {error}")
+        return None
+
+
+def start_grid_display():
+    """Start the grid renderer as a separate process (owns the matrix)."""
+    global _grid_process
+    stopProcess()
+
+    _grid_process = _start_renderer('grid_display.py')
+    return _grid_process is not None
+
+
+def start_bot_display():
+    """Start the full-screen bot renderer (owns the matrix)."""
+    global _bot_process
+    stopProcess()
+
+    _bot_process = _start_renderer('bot_display.py')
+    return _bot_process is not None
 
 
 def _cancel_pending_display():
@@ -594,6 +644,7 @@ def stopProcess(keep_loops=()):
     Immich loops call into the display path for every picture they show.
     """
     stop_grid_display()
+    stop_bot_display()
     _cancel_pending_display()
 
     for process in psutil.process_iter():

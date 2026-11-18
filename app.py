@@ -1,5 +1,8 @@
+import io
 import os
+import re
 import secrets
+import time
 from functools import wraps
 from flask import Flask, render_template, request, url_for, redirect, jsonify, send_from_directory, session, abort, current_app, Response, flash
 from threading import Thread
@@ -10,15 +13,24 @@ from upload_handler import upload_image
 from modules.settings_handler import read_settings, save_settings
 from modules.info_handler import read_infos
 from modules.media_handler import countMediaTypeAndNumber
-from modules.display_control import process_image_async, stopProcess, _current_image_name, _current_command_line, _current_static_folder, trigger_rotation, start_grid_display, stop_grid_display, is_grid_running, IMAGE_FIT_MODES, IMAGE_FIT_ANCHORS
+from modules.display_control import process_image_async, stopProcess, _current_image_name, _current_command_line, _current_static_folder, trigger_rotation, start_grid_display, stop_grid_display, is_grid_running, start_bot_display, stop_bot_display, is_bot_running, IMAGE_FIT_MODES, IMAGE_FIT_ANCHORS
 from modules.geometry import get_display_geometry, DIRECTIONS, DEFAULT_DIRECTION
 from modules.system_handler import getFreeDiskSpace, reboot_system, shutdown_system, sync_time, has_internet, COMMON_TIMEZONES, validate_strftime
 from modules.update_handler import trigger_update, fetch_update_info, is_update_running
 from modules.layout_handler import read_layout, save_layout, validate_layout, grid_dimensions, new_widget, WIDGET_TYPES
+from modules.bot.bus import BotBus
+from modules.bot.face import FaceModel, MOOD_NAMES
+from modules.bot.motion import eye_options
+from modules.bot.reactions import build_reaction
+from modules.bot.render import render_face
+from modules.bot.schedule import is_sleeping, parse_bool
+from modules.bot.status import read_status
+from modules.bot.styles import available_styles
 from modules import mqtt_handler, giphy_controller, immich_controller, immich_handler
 from modules import startup_screen
 
 app = Flask(__name__)
+bot_bus = BotBus()
 app.secret_key = os.environ.get('SECRET_KEY')
 if not app.secret_key:
     app.secret_key = secrets.token_hex(32)
@@ -55,6 +67,32 @@ def _get_csrf_token():
     if '_csrf_token' not in session:
         session['_csrf_token'] = secrets.token_hex(32)
     return session['_csrf_token']
+
+
+def _hex_color(value, fallback):
+    """Return a normalized #rrggbb string or ``fallback``."""
+    text = str(value or '').strip().lower()
+    if re.fullmatch(r'#[0-9a-f]{6}', text):
+        return text
+    return fallback
+
+
+def _clock_text(value, fallback):
+    """Return a valid ``HH:MM`` string or ``fallback``."""
+    text = str(value or '').strip()
+    match = re.fullmatch(r'([01]?[0-9]|2[0-3]):([0-5][0-9])', text)
+    if not match:
+        return fallback
+    return f"{int(match.group(1)):02d}:{int(match.group(2)):02d}"
+
+
+def _bounded_number(value, fallback, low, high):
+    """Clamp a numeric form value, keeping ``fallback`` when it is not a number."""
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return fallback
+    return max(low, min(high, number))
 
 
 # Expose to templates so forms can render {{ csrf_token() }}
@@ -293,6 +331,7 @@ def layout():
         widgetDefaults=widget_defaults,
         widgetTypes=WIDGET_TYPES,
         gridRunning=is_grid_running(),
+        botRunning=is_bot_running(),
     )
 
 
@@ -325,6 +364,113 @@ def start_grid():
 def stop_grid():
     stop_grid_display()
     return redirect(url_for('layout'))
+
+
+@app.route('/start_bot', methods=['POST'])
+def start_bot():
+    start_bot_display()
+    return redirect(url_for('layout'))
+
+
+@app.route('/stop_bot', methods=['POST'])
+def stop_bot():
+    stop_bot_display()
+    return redirect(url_for('layout'))
+
+
+@app.route('/bot/event', methods=['POST'])
+def bot_event():
+    """Accept a bot event as JSON or as a plain-text message.
+
+    The renderer (a separate process) consumes the event through
+    :mod:`modules.bot.bus`. This endpoint only validates and queues it.
+    """
+    payload = request.get_json(silent=True)
+    if payload is None:
+        text = request.get_data(as_text=True).strip()
+        if not text:
+            return jsonify({'ok': False, 'error': 'Expected a JSON bot event or a text message'}), 400
+        payload = {'type': 'message', 'text': text}
+
+    if isinstance(payload, str):
+        payload = {'type': 'message', 'text': payload}
+
+    if not isinstance(payload, dict):
+        return jsonify({'ok': False, 'error': 'Bot event must be a JSON object'}), 400
+
+    reaction = build_reaction(payload)
+    if reaction is None:
+        return jsonify({'ok': False, 'error': 'Event does not contain a type, text or mood'}), 400
+
+    try:
+        stored = bot_bus.publish(payload, source='rest')
+    except (OSError, TypeError) as error:
+        print(f"Error queueing bot event: {error}")
+        return jsonify({'ok': False, 'error': 'Could not queue the bot event'}), 500
+
+    return jsonify({'ok': True, 'event': stored, 'reaction': reaction.as_dict()})
+
+
+@app.route('/bot/state')
+def bot_state():
+    settings = read_settings()
+    now = time.time()
+    status = read_status()
+    return jsonify({
+        'sleeping': is_sleeping(
+            now,
+            start=settings.get('botSleepStart', '22:00'),
+            end=settings.get('botSleepEnd', '07:00'),
+            timezone=settings.get('timezone', 'UTC'),
+            enabled=parse_bool(settings.get('botSleepEnabled'), False),
+        ),
+        'sleepEnabled': parse_bool(settings.get('botSleepEnabled'), False),
+        'queuedEvents': bot_bus.count(),
+        'moods': list(MOOD_NAMES),
+        'styles': list(available_styles()),
+        'renderer': status,
+        'mode': 'fullscreen' if is_bot_running() else (
+            'grid' if is_grid_running() else 'stopped'),
+    })
+
+
+@app.route('/bot/preview.png')
+def bot_preview():
+    """Render a static face preview for the layout editor and settings UI."""
+    style = request.args.get('style', 'robot')
+    if style not in available_styles():
+        style = 'robot'
+    mood = request.args.get('mood', 'idle')
+    if mood not in MOOD_NAMES:
+        mood = 'idle'
+
+    def dimension(name, default):
+        try:
+            return max(8, min(512, int(request.args.get(name, default))))
+        except (TypeError, ValueError):
+            return default
+
+    width = dimension('w', 64)
+    height = dimension('h', 64)
+
+    options = {}
+    if request.args.get('color'):
+        options['color'] = request.args.get('color')
+    if request.args.get('accent'):
+        options['accent'] = request.args.get('accent')
+    options.update(eye_options(settings=None, config=None, defaults=request.args))
+
+    model = FaceModel(mood=mood, animations=False)
+    model.update(0.0)
+    image = render_face(
+        width, height, model.snapshot(), style=style, options=options
+    )
+
+    buffer = io.BytesIO()
+    image.save(buffer, format='PNG')
+    response = Response(buffer.getvalue(), mimetype='image/png')
+    response.headers['Cache-Control'] = 'public, max-age=3600'
+    return response
 
 
 @app.route('/changelog')
@@ -448,6 +594,47 @@ def save_settings_route():
     new_startupScreenScrollSpeed = str(
         max(1, min(speed_setting, startup_screen.MAX_SCROLL_SPEED)))
 
+    # Display bot settings.
+    new_botFaceStyle = form_text('botFaceStyle', 'botFaceStyle', 'robot')
+    if new_botFaceStyle not in available_styles():
+        new_botFaceStyle = 'robot'
+    new_botFaceColor = _hex_color(
+        request.form.get('botFaceColor'),
+        _hex_color(previous_settings.get('botFaceColor'), '#00d4ff'))
+    new_botRobotAccent = _hex_color(
+        request.form.get('botRobotAccent'),
+        _hex_color(previous_settings.get('botRobotAccent'), '#ffb000'))
+    new_botBackground = _hex_color(
+        request.form.get('botBackground'),
+        _hex_color(previous_settings.get('botBackground'), '#000000'))
+    new_botFaceScale = _bounded_number(
+        request.form.get('botFaceScale'),
+        previous_settings.get('botFaceScale', 0.9), 0.2, 1.0)
+    new_botEyeSize = _bounded_number(
+        request.form.get('botEyeSize'),
+        previous_settings.get('botEyeSize', 1.0), 0.5, 1.8)
+    new_botEyeGap = _bounded_number(
+        request.form.get('botEyeGap'),
+        previous_settings.get('botEyeGap', 0.0), -0.6, 1.0)
+    new_botEyeOffsetY = _bounded_number(
+        request.form.get('botEyeOffsetY'),
+        previous_settings.get('botEyeOffsetY', 0.0), -4.0, 4.0)
+    new_botWanderSpeed = _bounded_number(
+        request.form.get('botWanderSpeed'),
+        previous_settings.get('botWanderSpeed', 10), 0.0, 120.0)
+    new_botSleepStart = _clock_text(
+        request.form.get('botSleepStart'),
+        previous_settings.get('botSleepStart', '22:00'))
+    new_botSleepEnd = _clock_text(
+        request.form.get('botSleepEnd'),
+        previous_settings.get('botSleepEnd', '07:00'))
+    new_botWakePriority = _bounded_number(
+        request.form.get('botWakePriority'),
+        previous_settings.get('botWakePriority', 7), 0, 10)
+
+    def _flag(name):
+        return 'on' if request.form.get(name) == 'on' else ''
+
     # Validate strftime formats
     valid, err = validate_strftime(new_clockFormatDate)
     if not valid:
@@ -496,6 +683,21 @@ def save_settings_route():
         'startupScreenFontSize': new_startupScreenFontSize,
         'startupScreenScroll': new_startupScreenScroll,
         'startupScreenScrollSpeed': new_startupScreenScrollSpeed,
+        'botFaceStyle': new_botFaceStyle,
+        'botFaceColor': new_botFaceColor,
+        'botRobotAccent': new_botRobotAccent,
+        'botBackground': new_botBackground,
+        'botFaceScale': new_botFaceScale,
+        'botEyeSize': new_botEyeSize,
+        'botEyeGap': new_botEyeGap,
+        'botEyeOffsetY': new_botEyeOffsetY,
+        'botWanderEnabled': _flag('botWanderEnabled'),
+        'botWanderSpeed': new_botWanderSpeed,
+        'botSleepEnabled': _flag('botSleepEnabled'),
+        'botSleepStart': new_botSleepStart,
+        'botSleepEnd': new_botSleepEnd,
+        'botWakeOnAlarm': _flag('botWakeOnAlarm'),
+        'botWakePriority': new_botWakePriority,
     }
     existing_settings.update(merged_settings)
     if save_settings(existing_settings):
@@ -684,6 +886,7 @@ if __name__ == '__main__':
             mqtt_handler.publish_settings_display_image_in_sec_discovery()
             mqtt_handler.publish_settings_display_brightness_discovery()
             mqtt_handler.publish_device_rotation_settings_discovery()
+            mqtt_handler.publish_bot_discovery()
 
             mqtt_handler.publish_reboot_button_discovery()
             mqtt_handler.publish_shutdown_button_discovery()
@@ -697,6 +900,8 @@ if __name__ == '__main__':
             mqtt_handler.publish_disk_space()
             mqtt_handler.publish_device_settings_state()
             mqtt_handler.publish_device_rotation_settings_state()
+            mqtt_handler.publish_bot_state()
+            mqtt_handler.start_bot_state_publisher()
 
             import atexit
 

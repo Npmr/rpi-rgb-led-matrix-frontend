@@ -34,14 +34,16 @@
             days_until: 'Days until',
             api_text: 'API text',
             static_text: 'Static text',
-            image: 'Image'
+            image: 'Image',
+            bot: 'Bot'
         };
         var DEFAULT_SIZE = {
             clock: [3, 1],
             days_until: [3, 1],
             api_text: [3, 1],
             static_text: [3, 1],
-            image: [1, 1]
+            image: [1, 1],
+            bot: [1, 1]
         };
 
         var board = document.getElementById('matrix-board');
@@ -52,6 +54,7 @@
         var dimsLabel = document.getElementById('grid-dims-label');
 
         var selectedId = null;
+        var previewMood = 'idle';
         var scale = 1;
 
         // --- helpers ------------------------------------------------------
@@ -99,6 +102,24 @@
                 parseInt(value.substring(2, 4), 16) || 0,
                 parseInt(value.substring(4, 6), 16) || 0
             ];
+        }
+
+        function normalizeHex(value, fallback) {
+            if (Array.isArray(value)) {
+                return toHex(value);
+            }
+            if (typeof value === 'string') {
+                var text = value.trim().toLowerCase();
+                if (/^#[0-9a-f]{6}$/.test(text)) {
+                    return text;
+                }
+                if (/^#[0-9a-f]{3}$/.test(text)) {
+                    return '#' + text.substring(1).split('').map(function (c) {
+                        return c + c;
+                    }).join('');
+                }
+            }
+            return fallback;
         }
 
         function generateId() {
@@ -171,6 +192,8 @@
                     return config.text || 'Text';
                 case 'image':
                     return config.filename || 'Image';
+                case 'bot':
+                    return 'Bot';
                 default:
                     return widget.type;
             }
@@ -218,6 +241,27 @@
                 el.style.width = Math.max(8, widget.w * cellW() * scale - 1) + 'px';
                 el.style.height = Math.max(8, widget.h * cellH() * scale - 1) + 'px';
                 el.style.color = toHex((widget.style || {}).color);
+
+                if (widget.type === 'bot') {
+                    el.classList.add('widget-block--bot');
+                    var botConfig = configOf(widget);
+                    var preview = document.createElement('img');
+                    preview.className = 'widget-block__preview';
+                    preview.alt = '';
+                    preview.src = '/bot/preview.png?style=' +
+                        encodeURIComponent(botConfig.faceStyle || 'robot') +
+                        '&mood=' + encodeURIComponent(previewMood) +
+                        '&w=' + Math.max(8, Math.min(512, widget.w * cellW())) +
+                        '&h=' + Math.max(8, Math.min(512, widget.h * cellH())) +
+                        '&color=' + encodeURIComponent(toHex((widget.style || {}).color)) +
+                        '&accent=' + encodeURIComponent(
+                            normalizeHex(botConfig.accent, '#ffb000')
+                        ) +
+                        '&eyeSize=' + (botConfig.eyeSize == null ? 1 : botConfig.eyeSize) +
+                        '&eyeGap=' + (botConfig.eyeGap == null ? 0 : botConfig.eyeGap) +
+                        '&eyeOffsetY=' + (botConfig.eyeOffsetY == null ? 0 : botConfig.eyeOffsetY);
+                    el.appendChild(preview);
+                }
 
                 var label = document.createElement('span');
                 label.className = 'widget-block__label';
@@ -410,12 +454,14 @@
             colorWrap.appendChild(colorInput);
             inspector.appendChild(colorWrap);
 
-            addSelect(inspector, 'Align', style.align || 'center', [
-                ['left', 'Left'], ['center', 'Center'], ['right', 'Right']
-            ], function (value) {
-                style.align = value;
-                renderBlocks();
-            });
+            if (widget.type !== 'bot') {
+                addSelect(inspector, 'Align', style.align || 'center', [
+                    ['left', 'Left'], ['center', 'Center'], ['right', 'Right']
+                ], function (value) {
+                    style.align = value;
+                    renderBlocks();
+                });
+            }
 
             if (widget.type === 'clock') {
                 addText(inspector, 'Time format (strftime)', config.timeFormat || '', function (v) {
@@ -509,6 +555,58 @@
                     ['cover', 'Cover (crop)'], ['contain', 'Contain (letterbox)']
                 ], function (value) {
                     style.fit = value;
+                });
+            } else if (widget.type === 'bot') {
+                addSelect(inspector, 'Face style', config.faceStyle || 'robot', [
+                    ['robot', 'Cute robot'],
+                    ['emoji', 'Minimal B&W emoji'],
+                    ['screen', 'Screen face (transparent)']
+                ], function (value) {
+                    config.faceStyle = value;
+                    renderBlocks();
+                });
+
+                var accentWrap = fieldWrap('Robot accent');
+                var accentInput = document.createElement('input');
+                accentInput.type = 'color';
+                accentInput.className = 'field__input inspector__color';
+                accentInput.value = normalizeHex(config.accent, '#ffb000');
+                accentInput.addEventListener('input', function () {
+                    config.accent = accentInput.value;
+                    renderBlocks();
+                });
+                accentWrap.appendChild(accentInput);
+                inspector.appendChild(accentWrap);
+
+                addNumber(inspector, 'Eye size (%)',
+                    Math.round((config.eyeSize == null ? 1 : config.eyeSize) * 100),
+                    function (v) {
+                        config.eyeSize = clamp(v / 100, 0.5, 1.8);
+                        renderBlocks();
+                    }, 50, 180);
+
+                addNumber(inspector, 'Eye spacing (%)',
+                    Math.round((config.eyeGap == null ? 0 : config.eyeGap) * 100),
+                    function (v) {
+                        config.eyeGap = clamp(v / 100, -0.6, 1.0);
+                        renderBlocks();
+                    }, -60, 100);
+
+                addNumber(inspector, 'Eye vertical offset',
+                    Math.round(config.eyeOffsetY == null ? 0 : config.eyeOffsetY),
+                    function (v) {
+                        config.eyeOffsetY = clamp(v, -4, 4);
+                        renderBlocks();
+                    }, -4, 4);
+
+                addSelect(inspector, 'Preview mood', previewMood, [
+                    ['idle', 'Idle'], ['happy', 'Happy'], ['love', 'Love'],
+                    ['curious', 'Curious'], ['thinking', 'Thinking'],
+                    ['excited', 'Excited'], ['alarmed', 'Alarmed'],
+                    ['sad', 'Sad'], ['sleepy', 'Sleepy'], ['angry', 'Angry']
+                ], function (value) {
+                    previewMood = value;
+                    renderBlocks();
                 });
             }
         }

@@ -33,6 +33,7 @@ def publish_mqtt(topic, payload, retain=False):
 
 from .mqtt import discovery
 from .mqtt import state
+from .mqtt import bot as bot_mqtt
 
 giphy_controller.set_mqtt_publish_callback(publish_mqtt)
 immich_controller.set_mqtt_publish_callback(publish_mqtt)
@@ -68,6 +69,10 @@ publish_device_settings_state = state.publish_device_settings_state
 publish_device_rotation_settings_state = state.publish_device_rotation_settings_state
 publish_reboot_button_state = state.publish_reboot_button_state
 publish_shutdown_button_state = state.publish_shutdown_button_state
+
+publish_bot_discovery = bot_mqtt.publish_bot_discovery
+publish_bot_state = bot_mqtt.publish_bot_state
+start_bot_state_publisher = bot_mqtt.start_state_publisher
 
 def mqtt_listener(callback_play_media, callback_stop):
     settings = read_settings()
@@ -109,6 +114,11 @@ def mqtt_listener(callback_play_media, callback_stop):
             client.subscribe(f"button/{DEVICE_ID}/immich_album/press")
             client.subscribe(f"button/{DEVICE_ID}/immich_search/press")
             client.subscribe(f"button/{DEVICE_ID}/immich_stop/press")
+            client.subscribe(f"bot/{DEVICE_ID}/event")
+            client.subscribe(f"bot/{DEVICE_ID}/message/set")
+            client.subscribe(f"bot/{DEVICE_ID}/mood/set")
+            client.subscribe(f"bot/{DEVICE_ID}/sleep/set")
+            client.subscribe(f"bot/{DEVICE_ID}/display/set")
             _clear_processed_payloads() # Start the cleanup timer on connect
         else:
             print(f"Failed to connect to MQTT Broker, return code {rc}")
@@ -125,6 +135,12 @@ def mqtt_listener(callback_play_media, callback_stop):
         print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
         try:
             payload = msg.payload.decode()
+            # Bot topics bypass the duplicate filter: two identical messages
+            # are legitimate (for example saying "dinner" twice).
+            if msg.topic.startswith(f"bot/{DEVICE_ID}/"):
+                bot_mqtt.handle_message(msg.topic, payload)
+                return
+
             payload_id = f"{msg.topic}-{payload}"  # Create a unique ID based on topic and payload
             if payload_id not in _processed_payloads:
                 _processed_payloads.add(payload_id)
