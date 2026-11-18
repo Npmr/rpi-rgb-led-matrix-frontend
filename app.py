@@ -1,3 +1,4 @@
+import io
 import os
 import secrets
 import time
@@ -17,9 +18,11 @@ from modules.system_handler import getFreeDiskSpace, reboot_system, shutdown_sys
 from modules.update_handler import trigger_update, fetch_update_info, is_update_running
 from modules.layout_handler import read_layout, save_layout, validate_layout, grid_dimensions, new_widget, WIDGET_TYPES
 from modules.bot.bus import BotBus
-from modules.bot.face import MOOD_NAMES
+from modules.bot.face import FaceModel, MOOD_NAMES
 from modules.bot.reactions import build_reaction
+from modules.bot.render import render_face
 from modules.bot.schedule import is_sleeping, parse_bool
+from modules.bot.styles import available_styles
 from modules import mqtt_handler, giphy_controller, immich_controller, immich_handler
 from modules import startup_screen
 
@@ -382,6 +385,44 @@ def bot_state():
         'queuedEvents': bot_bus.count(),
         'moods': list(MOOD_NAMES),
     })
+
+
+@app.route('/bot/preview.png')
+def bot_preview():
+    """Render a static face preview for the layout editor and settings UI."""
+    style = request.args.get('style', 'robot')
+    if style not in available_styles():
+        style = 'robot'
+    mood = request.args.get('mood', 'idle')
+    if mood not in MOOD_NAMES:
+        mood = 'idle'
+
+    def dimension(name, default):
+        try:
+            return max(8, min(512, int(request.args.get(name, default))))
+        except (TypeError, ValueError):
+            return default
+
+    width = dimension('w', 64)
+    height = dimension('h', 64)
+
+    options = {}
+    if request.args.get('color'):
+        options['color'] = request.args.get('color')
+    if request.args.get('accent'):
+        options['accent'] = request.args.get('accent')
+
+    model = FaceModel(mood=mood, animations=False)
+    model.update(0.0)
+    image = render_face(
+        width, height, model.snapshot(), style=style, options=options
+    )
+
+    buffer = io.BytesIO()
+    image.save(buffer, format='PNG')
+    response = Response(buffer.getvalue(), mimetype='image/png')
+    response.headers['Cache-Control'] = 'public, max-age=3600'
+    return response
 
 
 @app.route('/changelog')

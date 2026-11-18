@@ -2,6 +2,7 @@
 """Widget type registry."""
 from .base import Widget
 from .api_text import ApiTextWidget
+from .bot import BotWidget
 from .clock import ClockWidget
 from .days_until import DaysUntilWidget
 from .image import ImageWidget
@@ -23,6 +24,7 @@ for _widget in (
     ApiTextWidget,
     StaticTextWidget,
     ImageWidget,
+    BotWidget,
 ):
     register(_widget)
 

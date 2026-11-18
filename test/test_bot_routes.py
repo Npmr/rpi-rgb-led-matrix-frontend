@@ -1,5 +1,8 @@
+import io
 import unittest
 from unittest.mock import patch
+
+from PIL import Image
 
 from app import app
 
@@ -82,6 +85,42 @@ class TestBotStateRoute(unittest.TestCase):
         self.assertFalse(data['sleeping'])
         self.assertEqual(data['queuedEvents'], 2)
         self.assertIn('happy', data['moods'])
+
+
+class TestBotPreviewRoute(unittest.TestCase):
+
+    def setUp(self):
+        self.client = app.test_client()
+
+    def test_preview_returns_a_png(self):
+        response = self.client.get('/bot/preview.png?style=robot&mood=happy&w=64&h=64')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.mimetype, 'image/png')
+        self.assertTrue(response.data.startswith(b'\x89PNG'))
+
+    def test_every_style_renders(self):
+        for style in ('robot', 'emoji', 'screen'):
+            response = self.client.get(f'/bot/preview.png?style={style}&w=32&h=32')
+            with self.subTest(style=style):
+                self.assertEqual(response.status_code, 200)
+                self.assertTrue(response.data.startswith(b'\x89PNG'))
+
+    def test_unknown_style_and_mood_fall_back(self):
+        response = self.client.get('/bot/preview.png?style=nope&mood=nope')
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.data.startswith(b'\x89PNG'))
+
+    def test_size_is_clamped(self):
+        response = self.client.get('/bot/preview.png?w=99999&h=notanumber')
+        self.assertEqual(response.status_code, 200)
+        image = Image.open(io.BytesIO(response.data))
+        self.assertEqual(image.width, 512)
+        self.assertEqual(image.height, 64)
+
+    def test_custom_colour_is_accepted(self):
+        response = self.client.get('/bot/preview.png?color=%23ff0000&accent=%2300ff00')
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.data.startswith(b'\x89PNG'))
 
 
 if __name__ == '__main__':
