@@ -1,7 +1,17 @@
 {
-  "currentApplicationVersion": "v0.0.61",
-  "whatChanged": "Display bot foundation: cute robot and minimal B&W faces that scale from 32x32 upwards",
+  "currentApplicationVersion": "v0.0.62",
+  "whatChanged": "Added the transparent Screen face style: only eyes and a mouth, no plate",
   "changelog": [
+    {
+      "version": "v0.0.62",
+      "date": "2026-11-18",
+      "changes": [
+        "Added a third bot face style called Screen face: two white rounded-rectangle eyes and a small white smile on a fully transparent background",
+        "The Screen face draws no disc, outline, brows or plate, so it works over the grid background and on a black full-screen canvas",
+        "Screen face supports every existing mood, blinking, gaze shifts and the idle bob through the shared expression model",
+        "Added a test that the Screen face never emits colours other than white and leaves the corners transparent"
+      ]
+    },
     {
       "version": "v0.0.61",
       "date": "2026-11-18",

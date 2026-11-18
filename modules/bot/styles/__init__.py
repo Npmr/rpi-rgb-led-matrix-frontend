@@ -2,10 +2,12 @@
 """Registry of bot face styles."""
 from .emoji import EmojiStyle
 from .robot import RobotStyle
+from .screen import ScreenStyle
 
 _STYLES = {
     RobotStyle.id: RobotStyle(),
     EmojiStyle.id: EmojiStyle(),
+    ScreenStyle.id: ScreenStyle(),
 }
 
 DEFAULT_STYLE = RobotStyle.id

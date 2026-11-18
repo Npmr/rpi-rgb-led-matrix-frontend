@@ -74,10 +74,12 @@ class TestFaceModel(unittest.TestCase):
 
 class TestFaceStyles(unittest.TestCase):
 
-    def test_robots_and_emoji_are_registered(self):
+    def test_all_styles_are_registered(self):
         self.assertIn("robot", available_styles())
         self.assertIn("emoji", available_styles())
+        self.assertIn("screen", available_styles())
         self.assertEqual(get_style("robot").id, "robot")
+        self.assertEqual(get_style("screen").id, "screen")
         self.assertEqual(get_style("unknown").id, "robot")
 
     def test_every_mood_renders_in_every_style_and_size(self):
@@ -111,6 +113,21 @@ class TestFaceStyles(unittest.TestCase):
                     continue
                 with self.subTest(mood=mood, pixel=(red, green, blue)):
                     self.assertIn((red, green, blue), ((0, 0, 0), (255, 255, 255)))
+
+    def test_screen_style_is_transparent_with_white_features_only(self):
+        for mood in MOOD_NAMES:
+            model = FaceModel(mood=mood, animations=False)
+            model.update(0.0)
+            image = render_face(64, 64, model.snapshot(), style="screen")
+            colors = image.getcolors(maxcolors=64 * 64)
+            visible = {
+                pixel[:3] for _count, pixel in colors if pixel[3] > 0
+            }
+            with self.subTest(mood=mood):
+                self.assertEqual(visible, {(255, 255, 255)})
+                # Corners stay transparent: no disc or plate is drawn.
+                self.assertEqual(image.getpixel((0, 0))[3], 0)
+                self.assertEqual(image.getpixel((63, 63))[3], 0)
 
     def test_robot_uses_the_configured_colour(self):
         model = FaceModel(mood="happy", animations=False)
