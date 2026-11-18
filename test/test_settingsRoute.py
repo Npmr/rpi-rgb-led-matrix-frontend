@@ -87,6 +87,9 @@ class TestSettingsRoute(unittest.TestCase):
         self.assertIn(b'name="startupScreenImage"', response.data)
         self.assertIn(b'name="startupScreenText"', response.data)
         self.assertIn(b'name="startupScreenDuration"', response.data)
+        self.assertIn(b'name="botFaceStyle"', response.data)
+        self.assertIn(b'name="botWanderEnabled"', response.data)
+        self.assertIn(b'name="botSleepStart"', response.data)
 
     @patch('app.save_settings')
     @patch('app.read_settings')
@@ -204,6 +207,66 @@ class TestSaveSettingsDisplayOptions(unittest.TestCase):
     def test_startup_screen_disabled_when_toggle_is_off(self):
         saved = self._post(settings_form(startupScreenEnabled=None))
         self.assertEqual(saved['startupScreenEnabled'], '')
+
+    def test_bot_settings_are_stored(self):
+        saved = self._post(settings_form(
+            botFaceStyle='screen', botFaceColor='#112233',
+            botRobotAccent='#445566', botBackground='#101010',
+            botFaceScale='0.6', botEyeSize='1.5', botEyeGap='-0.3',
+            botEyeOffsetY='2.5', botWanderEnabled='on',
+            botWanderSpeed='25', botSleepEnabled='on',
+            botSleepStart='23:15', botSleepEnd='06:45',
+            botWakeOnAlarm='on', botWakePriority='9'))
+
+        self.assertEqual(saved['botFaceStyle'], 'screen')
+        self.assertEqual(saved['botFaceColor'], '#112233')
+        self.assertEqual(saved['botRobotAccent'], '#445566')
+        self.assertEqual(saved['botBackground'], '#101010')
+        self.assertAlmostEqual(saved['botFaceScale'], 0.6)
+        self.assertAlmostEqual(saved['botEyeSize'], 1.5)
+        self.assertAlmostEqual(saved['botEyeGap'], -0.3)
+        self.assertAlmostEqual(saved['botEyeOffsetY'], 2.5)
+        self.assertEqual(saved['botWanderEnabled'], 'on')
+        self.assertAlmostEqual(saved['botWanderSpeed'], 25.0)
+        self.assertEqual(saved['botSleepEnabled'], 'on')
+        self.assertEqual(saved['botSleepStart'], '23:15')
+        self.assertEqual(saved['botSleepEnd'], '06:45')
+        self.assertEqual(saved['botWakeOnAlarm'], 'on')
+        self.assertAlmostEqual(saved['botWakePriority'], 9.0)
+
+    def test_invalid_bot_settings_fall_back(self):
+        saved = self._post(settings_form(
+            botFaceStyle='nonsense', botFaceColor='not-a-colour',
+            botRobotAccent='#zzz', botBackground='black',
+            botFaceScale='99', botEyeSize='-5', botEyeGap='9',
+            botEyeOffsetY='99', botWanderSpeed='-3',
+            botSleepStart='99:99', botSleepEnd='oops',
+            botWakePriority='42'))
+
+        self.assertEqual(saved['botFaceStyle'], 'robot')
+        self.assertEqual(saved['botFaceColor'], '#00d4ff')
+        self.assertEqual(saved['botRobotAccent'], '#ffb000')
+        self.assertEqual(saved['botBackground'], '#000000')
+        self.assertAlmostEqual(saved['botFaceScale'], 1.0)
+        self.assertAlmostEqual(saved['botEyeSize'], 0.5)
+        self.assertAlmostEqual(saved['botEyeGap'], 1.0)
+        self.assertAlmostEqual(saved['botEyeOffsetY'], 4.0)
+        self.assertAlmostEqual(saved['botWanderSpeed'], 0.0)
+        self.assertEqual(saved['botSleepStart'], '22:00')
+        self.assertEqual(saved['botSleepEnd'], '07:00')
+        self.assertAlmostEqual(saved['botWakePriority'], 10.0)
+
+    def test_missing_bot_fields_use_defaults(self):
+        saved = self._post(settings_form(
+            botFaceStyle=None, botFaceScale=None, botEyeSize=None,
+            botSleepStart=None, botSleepEnd=None))
+        self.assertEqual(saved['botFaceStyle'], 'robot')
+        self.assertAlmostEqual(saved['botFaceScale'], 0.9)
+        self.assertAlmostEqual(saved['botEyeSize'], 1.0)
+        self.assertEqual(saved['botSleepStart'], '22:00')
+        self.assertEqual(saved['botSleepEnd'], '07:00')
+        self.assertEqual(saved['botWanderEnabled'], '')
+        self.assertEqual(saved['botSleepEnabled'], '')
 
     def test_brightness_and_duration_are_stored(self):
         saved = self._post(settings_form(displayBrightness='65',

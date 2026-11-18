@@ -55,6 +55,29 @@ def rgba(color):
     return (int(color[0]), int(color[1]), int(color[2]), 255)
 
 
+def _float_option(value, default, low, high):
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        number = float(default)
+    return max(low, min(high, number))
+
+
+def eye_options(options):
+    """Return ``(scale, gap, offset_y)`` for the eyes.
+
+    ``eyeSize`` scales both eye axes (1.0 = the style's normal eye), ``eyeGap``
+    moves the eyes apart (negative moves them together) and ``eyeOffsetY``
+    shifts them up or down. Values are clamped so a hand-edited layout.json can
+    never push the eyes outside the design canvas.
+    """
+    options = options or {}
+    scale = _float_option(options.get("eyeSize"), 1.0, 0.5, 1.8)
+    gap = _float_option(options.get("eyeGap"), 0.0, -0.6, 1.0) * 2.5
+    offset_y = _float_option(options.get("eyeOffsetY"), 0.0, -4.0, 4.0)
+    return scale, gap, offset_y
+
+
 class StyleCanvas:
     """An RGBA tile with a virtual 32x32 coordinate system."""
 

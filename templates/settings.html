@@ -235,6 +235,129 @@
         </div>
     </div>
 
+    {# === Display Bot === #}
+    <div class="settings-section mb-lg">
+        <div class="settings-section__header">
+            <div class="settings-section__icon">
+                <i class="material-icons">smart_toy</i>
+            </div>
+            <h3 class="settings-section__title">Display Bot</h3>
+        </div>
+
+        <div class="settings-section__fields">
+            <div class="field">
+                <label class="field__label" for="botFaceStyle">Face style</label>
+                {% set current_face_style = settings.get('botFaceStyle', 'robot') %}
+                <select name="botFaceStyle" id="botFaceStyle" class="field__input">
+                    <option value="robot" {% if current_face_style == 'robot' %}selected{% endif %}>Cute robot</option>
+                    <option value="emoji" {% if current_face_style == 'emoji' %}selected{% endif %}>Minimal B&amp;W emoji</option>
+                    <option value="screen" {% if current_face_style == 'screen' %}selected{% endif %}>Screen face (transparent)</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label class="field__label" for="botFaceScale">Face size (0.2 - 1.0)</label>
+                <input class="field__input" type="number" min="0.2" max="1" step="0.05" name="botFaceScale" id="botFaceScale" value="{{ settings.get('botFaceScale', 0.9) }}">
+            </div>
+        </div>
+
+        <div class="settings-section__fields mt-md">
+            <div class="field">
+                <label class="field__label" for="botFaceColor">Eye / mouth colour</label>
+                <input class="field__input" type="color" name="botFaceColor" id="botFaceColor" value="{{ settings.get('botFaceColor', '#00d4ff') }}">
+            </div>
+
+            <div class="field">
+                <label class="field__label" for="botRobotAccent">Robot accent</label>
+                <input class="field__input" type="color" name="botRobotAccent" id="botRobotAccent" value="{{ settings.get('botRobotAccent', '#ffb000') }}">
+            </div>
+
+            <div class="field">
+                <label class="field__label" for="botBackground">Background</label>
+                <input class="field__input" type="color" name="botBackground" id="botBackground" value="{{ settings.get('botBackground', '#000000') }}">
+            </div>
+        </div>
+
+        <div class="settings-section__fields mt-md">
+            <div class="field">
+                <label class="field__label" for="botEyeSize">Eye size (0.5 - 1.8)</label>
+                <input class="field__input" type="number" min="0.5" max="1.8" step="0.05" name="botEyeSize" id="botEyeSize" value="{{ settings.get('botEyeSize', 1.0) }}">
+            </div>
+
+            <div class="field">
+                <label class="field__label" for="botEyeGap">Eye spacing (-0.6 - 1.0)</label>
+                <input class="field__input" type="number" min="-0.6" max="1" step="0.05" name="botEyeGap" id="botEyeGap" value="{{ settings.get('botEyeGap', 0.0) }}">
+            </div>
+
+            <div class="field">
+                <label class="field__label" for="botEyeOffsetY">Eye vertical offset (-4 - 4)</label>
+                <input class="field__input" type="number" min="-4" max="4" step="0.5" name="botEyeOffsetY" id="botEyeOffsetY" value="{{ settings.get('botEyeOffsetY', 0.0) }}">
+            </div>
+        </div>
+
+        <div class="settings-section__fields mt-md">
+            <div class="field">
+                <label class="toggle">
+                    <input type="checkbox" class="toggle__input" id="botWanderEnabled" name="botWanderEnabled" {% if settings.get('botWanderEnabled') == 'on' %}checked{% endif %}>
+                    <div>
+                        <span class="toggle__label">Wander on big panels</span>
+                        <span class="toggle__description">Moves the face around; pauses while a reaction is held</span>
+                    </div>
+                </label>
+            </div>
+
+            <div class="field">
+                <label class="field__label" for="botWanderSpeed">Wander speed (px/s)</label>
+                <input class="field__input" type="number" min="0" max="120" step="1" name="botWanderSpeed" id="botWanderSpeed" value="{{ settings.get('botWanderSpeed', 10) }}">
+            </div>
+        </div>
+
+        <div class="settings-section__fields mt-md">
+            <div class="field">
+                <label class="toggle">
+                    <input type="checkbox" class="toggle__input" id="botSleepEnabled" name="botSleepEnabled" {% if settings.get('botSleepEnabled') == 'on' %}checked{% endif %}>
+                    <div>
+                        <span class="toggle__label">Sleep hours</span>
+                        <span class="toggle__description">Show a sleepy face between these times</span>
+                    </div>
+                </label>
+            </div>
+
+            <div class="field">
+                <label class="field__label" for="botSleepStart">Sleep from</label>
+                <input class="field__input" type="time" name="botSleepStart" id="botSleepStart" value="{{ settings.get('botSleepStart', '22:00') }}">
+            </div>
+
+            <div class="field">
+                <label class="field__label" for="botSleepEnd">Sleep until</label>
+                <input class="field__input" type="time" name="botSleepEnd" id="botSleepEnd" value="{{ settings.get('botSleepEnd', '07:00') }}">
+            </div>
+        </div>
+
+        <div class="settings-section__fields mt-md">
+            <div class="field">
+                <label class="toggle">
+                    <input type="checkbox" class="toggle__input" id="botWakeOnAlarm" name="botWakeOnAlarm" {% if settings.get('botWakeOnAlarm', 'on') == 'on' %}checked{% endif %}>
+                    <div>
+                        <span class="toggle__label">Wake on urgent events</span>
+                        <span class="toggle__description">High-priority events (alarms, doorbell) wake the bot</span>
+                    </div>
+                </label>
+            </div>
+
+            <div class="field">
+                <label class="field__label" for="botWakePriority">Wake priority (0 - 10)</label>
+                <input class="field__input" type="number" min="0" max="10" step="1" name="botWakePriority" id="botWakePriority" value="{{ settings.get('botWakePriority', 7) }}">
+            </div>
+        </div>
+
+        <p style="font-size:var(--font-size-sm);color:var(--color-text-secondary);margin-top:var(--space-sm);">
+            Start or stop the full-screen face from the
+            <a href="{{ url_for('layout') }}">Grid Layout</a> page.
+            Home Assistant controls appear automatically under this device.
+        </p>
+    </div>
+
     {# === GIPHY Settings === #}
     <div class="settings-section mb-lg">
         <div class="settings-section__header">

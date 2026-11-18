@@ -47,6 +47,12 @@ class WidgetContext:
             self.bot_engine.update(now)
             self._bot_updated_at = now
 
+    def bot_status(self):
+        """Return the engine state, or ``{}`` when no bot widget exists."""
+        if self._bot_engine is None:
+            return {}
+        return self._bot_engine.state()
+
     @property
     def timezone(self):
         return self.settings.get("timezone", "UTC") or "UTC"

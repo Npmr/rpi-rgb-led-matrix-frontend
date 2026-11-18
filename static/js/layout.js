@@ -256,7 +256,10 @@
                         '&color=' + encodeURIComponent(toHex((widget.style || {}).color)) +
                         '&accent=' + encodeURIComponent(
                             normalizeHex(botConfig.accent, '#ffb000')
-                        );
+                        ) +
+                        '&eyeSize=' + (botConfig.eyeSize == null ? 1 : botConfig.eyeSize) +
+                        '&eyeGap=' + (botConfig.eyeGap == null ? 0 : botConfig.eyeGap) +
+                        '&eyeOffsetY=' + (botConfig.eyeOffsetY == null ? 0 : botConfig.eyeOffsetY);
                     el.appendChild(preview);
                 }
 
@@ -574,6 +577,27 @@
                 });
                 accentWrap.appendChild(accentInput);
                 inspector.appendChild(accentWrap);
+
+                addNumber(inspector, 'Eye size (%)',
+                    Math.round((config.eyeSize == null ? 1 : config.eyeSize) * 100),
+                    function (v) {
+                        config.eyeSize = clamp(v / 100, 0.5, 1.8);
+                        renderBlocks();
+                    }, 50, 180);
+
+                addNumber(inspector, 'Eye spacing (%)',
+                    Math.round((config.eyeGap == null ? 0 : config.eyeGap) * 100),
+                    function (v) {
+                        config.eyeGap = clamp(v / 100, -0.6, 1.0);
+                        renderBlocks();
+                    }, -60, 100);
+
+                addNumber(inspector, 'Eye vertical offset',
+                    Math.round(config.eyeOffsetY == null ? 0 : config.eyeOffsetY),
+                    function (v) {
+                        config.eyeOffsetY = clamp(v, -4, 4);
+                        renderBlocks();
+                    }, -4, 4);
 
                 addSelect(inspector, 'Preview mood', previewMood, [
                     ['idle', 'Idle'], ['happy', 'Happy'], ['love', 'Love'],

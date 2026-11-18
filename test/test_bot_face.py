@@ -82,6 +82,50 @@ class TestFaceStyles(unittest.TestCase):
         self.assertEqual(get_style("screen").id, "screen")
         self.assertEqual(get_style("unknown").id, "robot")
 
+    def test_eye_geometry_changes_the_face(self):
+        model = FaceModel(mood="idle", animations=False)
+        model.update(0.0)
+        face = model.snapshot()
+        for style in available_styles():
+            normal = render_face(64, 64, face, style=style)
+            bigger = render_face(
+                64, 64, face, style=style, options={"eyeSize": 1.8}
+            )
+            wider = render_face(
+                64, 64, face, style=style, options={"eyeGap": 1.0}
+            )
+            lower = render_face(
+                64, 64, face, style=style, options={"eyeOffsetY": 4}
+            )
+            with self.subTest(style=style):
+                self.assertNotEqual(normal.tobytes(), bigger.tobytes())
+                self.assertNotEqual(normal.tobytes(), wider.tobytes())
+                self.assertNotEqual(normal.tobytes(), lower.tobytes())
+
+    def test_extreme_eye_options_stay_inside_the_tile(self):
+        model = FaceModel(mood="idle", animations=False)
+        model.update(0.0)
+        face = model.snapshot()
+        for style in available_styles():
+            image = render_face(
+                32, 32, face, style=style,
+                options={"eyeSize": 1.8, "eyeGap": 1.0, "eyeOffsetY": 4},
+            )
+            # Corners must remain untouched: eyes never spill to the edges.
+            with self.subTest(style=style):
+                self.assertEqual(image.getpixel((0, 0))[3], 0)
+                self.assertEqual(image.getpixel((31, 31))[3], 0)
+
+    def test_eye_options_are_optional(self):
+        model = FaceModel(mood="idle", animations=False)
+        model.update(0.0)
+        face = model.snapshot()
+        for style in available_styles():
+            with self.subTest(style=style):
+                self.assertIsNotNone(
+                    render_face(32, 32, face, style=style).getbbox()
+                )
+
     def test_every_mood_renders_in_every_style_and_size(self):
         for style in available_styles():
             for mood in MOOD_NAMES:

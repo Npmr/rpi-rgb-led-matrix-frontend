@@ -1,7 +1,35 @@
 {
-  "currentApplicationVersion": "v0.0.64",
-  "whatChanged": "The display bot is now a grid widget you can place and preview in the layout editor",
+  "currentApplicationVersion": "v0.0.66",
+  "whatChanged": "The display bot can now run full screen, be driven from Home Assistant over MQTT, and move its eyes or wander across big panels",
   "changelog": [
+    {
+      "version": "v0.0.66",
+      "date": "2026-11-18",
+      "changes": [
+        "Added eye geometry controls: eyeSize scales the square eyes, eyeGap moves them apart or together and eyeOffsetY shifts them up or down",
+        "Eye geometry works everywhere at once: per-widget in the layout inspector, globally in Settings, in the full-screen renderer and in the preview endpoint",
+        "Values are clamped (eyeSize 0.5-1.8, eyeGap -0.6-1.0, eyeOffsetY -4-4) so a hand-edited layout.json can never push the eyes off the canvas",
+        "Added opt-in wandering for big panels: the face drifts with a gentle bounce, turns now and then and is capped at 85% of the short side so it always has room to move",
+        "Wandering pauses while a reaction is held or the bot is sleeping, so an alarm face always looks straight at you; speed is configurable up to 120 px/s",
+        "The face position rescales instead of teleporting when the panel size or rotation changes",
+        "Added 27 tests covering eye option parsing and clamping, wander motion, bounce limits, pausing, resize and the renderer face rectangle"
+      ]
+    },
+    {
+      "version": "v0.0.65",
+      "date": "2026-11-18",
+      "changes": [
+        "Added bot_display.py, a full-screen renderer that draws one large face, owns the matrix and hot-reloads settings.json while it runs",
+        "Added Start Bot / Stop Bot controls to the Grid Layout page, with the toolbar showing whether the grid or the bot is running",
+        "Added MQTT control: bot/<device>/event for JSON events, /message/set for plain text, /mood/set to hold a mood, /sleep/set for sleep and wake, /display/set to start or stop the full-screen face",
+        "Bot payloads bypass the listener's duplicate filter, so saying the same thing twice is two events instead of one",
+        "Added automatic Home Assistant discovery: mood sensor, sleeping binary sensor, mode sensor, mood preset select, message text box, sleep switch, full-screen switch and a Wake button",
+        "Added a retained bot/<device>/state topic published every 2 seconds from the renderer's own status, so HA shows the real mood and mode",
+        "Added a Display Bot section to Settings: face style, colours, face size, eye geometry, wander, sleep hours and wake priority, all validated on save",
+        "Added docs/home_assistant_bot_automations.yaml with 11 ready-to-use automations for doorbell, calendar, timers, weather, news, sleep and wake",
+        "Added 27 tests covering MQTT ingress, Home Assistant discovery payloads, state publishing, the full-screen renderer and settings validation"
+      ]
+    },
     {
       "version": "v0.0.64",
       "date": "2026-11-18",

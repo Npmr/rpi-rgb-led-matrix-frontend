@@ -94,6 +94,26 @@ class TestBotWidget(unittest.TestCase):
             first.update(100.1)
             self.assertEqual(update.call_count, 2)
 
+    def test_eye_options_come_from_config_then_settings(self):
+        context = self.context({"botEyeSize": 1.4, "botEyeGap": 0.3})
+        widget = BotWidget(spec(), context)
+        self.assertAlmostEqual(widget.options["eyeSize"], 1.4)
+        self.assertAlmostEqual(widget.options["eyeGap"], 0.3)
+
+        configured = BotWidget(
+            spec({"eyeSize": 0.8, "eyeOffsetY": -2}), context
+        )
+        self.assertAlmostEqual(configured.options["eyeSize"], 0.8)
+        self.assertAlmostEqual(configured.options["eyeOffsetY"], -2.0)
+
+    def test_eye_options_change_the_rendered_face(self):
+        context = self.context()
+        normal = BotWidget(spec(), context)
+        bigger = BotWidget(spec({"eyeSize": 1.8}), context)
+        self.assertNotEqual(
+            self.render(normal).tobytes(), self.render(bigger).tobytes()
+        )
+
     def test_event_changes_the_rendered_face(self):
         context = self.context()
         widget = BotWidget(spec({"faceStyle": "screen"}), context)

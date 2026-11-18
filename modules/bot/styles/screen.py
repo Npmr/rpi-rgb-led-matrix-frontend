@@ -7,7 +7,7 @@ black full-screen canvas and over the grid background.
 """
 import math
 
-from .base import StyleCanvas
+from .base import StyleCanvas, eye_options
 
 WHITE = (255, 255, 255)
 
@@ -19,35 +19,38 @@ class ScreenStyle:
     def render(self, width, height, face, options=None, background=None):
         canvas = StyleCanvas(width, height, background=background)
         dy = face.bob * 1.2
+        eye_scale, eye_gap, eye_dy = eye_options(options)
         gaze_x = face.gaze_x * 1.2
         gaze_y = face.gaze_y * 0.8
 
         self._draw_eye(
-            canvas, 9.0 + gaze_x, 14.5 + dy + gaze_y, face.eye_left
+            canvas, 9.0 - eye_gap + gaze_x, 14.5 + dy + eye_dy + gaze_y,
+            face.eye_left, eye_scale,
         )
         self._draw_eye(
-            canvas, 23.0 + gaze_x, 14.5 + dy + gaze_y, face.eye_right
+            canvas, 23.0 + eye_gap + gaze_x, 14.5 + dy + eye_dy + gaze_y,
+            face.eye_right, eye_scale,
         )
         self._draw_mouth(canvas, face, dy)
 
         return canvas.image
 
     @staticmethod
-    def _draw_eye(canvas, cx, cy, openness):
-        half_width = 4.0
-        half_height = 6.5 * max(0.04, openness)
+    def _draw_eye(canvas, cx, cy, openness, scale=1.0):
+        half_width = 4.0 * scale
+        half_height = 6.5 * scale * max(0.04, openness)
 
         if openness < 0.12:
             canvas.line(
                 cx - half_width, cy, cx + half_width, cy,
-                WHITE, width=2.0,
+                WHITE, width=2.0 * scale,
             )
             return
 
         canvas.rounded_rectangle(
             cx - half_width, cy - half_height,
             cx + half_width, cy + half_height,
-            radius=2.8, fill=WHITE,
+            radius=2.8 * scale, fill=WHITE,
         )
 
     @staticmethod

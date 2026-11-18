@@ -1,0 +1,167 @@
+# Home Assistant automations for the RGB matrix display bot
+#
+# Replace the device id if yours differs (Settings -> Home Assistant -> Device ID).
+# The bot entities are created automatically by MQTT discovery; these examples
+# only publish events to `bot/<device>/event`.
+#
+# Event fields (all optional except type):
+#   type      message | meeting_soon | meeting_started | meeting_ended | weather |
+#             doorbell | timer_done | news | alarm | mood | sleep | wake
+#   text      message shown as a caption
+#   mood      one of: idle happy excited curious thinking sad alarmed sleepy love wink
+#   priority  0-10 (higher interrupts lower)
+#   duration  seconds, 0 = until replaced
+#
+# You can always send a raw event with Developer Tools -> MQTT:
+#   topic:   bot/pixel_display_rpi/event
+#   payload: {"type": "doorbell"}
+
+- id: bot_doorbell
+  alias: "Display bot: doorbell"
+  description: "Shows an alarmed face when the doorbell rings."
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.front_doorbell
+      to: "on"
+  action:
+    - service: mqtt.publish
+      data:
+        topic: bot/pixel_display_rpi/event
+        payload: '{"type": "doorbell", "text": "Someone is at the door"}'
+
+- id: bot_meeting_soon
+  alias: "Display bot: meeting in 5 minutes"
+  description: "Shows an alarmed face before the next calendar event."
+  trigger:
+    - platform: calendar
+      entity_id: calendar.work
+      event: start
+      offset: "-00:05:00"
+  action:
+    - service: mqtt.publish
+      data:
+        topic: bot/pixel_display_rpi/event
+        payload: >-
+          {"type": "meeting_soon", "text": {{ trigger.calendar_event.summary | tojson }}}
+
+- id: bot_meeting_started
+  alias: "Display bot: meeting started"
+  trigger:
+    - platform: calendar
+      entity_id: calendar.work
+      event: start
+  action:
+    - service: mqtt.publish
+      data:
+        topic: bot/pixel_display_rpi/event
+        payload: '{"type": "meeting_started"}'
+
+- id: bot_meeting_ended
+  alias: "Display bot: meeting ended"
+  trigger:
+    - platform: calendar
+      entity_id: calendar.work
+      event: end
+  action:
+    - service: mqtt.publish
+      data:
+        topic: bot/pixel_display_rpi/event
+        payload: '{"type": "meeting_ended"}'
+
+- id: bot_timer_done
+  alias: "Display bot: timer finished"
+  trigger:
+    - platform: event
+      event_type: timer.finished
+  action:
+    - service: mqtt.publish
+      data:
+        topic: bot/pixel_display_rpi/event
+        payload: '{"type": "timer_done", "text": "Timer finished"}'
+
+- id: bot_rain_warning
+  alias: "Display bot: rain starting"
+  description: "Changes the face with the current weather condition."
+  trigger:
+    - platform: state
+      entity_id: weather.home
+  action:
+    - service: mqtt.publish
+      data:
+        topic: bot/pixel_display_rpi/event
+        payload: >-
+          {"type": "weather",
+           "condition": {{ state_attr('weather.home', 'condition') | tojson }},
+           "temp": {{ state_attr('weather.home', 'temperature') | default(0) }}}
+
+- id: bot_news
+  alias: "Display bot: news headline"
+  trigger:
+    - platform: state
+      entity_id: sensor.news_headline
+  action:
+    - service: mqtt.publish
+      data:
+        topic: bot/pixel_display_rpi/event
+        payload: >-
+          {"type": "news", "text": {{ states('sensor.news_headline') | tojson }}}
+
+- id: bot_good_night
+  alias: "Display bot: go to sleep"
+  trigger:
+    - platform: time
+      at: "22:30:00"
+  action:
+    - service: mqtt.publish
+      data:
+        topic: bot/pixel_display_rpi/event
+        payload: '{"type": "sleep"}'
+
+- id: bot_good_morning
+  alias: "Display bot: wake up"
+  trigger:
+    - platform: time
+      at: "07:00:00"
+  action:
+    - service: mqtt.publish
+      data:
+        topic: bot/pixel_display_rpi/event
+        payload: '{"type": "wake"}'
+
+- id: bot_hold_mood
+  alias: "Display bot: hold a mood until replaced"
+  description: "duration 0 keeps the mood until another event arrives."
+  trigger:
+    - platform: state
+      entity_id: input_boolean.bot_party_mode
+      to: "on"
+  action:
+    - service: mqtt.publish
+      data:
+        topic: bot/pixel_display_rpi/event
+        payload: '{"type": "mood", "mood": "excited", "duration": 0}'
+
+- id: bot_show_fullscreen_after_media
+  alias: "Display bot: full-screen when media stops"
+  description: "Starts the full-screen face when the media player goes idle."
+  trigger:
+    - platform: state
+      entity_id: media_player.living_room
+      to: "idle"
+      for: "00:02:00"
+  action:
+    - service: mqtt.publish
+      data:
+        topic: bot/pixel_display_rpi/display/set
+        payload: "ON"
+
+# You can also drive the bot directly from a dashboard card:
+#
+#   type: entities
+#   entities:
+#     - switch.pixel_display_status_bot_full_screen
+#     - switch.pixel_display_status_bot_sleep
+#     - select.pixel_display_status_bot_mood_preset
+#     - text.pixel_display_status_bot_message
+#     - sensor.pixel_display_status_bot_mood
+#     - binary_sensor.pixel_display_status_bot_sleeping

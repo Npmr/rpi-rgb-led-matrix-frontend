@@ -122,6 +122,28 @@ class TestBotPreviewRoute(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.data.startswith(b'\x89PNG'))
 
+    def test_eye_options_change_the_preview(self):
+        plain = self.client.get('/bot/preview.png?style=screen&w=64&h=64').data
+        bigger = self.client.get(
+            '/bot/preview.png?style=screen&w=64&h=64&eyeSize=1.8'
+            '&eyeGap=1&eyeOffsetY=4'
+        ).data
+        self.assertNotEqual(plain, bigger)
+
+    def test_eye_options_are_clamped_not_rejected(self):
+        response = self.client.get(
+            '/bot/preview.png?eyeSize=999&eyeGap=-999&eyeOffsetY=999'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.data.startswith(b'\x89PNG'))
+
+    def test_state_reports_styles_and_mode(self):
+        response = self.client.get('/bot/state')
+        data = response.get_json()
+        self.assertIn('screen', data['styles'])
+        self.assertIn(data['mode'], ('grid', 'fullscreen', 'stopped'))
+        self.assertIn('renderer', data)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -17,6 +17,7 @@ import time
 from modules.geometry import get_display_geometry
 from modules.layout_handler import read_layout
 from modules.matrix import build_matrix
+from modules.bot.status import write_status
 from modules.settings_handler import read_settings
 from modules.surface import Surface
 from modules.widgets.base import WidgetContext
@@ -88,6 +89,8 @@ def run():
     print(f"Grid display running ({matrix_width}x{matrix_height}, "
           f"{context.cols}x{context.rows} cells, {len(widgets)} widgets)")
 
+    last_status = 0.0
+
     try:
         while running:
             frame_start = time.time()
@@ -118,11 +121,33 @@ def run():
             canvas.SetImage(surface.image)
             canvas = matrix.SwapOnVSync(canvas)
 
+            if now - last_status >= 0.5:
+                last_status = now
+                state = context.bot_status()
+                write_status({
+                    "mode": "grid",
+                    "mood": state.get("mood", "idle"),
+                    "sleeping": bool(state.get("sleeping")),
+                    "active": state.get("active"),
+                    "queued": state.get("queued", 0),
+                    "style": None,
+                    "wandering": False,
+                })
+
             remaining = FRAME_INTERVAL - (time.time() - frame_start)
             if remaining > 0:
                 time.sleep(remaining)
     finally:
         stop_widgets(widgets)
+        write_status({
+            "mode": "stopped",
+            "mood": None,
+            "sleeping": False,
+            "active": None,
+            "queued": 0,
+            "style": None,
+            "wandering": False,
+        })
         try:
             matrix.Clear()
         except Exception:

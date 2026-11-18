@@ -2,7 +2,7 @@
 """Cute robot face: rounded head, antenna, screen eyes and an LED mouth."""
 import math
 
-from .base import StyleCanvas, blend, parse_color
+from .base import StyleCanvas, blend, eye_options, parse_color
 
 DEFAULT_COLOR = (0, 212, 255)
 DEFAULT_ACCENT = (255, 176, 0)
@@ -24,6 +24,7 @@ class RobotStyle:
 
         canvas = StyleCanvas(width, height, background=background)
         dy = face.bob * 1.5
+        eye_scale, eye_gap, eye_dy = eye_options(options)
 
         # Antenna and its little glowing ball.
         canvas.line(16, 2.5 + dy, 16, 7 + dy, accent, width=1.2)
@@ -41,35 +42,41 @@ class RobotStyle:
         )
 
         self._draw_brows(canvas, face, accent, dy)
-        self._draw_eye(canvas, 10.5, 16.5 + dy, face.eye_left, face, color, pupil)
-        self._draw_eye(canvas, 21.5, 16.5 + dy, face.eye_right, face, color, pupil)
+        self._draw_eye(
+            canvas, 10.5 - eye_gap, 16.5 + dy + eye_dy,
+            face.eye_left, face, color, pupil, eye_scale,
+        )
+        self._draw_eye(
+            canvas, 21.5 + eye_gap, 16.5 + dy + eye_dy,
+            face.eye_right, face, color, pupil, eye_scale,
+        )
         self._draw_mouth(canvas, face, accent, dy)
         self._draw_cheeks(canvas, face, cheek, dy)
 
         return canvas.image
 
     @staticmethod
-    def _draw_eye(canvas, cx, cy, openness, face, color, pupil):
-        half_width = 2.7
-        half_height = 3.6 * max(0.05, openness)
+    def _draw_eye(canvas, cx, cy, openness, face, color, pupil, scale=1.0):
+        half_width = 2.7 * scale
+        half_height = 3.6 * scale * max(0.05, openness)
 
         if openness < 0.12:
             canvas.line(
                 cx - half_width, cy, cx + half_width, cy,
-                color, width=1.8,
+                color, width=1.8 * scale,
             )
             return
 
         canvas.rounded_rectangle(
             cx - half_width, cy - half_height,
             cx + half_width, cy + half_height,
-            1.4, fill=color,
+            1.4 * scale, fill=color,
         )
         if openness > 0.45:
             canvas.circle(
-                cx + face.gaze_x * 1.2,
-                cy + face.gaze_y * 1.0,
-                1.2, pupil,
+                cx + face.gaze_x * 1.2 * scale,
+                cy + face.gaze_y * 1.0 * scale,
+                1.2 * scale, pupil,
             )
 
     @staticmethod

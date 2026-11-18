@@ -7,7 +7,7 @@ easy to verify in tests.
 """
 import math
 
-from .base import StyleCanvas
+from .base import StyleCanvas, eye_options
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -20,24 +20,35 @@ class EmojiStyle:
     def render(self, width, height, face, options=None, background=None):
         canvas = StyleCanvas(width, height, background=background)
         dy = face.bob * 1.2
+        eye_scale, eye_gap, eye_dy = eye_options(options)
 
         # Filled disc: the visual anchor of the minimal style.
         canvas.circle(16, 16 + dy, 14, WHITE)
 
         self._draw_brows(canvas, face, dy)
-        self._draw_eye(canvas, 10.5, 14.5 + dy, face.eye_left)
-        self._draw_eye(canvas, 21.5, 14.5 + dy, face.eye_right)
+        self._draw_eye(
+            canvas, 10.5 - eye_gap, 14.5 + dy + eye_dy,
+            face.eye_left, eye_scale,
+        )
+        self._draw_eye(
+            canvas, 21.5 + eye_gap, 14.5 + dy + eye_dy,
+            face.eye_right, eye_scale,
+        )
         self._draw_mouth(canvas, face, dy)
 
         return canvas.image
 
     @staticmethod
-    def _draw_eye(canvas, cx, cy, openness):
-        half_height = 2.9 * max(0.05, openness)
+    def _draw_eye(canvas, cx, cy, openness, scale=1.0):
+        half_width = 2.2 * scale
+        half_height = 2.9 * scale * max(0.05, openness)
         if openness < 0.12:
-            canvas.line(cx - 2.2, cy, cx + 2.2, cy, BLACK, width=1.8)
+            canvas.line(
+                cx - half_width, cy, cx + half_width, cy,
+                BLACK, width=1.8 * scale,
+            )
             return
-        canvas.ellipse(cx, cy, 2.2, half_height, BLACK)
+        canvas.ellipse(cx, cy, half_width, half_height, BLACK)
 
     @staticmethod
     def _draw_brows(canvas, face, dy):

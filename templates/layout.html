@@ -31,8 +31,22 @@
                     Stop
                 </button>
             </form>
-            <span class="layout-editor__status {% if gridRunning %}layout-editor__status--on{% endif %}">
-                {% if gridRunning %}Grid running{% else %}Grid stopped{% endif %}
+            <form action="/start_bot" method="post" class="inline-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn--outline" {% if botRunning %}disabled{% endif %}>
+                    <i class="material-icons" style="font-size:18px;">smart_toy</i>
+                    Bot Full Screen
+                </button>
+            </form>
+            <form action="/stop_bot" method="post" class="inline-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn--ghost">
+                    <i class="material-icons" style="font-size:18px;">stop</i>
+                    Stop Bot
+                </button>
+            </form>
+            <span class="layout-editor__status {% if gridRunning or botRunning %}layout-editor__status--on{% endif %}">
+                {% if botRunning %}Bot running{% elif gridRunning %}Grid running{% else %}Grid stopped{% endif %}
             </span>
         </div>
 

@@ -1,6 +1,7 @@
 # modules/widgets/bot.py
 """Grid widget that renders the display bot."""
 from .base import Widget
+from ..bot.motion import eye_options
 from ..bot.render import draw_face
 from ..bot.styles import available_styles
 
@@ -27,7 +28,11 @@ class BotWidget(Widget):
             or context.settings.get("botRobotAccent")
             or "#ffb000"
         )
-        self.options = {"color": self.color, "accent": accent}
+        self.options = {
+            "color": self.color,
+            "accent": accent,
+            **eye_options(context.settings, self.config),
+        }
 
     def update(self, now):
         self.context.update_bot(now)
